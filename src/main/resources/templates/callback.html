@@ -1,0 +1,16 @@
+<body>
+<div>
+</div>
+</body>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var accessToken = /*[[${accessToken}]]*/ 'default';
+    var refreshToken = /*[[${refreshToken}]]*/ 'default';
+    var redirectUri = /*[[${redirectUri}]]*/ 'default';
+
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    window.location.href = redirectUri;
+    /*]]>*/
+</script>

@@ -1,0 +1,13 @@
+<body>
+<div>
+    An error occurred. Redirecting...
+</div>
+</body>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var mainUrl = /*[[${mainUrl}]]*/ 'default';
+
+    window.location.href = mainUrl;
+    /*]]>*/
+</script>

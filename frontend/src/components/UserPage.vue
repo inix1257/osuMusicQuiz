@@ -1,0 +1,212 @@
+<script>
+import {useUserStore} from "@/stores/userStore";
+import apiService from "@/api/apiService";
+import {getUserData} from "@/service/authService";
+import moment from "moment";
+
+export default {
+  name: "UserPage",
+  data() {
+    return {
+      player: {},
+    }
+  },
+  props: {
+    playerId: {
+      type: Number,
+      required: true
+    }
+  },
+  methods: {
+    formatDate(date) {
+      return moment(date).format('MMMM Do YYYY');
+    },
+  },
+
+  mounted() {
+    apiService.get(`/api/user?id=${this.playerId}`)
+        .then((response) => {
+          this.player = response.data;
+        })
+  },
+
+  computed: {
+    totalGuesses() {
+      return this.player.maps_guessed_easy + this.player.maps_guessed_normal + this.player.maps_guessed_hard + this.player.maps_guessed_insane;
+    },
+    totalPlays() {
+      return this.player.maps_played_easy + this.player.maps_played_normal + this.player.maps_played_hard + this.player.maps_played_insane;
+    }
+  }
+}
+</script>
+
+<template>
+    <div class="user-info-container">
+      <div class="user-info" v-if="player.id">
+        <a :href="`https://osu.ppy.sh/users/${player.id}`" target="_blank">
+          <div class="user-header">
+            <img :src="player.avatar_url" alt="User's avatar" class="user-avatar">
+            <div class="user-header-right">
+              <p class="user-username">{{ player.username }}</p>
+              <p class="user-rank">Rank: <strong>#{{ player.rank }}</strong></p>
+            </div>
+          </div>
+        </a>
+        <div class="user-levelpoints">
+          <p class="user-points"><strong>{{ player.points }}</strong> pts</p>
+          <p class="user-level">(Level <strong>{{ player.level }}</strong>)</p>
+        </div>
+        <div class="user-stats-container">
+          <p class="user-stats"><span class="difficulty-easy">EASY</span>: {{
+              player.maps_guessed_easy
+            }}/{{ player.maps_played_easy }}
+            ({{ (player.maps_guessed_easy / player.maps_played_easy * 100 || 0).toFixed(2) }}%)</p>
+          <p class="user-stats"><span class="difficulty-normal">NORMAL</span>: {{
+              player.maps_guessed_normal
+            }}/{{ player.maps_played_normal }}
+            ({{ (player.maps_guessed_normal / player.maps_played_normal * 100 || 0).toFixed(2) }}%)</p>
+          <p class="user-stats"><span class="difficulty-hard">HARD</span>: {{
+              player.maps_guessed_hard
+            }}/{{ player.maps_played_hard }}
+            ({{ (player.maps_guessed_hard / player.maps_played_hard * 100 || 0).toFixed(2) }}%)</p>
+          <p class="user-stats"><span class="difficulty-insane">INSANE</span>: {{
+              player.maps_guessed_insane
+            }}/{{ player.maps_played_insane }}
+            ({{ (player.maps_guessed_insane / player.maps_played_insane * 100 || 0).toFixed(2) }}%)</p>
+        </div>
+
+        <p class="user-stats"><strong>Total</strong>: {{ totalGuesses }}/{{ totalPlays }} ({{ (totalGuesses / totalPlays * 100 || 0).toFixed(2) }}%)</p>
+
+        <p class="user-register-date">OMQ Registration: {{ formatDate(player.register_date) }}</p>
+      </div>
+    </div>
+</template>
+
+<style scoped>
+.modal-overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.user-info-container {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info {
+  width: 50vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  background-color: var(--color-secondary);
+}
+
+.user-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.user-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.user-header-details {
+  display: flex;
+  align-items: center;
+}
+
+.user-levelpoints {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-levelpoints p {
+  font-size: 1.5em;
+  margin: 0;
+}
+
+.user-avatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 10px;
+  margin-right: 20px;
+  border: 3px solid var(--color-text);
+}
+
+.user-username {
+  font-size: 2.5em;
+  font-weight: bold;
+  margin-bottom: 0px;
+}
+
+.user-rank {
+  margin-top: 0;
+  font-size: 1.8em;
+}
+
+.user-points {
+  margin-left: 12px;
+  font-size: 1.2em;
+}
+
+.user-guesses,
+.user-plays,
+.user-register-date {
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.user-stats {
+  font-size: 16px;
+  margin-bottom: 0;
+  margin-top: 0.5em;
+}
+
+.user-stats-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+  margin-top: 16px;
+}
+
+.difficulty-easy {
+  color: #20c020;
+}
+
+.difficulty-normal {
+  color: #226f9a;
+}
+
+.difficulty-hard {
+  color: #e7c125;
+}
+
+.difficulty-insane {
+  color: #e53f3f;
+}
+</style>

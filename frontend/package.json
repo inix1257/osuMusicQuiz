@@ -1,0 +1,66 @@
+{
+  "name": "osuMusicQuiz",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "serve": "vue-cli-service serve --port 8081 --mode local",
+    "build": "vue-cli-service build --mode live",
+    "lint": "vue-cli-service lint"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.5.2",
+    "@fortawesome/free-solid-svg-icons": "^6.5.2",
+    "@fortawesome/vue-fontawesome": "^3.0.8",
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "@stomp/stompjs": "^7.0.0",
+    "@trevoreyre/autocomplete-vue": "^3.0.2",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "axios": "^1.6.7",
+    "core-js": "^3.8.3",
+    "dotenv": "^16.4.5",
+    "fast-levenshtein": "^3.0.0",
+    "moment": "^2.30.1",
+    "osu-web.js": "^2.4.0",
+    "pinia": "^2.1.7",
+    "pinia-plugin-persist": "^1.0.0",
+    "pixi.js": "^8.2.2",
+    "sockjs-client": "^1.6.1",
+    "vue": "^3.2.13",
+    "vue-moment": "^4.1.0",
+    "vue-router": "^4.3.2",
+    "vue3-pixi": "^0.9.3",
+    "webstomp-client": "^1.2.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.16",
+    "@babel/eslint-parser": "^7.12.16",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^8.0.3"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "@babel/eslint-parser"
+    },
+    "rules": {
+      "no-unused-vars": "off",
+      "vue/no-unused-components": "off"
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
+}

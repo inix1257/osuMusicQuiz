@@ -1,0 +1,55 @@
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+!**/src/main/resources/static/
+
+/preview
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+/oldmaps.txt
+/src/main/resources/application.properties
+/src/main/resources/static/img/discord.svg
+/src/main/resources/static/img/github.svg
+/src/main/resources/static/img/siren.png
+/src/main/resources/static/img/usereport.png
+/src/main/resources/static/js/app.376f6884a32225ca.js
+/src/main/resources/static/js/chunk-vendors.376f6884a32225ca.js
+/src/main/resources/static/js/node_modules_pixi_js_lib_environment-browser_browserAll_mjs.376f6884a32225ca.js
+/src/main/resources/static/js/node_modules_pixi_js_lib_environment-webworker_webworkerAll_mjs.376f6884a32225ca.js
+/src/main/resources/static/favicon.ico
+/src/main/resources/static/index.html
+/logs/*
+/gradle/wrapper/gradle-wrapper.jar
+/gradle/wrapper/gradle-wrapper.properties
