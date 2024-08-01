@@ -24,7 +24,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import FullLeaderboard from "@/components/FullLeaderboard.vue";
 import DebugPage from "@/components/DebugPage.vue";
 import UserPage from "@/components/UserPage.vue";
-import PaypalPage from "@/components/PaypalPage.vue";
 import AboutPage from "@/components/AboutPage.vue";
 import GameLog from "@/components/GameLog.vue";
 
@@ -64,11 +63,6 @@ const router = createRouter({
             name: 'GameLog',
             path: '/log',
             component: GameLog
-        },
-        {
-            name: 'Donation',
-            path: '/donate',
-            component: PaypalPage
         },
         {
             name: 'Callback',
