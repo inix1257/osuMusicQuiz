@@ -91,6 +91,7 @@ export default {
         startYear: this.localGame.startYear,
         endYear: this.localGame.endYear,
         poolMode: this.localGame.poolMode,
+        displayMode: this.localGame.displayMode,
         genreType: this.localGame.genreType,
         languageType: this.localGame.languageType
       }
@@ -120,13 +121,10 @@ export default {
 
     'localGame.genreType' : function(newVal, oldVal) {
       if (newVal.includes('ANY') && !oldVal.includes('ANY')) {
-        // When "ANY" is checked, select all genres
         this.localGame.genreType = Object.keys(this.genreType);
       } else if (!newVal.includes('ANY') && oldVal.includes('ANY')) {
-        // When "ANY" is unchecked, deselect all genres
         this.localGame.genreType = [];
       } else if (newVal.length < Object.keys(this.genreType).length) {
-        // When any other genre is unchecked, uncheck "ANY"
         const index = this.localGame.genreType.indexOf('ANY');
         if (index !== -1) {
           this.localGame.genreType.splice(index, 1);
@@ -135,13 +133,10 @@ export default {
     },
     'localGame.languageType' : function(newVal, oldVal) {
       if (newVal.includes('ANY') && !oldVal.includes('ANY')) {
-        // When "ANY" is checked, select all languages
         this.localGame.languageType = Object.keys(this.languageType);
       } else if (!newVal.includes('ANY') && oldVal.includes('ANY')) {
-        // When "ANY" is unchecked, deselect all languages
         this.localGame.languageType = [];
       } else if (newVal.length < Object.keys(this.languageType).length) {
-        // When any other language is unchecked, uncheck "ANY"
         const index = this.localGame.languageType.indexOf('ANY');
         if (index !== -1) {
           this.localGame.languageType.splice(index, 1);
@@ -243,7 +238,17 @@ export default {
             <option value="VOCALOID">Vocaloid</option>
           </select>
         </div>
-
+        <div class="form-row">
+          <label>Difficulty</label>
+          <div>
+            <input type="checkbox" id="background" value="BACKGROUND" v-model="localGame.displayMode">
+            <label for="background">Background</label>
+          </div>
+          <div>
+            <input type="checkbox" id="audio" value="AUDIO" v-model="localGame.displayMode">
+            <label for="audio">Audio</label>
+          </div>
+        </div>
         <div class="form-row">
           <label>Genre</label>
           <div class="checkbox-grid">

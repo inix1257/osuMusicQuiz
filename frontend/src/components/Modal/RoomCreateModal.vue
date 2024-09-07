@@ -25,6 +25,7 @@ export default {
       endYear: new Date().getFullYear(),
       isExpanded: false,
       poolMode: 'DEFAULT',
+      displayMode: ["BACKGROUND", "AUDIO"],
       genreType: {
         ANY: 0,
         UNSPECIFIED: 1,
@@ -134,6 +135,7 @@ export default {
         startYear: this.startYear,
         endYear: this.endYear,
         poolMode: this.poolMode,
+        displayMode: this.displayMode,
         genreType: this.selectedGenres,
         languageType: this.selectedLanguages
       };
@@ -183,13 +185,10 @@ export default {
 
     selectedGenres(newVal, oldVal) {
       if (newVal.includes(0) && !oldVal.includes(0)) {
-        // When "ANY" is checked, select all genres
         this.selectedGenres = Object.values(this.genreType);
       } else if (!newVal.includes(0) && oldVal.includes(0)) {
-        // When "ANY" is unchecked, deselect all genres
         this.selectedGenres = [];
       } else if (newVal.length < Object.keys(this.genreType).length) {
-        // When any other genre is unchecked, uncheck "ANY"
         const index = this.selectedGenres.indexOf(0);
         if (index !== -1) {
           this.selectedGenres.splice(index, 1);
@@ -198,13 +197,10 @@ export default {
     },
     selectedLanguages(newVal, oldVal) {
       if (newVal.includes(0) && !oldVal.includes(0)) {
-        // When "ANY" is checked, select all languages
         this.selectedLanguages = Object.values(this.languageType);
       } else if (!newVal.includes(0) && oldVal.includes(0)) {
-        // When "ANY" is unchecked, deselect all languages
         this.selectedLanguages = [];
       } else if (newVal.length < Object.keys(this.languageType).length) {
-        // When any other language is unchecked, uncheck "ANY"
         const index = this.selectedLanguages.indexOf(0);
         if (index !== -1) {
           this.selectedLanguages.splice(index, 1);
@@ -287,12 +283,10 @@ export default {
           </select>
         </div>
         <div class="form-row">
-          <label>Start Year</label>
-          <input type="number" v-model="startYear" class="input-gameinfo">
-        </div>
-        <div class="form-row">
-          <label>End Year</label>
-          <input type="number" v-model="endYear" class="input-gameinfo">
+          <label>Year Range</label>
+          <input type="number" v-model="startYear" class="input-gameinfo input-yearrange">
+          ~
+          <input type="number" v-model="endYear" class="input-gameinfo input-yearrange">
         </div>
         <!--             EXPAND            -->
         <!--             EXPAND            -->
@@ -314,7 +308,17 @@ export default {
             <option value="VOCALOID">Vocaloid</option>
           </select>
         </div>
-
+        <div class="form-row" v-if="isExpanded">
+          <label>Display Mode</label>
+          <div>
+            <input type="checkbox" id="background" value="BACKGROUND" v-model="displayMode">
+            <label for="background">Background</label>
+          </div>
+          <div>
+            <input type="checkbox" id="audio" value="AUDIO" v-model="displayMode">
+            <label for="audio">Audio</label>
+          </div>
+        </div>
         <div class="form-row" v-if="isExpanded">
           <label>Genre</label>
           <div class="checkbox-grid">
@@ -385,6 +389,10 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+}
+
+.input-yearrange {
+  width: 30%;
 }
 
 .dropdown {
