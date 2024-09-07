@@ -46,8 +46,11 @@ public class Game {
 
     private List<GameDifficulty> difficulty = new ArrayList<>();
     private GameMode mode;
+    private List<DisplayMode> displayMode;
     private boolean isPlaying;
     private boolean isGuessing;
+
+    private boolean ranked;
 
     private Date lastActivity;
     private Date lastContinue;

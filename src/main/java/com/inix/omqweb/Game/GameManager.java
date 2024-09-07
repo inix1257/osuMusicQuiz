@@ -328,7 +328,7 @@ public class GameManager {
             if (game.getPlayerAnswers().size() == game.getPlayers().size() && !game.isAllAnswered() && game.isAutoskip()) {
                 long delay = game.getGameScheduler_Guess().getDelay(TimeUnit.MILLISECONDS);
                 if (delay < 3000) {
-                    // If the delay is less than 3 seconds, ignore
+                    // If the delay (=time left) is less than 3 seconds, ignore
                     // This is to prevent multiple continueGame calls, aka autoskip bug
                     return true;
                 }
@@ -599,7 +599,9 @@ public class GameManager {
                 .poolMode(game.getPoolMode())
                 .genreType(new ArrayList<>(game.getGenreType()))
                 .languageType(new ArrayList<>(game.getLanguageType()))
+                .displayMode(new ArrayList<>(game.getDisplayMode()))
                 .autoskip(game.isAutoskip())
+                .ranked(game.isRanked())
                 .difficulty(new ArrayList<>(game.getDifficulty()))
                 .startYear(game.getStartYear())
                 .endYear(game.getEndYear())
@@ -646,12 +648,24 @@ public class GameManager {
             messageService.sendSystemMessage(game.getUuid(), "Pool mode has been changed from " + prevGame.getPoolMode() + " to " + game.getPoolMode());
         }
 
+        if (!prevGame.getDisplayMode().equals(game.getDisplayMode())) {
+            messageService.sendSystemMessage(game.getUuid(), "Display mode has been changed from " + prevGame.getDisplayMode() + " to " + game.getDisplayMode());
+        }
+
         if (!prevGame.getGenreType().equals(game.getGenreType())) {
             messageService.sendSystemMessage(game.getUuid(), "Genre has been changed from " + prevGame.getGenreType() + " to " + game.getGenreType());
         }
 
         if (!prevGame.getLanguageType().equals(game.getLanguageType())) {
             messageService.sendSystemMessage(game.getUuid(), "Language has been changed from " + prevGame.getLanguageType() + " to " + game.getLanguageType());
+        }
+
+        if (prevGame.isRanked() && !game.isRanked()) {
+            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby does not meet the requirements for ranked play. Games will be unranked and profile stats will not be updated.");
+        }
+
+        if (!prevGame.isRanked() && game.isRanked()) {
+            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby meets the requirements for ranked play. Games will be ranked and profile stats will be updated.");
         }
 
         return game;
@@ -666,12 +680,16 @@ public class GameManager {
         game.setStartYear(Math.max(2007, gameSettingsDTO.getStartYear()));
         game.setEndYear(Math.min(Year.now().getValue(), gameSettingsDTO.getEndYear()));
         game.setPoolMode(gameSettingsDTO.getPoolMode());
+        game.setDisplayMode(gameSettingsDTO.getDisplayMode());
         game.setGenreType(gameSettingsDTO.getGenreType());
         game.setLanguageType(gameSettingsDTO.getLanguageType());
 
         if(game.getStartYear() > game.getEndYear()) {
             game.setStartYear(game.getEndYear());
         }
+
+        // Ranked game should have both audio and background display modes, otherwise unranked
+        game.setRanked(game.getDisplayMode().contains(DisplayMode.AUDIO) && game.getDisplayMode().contains(DisplayMode.BACKGROUND));
 
         game.getDifficulty().clear();
         game.getDifficulty().addAll(gameSettingsDTO.getDifficulty());
