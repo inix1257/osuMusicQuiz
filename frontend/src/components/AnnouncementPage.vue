@@ -71,15 +71,15 @@ h1 {
 h2 {
   font-size: 1.5em;
   font-weight: bold;
-  line-height: 1; /* Adjust this value to change the space between lines of text */
-  margin-bottom: 10px; /* Adjust this value to change the space below the element */
+  line-height: 1;
+  margin-bottom: 10px;
 }
 
 p {
   font-size: 1em;
   color: #666;
-  line-height: 0; /* Adjust this value to change the space between lines of text */
-  margin-bottom: 10px; /* Adjust this value to change the space below the element */
+  line-height: 0;
+  margin-bottom: 10px;
 }
 
 h1, h2, p {
