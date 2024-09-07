@@ -2,6 +2,7 @@ package com.inix.omqweb.DTO;
 
 import com.inix.omqweb.Beatmap.GenreType;
 import com.inix.omqweb.Beatmap.LanguageType;
+import com.inix.omqweb.Game.DisplayMode;
 import com.inix.omqweb.Game.GameDifficulty;
 import com.inix.omqweb.Game.PoolMode;
 import lombok.Data;
@@ -23,6 +24,8 @@ public class UpdateRoomSettingsDTO implements GameSettingsDTO{
     private int cooldownTime;
 
     private boolean autoskip;
+
+    private List<DisplayMode> displayMode;
 
     List<GameDifficulty> difficulty;
 

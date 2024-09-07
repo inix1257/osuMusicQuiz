@@ -2,6 +2,7 @@ package com.inix.omqweb.DTO;
 
 import com.inix.omqweb.Beatmap.GenreType;
 import com.inix.omqweb.Beatmap.LanguageType;
+import com.inix.omqweb.Game.DisplayMode;
 import com.inix.omqweb.Game.GameDifficulty;
 import com.inix.omqweb.Game.PoolMode;
 
@@ -17,6 +18,7 @@ public interface GameSettingsDTO {
     int getStartYear();
     int getEndYear();
     PoolMode getPoolMode();
+    List<DisplayMode> getDisplayMode();
     List<GenreType> getGenreType();
     List<LanguageType> getLanguageType();
 }
