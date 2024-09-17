@@ -162,7 +162,7 @@ export default {
           <input disabled type="password" class="input-gameinfo">
         </div>
         <div class="form-row">
-          <label>Total Questions</label>
+          <label>Total Beatmaps</label>
           <select v-model="localGame.totalQuestions" class="dropdown">
             <option value="10">10</option>
             <option value="20">20</option>
@@ -223,12 +223,10 @@ export default {
           <input type="checkbox" id="autoskip" v-model="localGame.autoskip">
         </div>
         <div class="form-row">
-          <label>Start Year</label>
-          <input type="number" v-model="localGame.startYear" class="input-gameinfo">
-        </div>
-        <div class="form-row">
-          <label>End Year</label>
-          <input type="number" v-model="localGame.endYear" class="input-gameinfo">
+          <label>Year Range</label>
+          <input type="number" v-model="localGame.startYear" class="input-gameinfo input-yearrange">
+          ~
+          <input type="number" v-model="localGame.endYear" class="input-gameinfo input-yearrange">
         </div>
         <div class="form-row">
           <label>Pool Mode</label>
@@ -321,6 +319,10 @@ export default {
   margin-bottom: 10px;
 }
 
+.input-yearrange {
+  width: 30%;
+}
+
 .button-row {
   display: flex;
   justify-content: center;
@@ -347,13 +349,14 @@ export default {
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 16px;
-  color: #333;
+  background-color: var(--color-secondary);
+  color: var(--color-text);
   box-sizing: border-box;
   transition: border-color 0.3s ease;
 }
 
 .input-gameinfo:disabled {
-  background-color: #d3d3d3;
+  background-color: var(--color-disabled);
 }
 
 .save-button {

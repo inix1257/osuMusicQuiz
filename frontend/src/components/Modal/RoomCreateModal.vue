@@ -229,7 +229,7 @@ export default {
           <input type="password" v-model="password" class="input-gameinfo">
         </div>
         <div class="form-row">
-          <label>Total Questions</label>
+          <label>Total Beatmaps</label>
           <select v-model="totalQuestions" class="dropdown">
             <option value="10">10</option>
             <option value="20">20</option>
@@ -459,11 +459,11 @@ export default {
 }
 
 .save-button {
-  width: 100%; /* Full width */
+  width: 100%;
   padding: 10px;
   border: none;
   background-color: var(--color-primary);
-  color: white; /* White text */
+  color: white;
   text-align: center;
   text-decoration: none;
   display: inline-block;
@@ -476,6 +476,6 @@ export default {
 }
 
 .save-button:hover {
-  background-color: #2984a4; /* Darker green */
+  background-color: #2984a4;
 }
 </style>
