@@ -136,8 +136,9 @@ export default {
 .gameroom {
   display: flex;
   background-color: var(--color-gameroom);
-  border-radius: 20px;
-  border: 4px solid var(--color-primary);
+  border-radius: 10px;
+  border: 3px solid var(--color-gameroom);
+  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.1);
   padding: 20px;
   margin-bottom: 20px;
   cursor: pointer;
