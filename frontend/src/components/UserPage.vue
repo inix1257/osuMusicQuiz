@@ -6,9 +6,18 @@ import moment from "moment";
 
 export default {
   name: "UserPage",
+  setup() {
+    const userStore = useUserStore();
+    return {
+      me: userStore.getMe(),
+    };
+  },
   data() {
     return {
       player: {},
+      achievements: [],
+      current_achievement: {},
+      selectedAchievement: null,
     }
   },
   props: {
@@ -18,15 +27,44 @@ export default {
     }
   },
   methods: {
+    getUserData() {
+      apiService.get(`/api/user?id=${this.playerId}`)
+          .then((response) => {
+            this.player = response.data;
+            this.selectedAchievement = response.data.current_title_achievement;
+          })
+    },
+
     formatDate(date) {
       return moment(date).format('MMMM Do YYYY');
     },
+
+    onAchievementUpdate() {
+      apiService.post('/api/achievement', {
+        userId: this.player.id,
+        achievementId: this.selectedAchievement.id
+      })
+          .then(response => {
+            this.getUserData();
+          })
+    }
   },
 
   mounted() {
-    apiService.get(`/api/user?id=${this.playerId}`)
+    this.getUserData();
+
+    apiService.get(`/api/achievement`)
         .then((response) => {
-          this.player = response.data;
+          this.achievements = response.data;
+
+          const nullAchievement = {
+            id: -1,
+            name: "None",
+            description: "No achievement selected",
+            icon_url: ""
+          }
+
+          this.achievements.unshift(nullAchievement);
         })
   },
 
@@ -44,11 +82,12 @@ export default {
 <template>
     <div class="user-info-container">
       <div class="user-info" v-if="player.id">
-        <a :href="`https://osu.ppy.sh/users/${player.id}`" target="_blank">
+        <a :href="`https://osu.ppy.sh/users/${player.id}`" target="_blank" @click.stop="">
           <div class="user-header">
             <img :src="player.avatar_url" alt="User's avatar" class="user-avatar">
             <div class="user-header-right">
               <p class="user-username">{{ player.username }}</p>
+              <p class="user-title" v-if="player.current_title_achievement != null">{{ player.current_title_achievement.name }}</p>
               <p class="user-rank">Rank: <strong>#{{ player.rank }}</strong></p>
             </div>
           </div>
@@ -57,6 +96,11 @@ export default {
           <p class="user-points"><strong>{{ player.points }}</strong> pts</p>
           <p class="user-level">(Level <strong>{{ player.level }}</strong>)</p>
         </div>
+          <select @click.stop="" v-if="me.id == player.id" v-model="selectedAchievement" @change="onAchievementUpdate" class="user-title-selection">
+            <option v-for="achievement in achievements" :key="achievement.id" :value="achievement">
+              {{ achievement.name }}
+            </option>
+          </select>
         <div class="user-stats-container">
           <p class="user-stats"><span class="difficulty-easy">EASY</span>: {{
               player.maps_guessed_easy
@@ -163,6 +207,12 @@ export default {
   margin-bottom: 0px;
 }
 
+.user-title {
+  font-size: 1.5em;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
 .user-rank {
   margin-top: 0;
   font-size: 1.8em;
@@ -171,6 +221,24 @@ export default {
 .user-points {
   margin-left: 12px;
   font-size: 1.2em;
+}
+
+.user-title-selection {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-top: 8px;
+  font-size: 16px;
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.user-title-selection:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
 }
 
 .user-guesses,
