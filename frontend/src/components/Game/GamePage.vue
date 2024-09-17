@@ -827,6 +827,7 @@ export default {
             </button>
             <div class="game-name">{{ this.game.name }}</div>
             <div>Host: {{ this.game.owner.username }} / {{ players.length }} players</div>
+            <div v-if="!this.game.ranked" class="game-room-info-unranked">Unranked</div>
           </div>
 
           <div class="game-room-info-middle">
@@ -868,7 +869,7 @@ export default {
 
         <div v-if="this.game">
           <div class="question-image-container">
-            <div class="question-image-cover" v-if="!toggleImage"></div>
+            <div class="question-image-cover" v-if="!toggleImage || !this.game.displayMode.includes('BACKGROUND')"></div>
             <div class="image-wrapper">
               <img :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
               <img :src="icon_report" alt="" class="icon-report" v-on:click="toggleReportDropdown" v-if="isPlaying"/>
@@ -964,6 +965,7 @@ export default {
             <img :src="player.avatar_url" alt="Player's avatar" class="player-avatar" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
               <p class="player-username">
                 {{ player.username }}</p>
+            <p class="player-title" v-if="player.current_title_achievement != null">{{ player.current_title_achievement.title_name }}</p>
               <p class="player-points">{{ formatDecimal(player.totalPoints ? player.totalPoints : 0) }}
                 <span class="player-totalguess">({{ player.totalGuess ? player.totalGuess : 0 }})</span></p>
 
@@ -1037,6 +1039,7 @@ UserPage {
   background-color: rgba(0, 0, 0, 0.8);
   color: white;
   font-size: 3em;
+  z-index: 999;
 }
 
 .game-container {
@@ -1170,6 +1173,14 @@ UserPage {
   font-size: 1.2em;
 }
 
+.game-room-info-unranked {
+  background-color: var(--color-gameroom);
+  border-radius: 5px;
+  padding: 5px;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
 .info-icon {
   color: var(--color-text);
   font-size: 20px;
@@ -1197,7 +1208,7 @@ UserPage {
   margin-top: 16px;
   height: 30vh;
   width: 80vw;
-  padding-left: 10px; /* Add padding to the left */
+  padding-left: 10px;
   padding-right: 10px;
 }
 
@@ -1247,8 +1258,15 @@ UserPage {
   box-sizing: border-box;
 }
 
-.player-username, .player-points {
+.player-username{
   margin-top: 10px;
+  margin-bottom: 2px;
+}
+
+.player-title {
+  font-size: 0.8em;
+  margin-top: 2px;
+  margin-bottom: 2px;
 }
 
 .player-info-hover {
@@ -1262,6 +1280,7 @@ UserPage {
 .player-points {
   font-size: 1.2em;
   color: var(--color-text);
+  margin-top: 1em;
 }
 
 .player-totalguess {
@@ -1581,10 +1600,6 @@ UserPage {
   margin-right: 10px;
 }
 
-.player-header-compact {
-
-}
-
 .player-username-compact {
   font-weight: bold;
   font-size: 1.2em;
@@ -1599,10 +1614,10 @@ UserPage {
 
 .players-container-compact {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* This creates two columns of equal width */
-  grid-auto-rows: 4.5em; /* This allows the rows to size themselves based on their content */
-  grid-auto-flow: row; /* This makes the grid create new rows when there are more grid items */
-  overflow-y: auto; /* This adds a scrollbar when there are too many elements */
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 4.5em;
+  grid-auto-flow: row;
+  overflow-y: auto;
   height: 35vh;
 }
 </style>
