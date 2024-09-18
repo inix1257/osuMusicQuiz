@@ -18,8 +18,9 @@
       </a>
       <div v-if="this.me && this.me.id===adminUserId">
         <router-link to="/debug">Debug</router-link>
-        <router-link to="/donate">Donation</router-link>
+<!--        <router-link to="/donate">Donation</router-link>-->
       </div>
+      <a href="#" @click.stop="showDonatePage = true">Donate</a>
       <a href="#" @click.stop="showHelpPage = true">Help</a>
       <router-link to="/log" v-if="this.me.id">Log</router-link>
       <div class="links"/>
@@ -44,6 +45,9 @@
     <div class="modal-overlay" v-if="showHelpPage" @click="showHelpPage = false">
       <AboutPage ></AboutPage>
     </div>
+    <div class="modal-overlay" v-if="showDonatePage" @click="showDonatePage = false">
+      <DonationPage ></DonationPage>
+    </div>
     <div class="modal-overlay" v-if="showOwnProfile" @click="showOwnProfile = false">
       <UserPage :playerId="me.id"></UserPage>
     </div>
@@ -63,10 +67,12 @@ import apiService from "@/api/apiService";
 import UserPage from "@/components/UserPage.vue";
 import AboutPage from "@/components/AboutPage.vue";
 import GameLog from "@/components/GameLog.vue";
+import DonationPage from "@/components/DonationPage.vue";
 
 export default {
   name: 'App',
   components: {
+    DonationPage,
     GameLog,
     AboutPage,
     UserPage
@@ -94,6 +100,7 @@ export default {
       theme: 'darkMode',
       showOwnProfile: false,
       showHelpPage: false,
+      showDonatePage: false,
       showLogPage: false,
       adminUserId: process.env.VUE_APP_OSU_ADMINUSERID
     }
