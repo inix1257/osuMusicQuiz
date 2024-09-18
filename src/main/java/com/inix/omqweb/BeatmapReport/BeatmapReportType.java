@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum BeatmapReportType {
-    RESOURCE_MISSING(1),
+    MISSING_RESOURCE(1),
     BG_SPOILER(2);
 
     private final int value;
