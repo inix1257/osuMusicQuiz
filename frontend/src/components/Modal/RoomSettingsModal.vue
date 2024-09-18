@@ -237,7 +237,7 @@ export default {
           </select>
         </div>
         <div class="form-row">
-          <label>Difficulty</label>
+          <label>Display Mode</label>
           <div>
             <input type="checkbox" id="background" value="BACKGROUND" v-model="localGame.displayMode">
             <label for="background">Background</label>

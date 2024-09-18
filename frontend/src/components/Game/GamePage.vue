@@ -891,7 +891,7 @@ export default {
           </div>
 
           <div class="audio-input-container">
-            <audio hidden ref="audio" v-if="this.game && this.game.mode === 'DEFAULT'" id="audioPlayer">
+            <audio hidden ref="audio" v-if="this.game && this.game.displayMode.includes('AUDIO')" id="audioPlayer">
               <source :src="'/audio/' + this.audioSourceBase64" type="audio/mpeg">
               Your browser does not support the audio element.
             </audio>

@@ -47,7 +47,6 @@ export default class WebSocketService {
     }
 
     sendMessage(message) {
-        console.log('sending message', message)
         this.stompClient.send(`/send/${message.gameId}`, {}, JSON.stringify(message));
     }
 }

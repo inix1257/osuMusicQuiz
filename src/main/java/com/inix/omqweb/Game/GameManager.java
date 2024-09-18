@@ -471,8 +471,10 @@ public class GameManager {
                 game.getPlayerAnswers().clear();
                 game.setQuestionIndex(game.getQuestionIndex() + 1);
 
-                beatmapService.addPlaycount(beatmap.getBeatmapset_id(), correctAnswers, game.getPlayers().size());
-                playerRepository.saveAll(game.getPlayers());
+                if (game.isRanked()) {
+                    beatmapService.addPlaycount(beatmap.getBeatmapset_id(), correctAnswers, game.getPlayers().size());
+                    playerRepository.saveAll(game.getPlayers());
+                }
 
                 // Check if the game is over
                 if (game.getQuestionIndex() >= game.getTotalQuestions()) {

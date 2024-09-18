@@ -2,6 +2,7 @@ package com.inix.omqweb.osuAPI;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.inix.omqweb.Achievement.Achievement;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -52,6 +53,10 @@ public class Player {
 
     @Transient
     private int rank;
+
+    @ManyToOne
+    @JoinColumn(name = "current_title_achievement", referencedColumnName = "id")
+    private Achievement current_title_achievement;
 
     @Transient
     @JsonIgnore
