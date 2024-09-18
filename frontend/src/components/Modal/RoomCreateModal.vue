@@ -144,6 +144,12 @@ export default {
         languageType: this.selectedLanguages
       };
 
+      if (createGameDTO.displayMode.length === 0) {
+        alert("You must select at least one display mode.");
+        this.isLoading = false;
+        return;
+      }
+
       // Check if any field is empty
       if (!createGameDTO.name || !createGameDTO.totalQuestions || !createGameDTO.difficulty || !createGameDTO.mode) {
         alert("An error occurred. Please try again.")
@@ -305,16 +311,13 @@ export default {
           </select>
         </div>
         <div class="form-row">
-          <label>Guess Time</label>
+          <label>Guess / Cooldown Time</label>
           <select v-model="guessingTime" class="dropdown">
             <option value="10">10</option>
             <option value="15">15</option>
             <option value="20">20</option>
             <option value="30">30</option>
           </select>
-        </div>
-        <div class="form-row">
-          <label>Cooldown Time</label>
           <select v-model="cooldownTime" class="dropdown">
             <option value="3">3</option>
             <option value="5">5</option>
