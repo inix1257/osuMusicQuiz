@@ -6,7 +6,7 @@ node_modules
 
 # local env files
 .env.local
-.env.*.local
+.env.live
 
 # Log files
 npm-debug.log*
@@ -26,3 +26,4 @@ pnpm-debug.log*
 
 !/.env.local
 /.env.local
+/.env.live
