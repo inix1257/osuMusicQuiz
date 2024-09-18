@@ -95,6 +95,10 @@ export default {
       }),
     }
   },
+  created() {
+    this.loadSettings();
+  },
+
   methods: {
     closeModal() {
       this.$emit("close-modal");
@@ -151,6 +155,8 @@ export default {
           .then((response) => {
             localStorage.setItem("gameId", response.data);
             localStorage.setItem("roompw", this.password);
+
+            this.saveSettings();
             this.joinGame(response.data.uuid, response.data.private);
           })
           .finally(() => {
@@ -173,6 +179,40 @@ export default {
       formattedLabel = words.join(' ');
 
       return formattedLabel;
+    },
+
+    saveSettings() {
+      const settings = {
+        totalQuestions: this.totalQuestions,
+        guessingTime: this.guessingTime,
+        cooldownTime: this.cooldownTime,
+        autoskip: this.autoskip,
+        difficulty: this.difficulty,
+        startYear: this.startYear,
+        endYear: this.endYear,
+        poolMode: this.poolMode,
+        displayMode: this.displayMode,
+        selectedGenres: this.selectedGenres,
+        selectedLanguages: this.selectedLanguages
+      };
+      localStorage.setItem('roomCreateSettings', JSON.stringify(settings));
+    },
+
+    loadSettings() {
+      const settings = JSON.parse(localStorage.getItem('roomCreateSettings'));
+      if (settings) {
+        this.totalQuestions = settings.totalQuestions;
+        this.guessingTime = settings.guessingTime;
+        this.cooldownTime = settings.cooldownTime;
+        this.autoskip = settings.autoskip;
+        this.difficulty = settings.difficulty;
+        this.startYear = settings.startYear;
+        this.endYear = settings.endYear;
+        this.poolMode = settings.poolMode;
+        this.displayMode = settings.displayMode;
+        this.selectedGenres = settings.selectedGenres;
+        this.selectedLanguages = settings.selectedLanguages;
+      }
     }
   },
 
