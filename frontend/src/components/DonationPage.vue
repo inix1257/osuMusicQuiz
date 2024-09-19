@@ -21,6 +21,7 @@ export default {
 <style scoped>
 div {
   font-size: 1.2em;
+  color: #fff;
   margin: 20px;
 }
 
