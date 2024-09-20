@@ -221,6 +221,16 @@ public class omqController {
         return ResponseEntity.ok(beatmapService.getPossibleAnswers());
     }
 
+    @GetMapping("/possibleAnswers_artist")
+    public ResponseEntity<?> getPossibleAnswers_artist() {
+        return ResponseEntity.ok(beatmapService.getPossibleArtists());
+    }
+
+    @GetMapping("/possibleAnswers_creator")
+    public ResponseEntity<?> getPossibleAnswers_creator() {
+        return ResponseEntity.ok(beatmapService.getPossibleCreators());
+    }
+
     @PostMapping("/addBeatmap")
     public ResponseEntity<Beatmap> addBeatmap(@RequestBody BeatmapAddDTO beatmapAddDTO, HttpServletRequest request) throws IOException, ParseException {
         Player player = (Player) request.getAttribute("userInfo");
