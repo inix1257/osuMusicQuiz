@@ -71,6 +71,7 @@ export default {
       compactViewMode: false,
       inactivityTimer: null,
       showInactivityWarning: false,
+      answerInputPlaceHolder: "Guess the title of the beatmap!",
     };
   },
   methods: {
@@ -303,18 +304,6 @@ export default {
       return ((guessed / played) * 100).toFixed(2) + "%";
     },
 
-    getTotalPlaycount(player) {
-      var totalGuess = player.maps_guessed_easy + player.maps_guessed_normal + player.maps_guessed_hard + player.maps_guessed_insane;
-      var totalPlayed = player.maps_played_easy + player.maps_played_normal + player.maps_played_hard + player.maps_played_insane;
-      return totalGuess + " / " + totalPlayed;
-    },
-
-    getTotalPlaycountRate(player) {
-      var totalGuess = player.maps_guessed_easy + player.maps_guessed_normal + player.maps_guessed_hard + player.maps_guessed_insane;
-      var totalPlayed = player.maps_played_easy + player.maps_played_normal + player.maps_played_hard + player.maps_played_insane;
-      return this.getRate(totalGuess, totalPlayed);
-    },
-
     toggleRoomSettingsModal() {
       if (this.isPlaying && !this.isRoomSettingsModalOpen) {
         this.showSettingsWarning = true;
@@ -364,11 +353,8 @@ export default {
             if (response.data) {
               this.players = response.data.players;
               this.game = response.data;
+              this.setInputPlaceholder();
 
-              if (!this.me.id) {
-                // useUserStore().setMe(getUserData(sessionStorage.getItem("accessToken")));
-                // this.me = await getUserData(sessionStorage.getItem("accessToken"));
-              }
             } else {
               alert("Either you already have joined this game, or the game does not exist.")
               this.$router.push('/');
@@ -438,6 +424,16 @@ export default {
         alert("You have been flagged as inactive. Click OK if you are still here.")
         this.resetInactivityTimer();
       }, 60000 * 4); // 4 minutes
+    },
+
+    setInputPlaceholder() {
+      if (this.game.gameMode === 'DEFAULT') {
+        this.answerInputPlaceHolder = "Guess the title of the beatmap!";
+      } else if (this.game.gameMode === 'ARTIST') {
+        this.answerInputPlaceHolder = "Guess the artist of the beatmap!";
+      } else if (this.game.gameMode === 'CREATOR') {
+        this.answerInputPlaceHolder = "Guess the mapper of the beatmap!";
+      }
     }
   },
 
@@ -453,7 +449,15 @@ export default {
 
     await this.joinGame(roompw, false);
 
-    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers`, {})
+    var possibleAnswerURL = 'possibleAnswers';
+
+    if (this.game.gameMode === 'ARTIST') {
+      possibleAnswerURL = 'possibleAnswers_artist';
+    } else if (this.game.gameMode === 'CREATOR') {
+      possibleAnswerURL = 'possibleAnswers_creator';
+    }
+
+    apiService.get(`${process.env.VUE_APP_API_URL}/api/${possibleAnswerURL}`, {})
         .then((response) => {
           this.possibleAnswers = response.data;
         })
@@ -508,7 +512,15 @@ export default {
             player.guessedRight = false;
           });
 
-          apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers`, {})
+          var possibleAnswerURL = 'possibleAnswers';
+
+          if (this.game.gameMode === 'ARTIST') {
+            possibleAnswerURL = 'possibleAnswers_artist';
+          } else if (this.game.gameMode === 'CREATOR') {
+            possibleAnswerURL = 'possibleAnswers_creator';
+          }
+
+          apiService.get(`${process.env.VUE_APP_API_URL}/api/${possibleAnswerURL}`, {})
               .then((response) => {
                 this.possibleAnswers = response.data;
               })
@@ -536,6 +548,16 @@ export default {
         this.isGuessing = true;
         this.answerInput = "";
         this.inputFocused = false;
+
+        // If display mode does not include AUDIO, stop the audio
+        if (!this.game.displayMode.includes('AUDIO')) {
+          const audioPlayer = this.$refs.audio;
+          if (audioPlayer) {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+          }
+        }
+
         var encryptedBeatmapInfo = JSON.parse(message.body);
         this.ownGuessRight = false;
         this.imageSourceBase64 = encryptedBeatmapInfo.base64;
@@ -601,7 +623,15 @@ export default {
       onAnswer: (message) => {
         // Handle answer updates
         this.currentBeatmap = JSON.parse(message.body);
-        this.answerInput = this.currentBeatmap.title;
+
+        if (this.game.gameMode === 'DEFAULT') {
+          this.answerInput = this.currentBeatmap.title;
+        } else if (this.game.gameMode === 'ARTIST') {
+          this.answerInput = this.currentBeatmap.artist;
+        } else if (this.game.gameMode === 'CREATOR') {
+          this.answerInput = this.currentBeatmap.creator;
+        }
+
         this.answerSubmitted = false;
       },
       onAnswerSubmission: (message) => {
@@ -639,6 +669,7 @@ export default {
         // Handle room settings updates
         this.game = JSON.parse(message.body);
         this.showDropdown = false;
+        this.setInputPlaceholder();
       },
       onAnnouncement: (message) => {
         // Handle announcement updates
@@ -869,7 +900,7 @@ export default {
 
         <div v-if="this.game">
           <div class="question-image-container">
-            <div class="question-image-cover" v-if="!toggleImage || !this.game.displayMode.includes('BACKGROUND')"></div>
+            <div class="question-image-cover" v-if="!toggleImage || (!this.game.displayMode.includes('BACKGROUND') && isGuessing)"></div>
             <div class="image-wrapper">
               <img :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
               <img :src="icon_report" alt="" class="icon-report" v-on:click="toggleReportDropdown" v-if="isPlaying"/>
@@ -891,7 +922,7 @@ export default {
           </div>
 
           <div class="audio-input-container">
-            <audio hidden ref="audio" v-if="this.game && this.game.displayMode.includes('AUDIO')" id="audioPlayer">
+            <audio hidden ref="audio" v-if="this.game && (this.game.displayMode.includes('AUDIO'))" id="audioPlayer">
               <source :src="'/audio/' + this.audioSourceBase64" type="audio/mpeg">
               Your browser does not support the audio element.
             </audio>
@@ -901,7 +932,7 @@ export default {
             <div class="input-icon-wrapper">
               <input type="text"
                      :class="{ answerSubmitted: answerSubmitted, highlight: ownGuessRight }"
-                     v-model="answerInput" placeholder="Enter your Answer"
+                     v-model="answerInput" :placeholder="answerInputPlaceHolder"
                      :readonly="!isGuessing"
                      v-on:keydown.up.prevent="selectedOptionIndex > 0 ? selectedOptionIndex-- : selectedOptionIndex = autocompleteOptions.length - 1"
                      v-on:keydown.down.prevent="selectedOptionIndex < autocompleteOptions.length - 1 ? selectedOptionIndex++ : selectedOptionIndex = 0"
@@ -965,8 +996,8 @@ export default {
             <img :src="player.avatar_url" alt="Player's avatar" class="player-avatar" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
               <p class="player-username">
                 {{ player.username }}</p>
-            <p class="player-title" v-if="player.current_title_achievement != null">{{ player.current_title_achievement.title_name }}</p>
-              <p class="player-points">{{ formatDecimal(player.totalPoints ? player.totalPoints : 0) }}
+            <p class="player-title">{{ player.current_title_achievement ? player.current_title_achievement.title_name : "" }}</p>
+            <p class="player-points">{{ formatDecimal(player.totalPoints ? player.totalPoints : 0) }}
                 <span class="player-totalguess">({{ player.totalGuess ? player.totalGuess : 0 }})</span></p>
 
             <div v-if="!isGuessing && answers[player.id] && answers[player.id].answer" class="player-answer">
@@ -989,7 +1020,6 @@ export default {
               <div class="player-answer-compact" v-if="!isGuessing">
                 {{ isGuessing ? "" : (answers[player.id] && answers[player.id].answer ? answers[player.id].answer : "") }}
               </div>
-
             </div>
           </div>
         </div>
@@ -1264,6 +1294,7 @@ UserPage {
 }
 
 .player-title {
+  min-height: 1.2em;
   font-size: 0.8em;
   margin-top: 2px;
   margin-bottom: 2px;
@@ -1280,7 +1311,8 @@ UserPage {
 .player-points {
   font-size: 1.2em;
   color: var(--color-text);
-  margin-top: 1em;
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
 }
 
 .player-totalguess {
@@ -1295,7 +1327,7 @@ UserPage {
 }
 
 .player-answer {
-  margin-top: 10px;
+  margin-top: 0.0em;
   font-size: 0.8em;
   color: var(--color-text);
   background-color: var(--color-secondary);
