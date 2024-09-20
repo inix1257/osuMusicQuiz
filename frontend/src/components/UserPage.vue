@@ -96,9 +96,9 @@ export default {
           <p class="user-points"><strong>{{ player.points }}</strong> pts</p>
           <p class="user-level">(Level <strong>{{ player.level }}</strong>)</p>
         </div>
-        <div>
+        <div v-if="me.id == player.id">
           Current Title:
-          <select @click.stop="" v-if="me.id == player.id" v-model="selectedAchievement" @change="onAchievementUpdate" class="user-title-selection">
+          <select @click.stop="" v-model="selectedAchievement" @change="onAchievementUpdate" class="user-title-selection">
             <option v-for="achievement in achievements" :key="achievement.id" :value="achievement">
               {{ achievement.name }}
             </option>
