@@ -32,7 +32,7 @@ public class CreateGameDTO implements GameSettingsDTO{
 
     private List<GameDifficulty> difficulty;
 
-    private GameMode mode;
+    private GameMode gameMode;
 
     private int startYear;
     private int endYear;
