@@ -29,6 +29,12 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
     @Query("SELECT DISTINCT b.title FROM Beatmap b")
     List<String> findDistinctTitles();
 
+    @Query("SELECT DISTINCT b.artist FROM Beatmap b")
+    List<String> findDistinctArtists();
+
+    @Query("SELECT DISTINCT b.creator FROM Beatmap b")
+    List<String> findDistinctCreators();
+
     @Query(value = "SELECT * FROM beatmap ORDER BY answer_rate DESC", nativeQuery = true)
     List<Beatmap> findBeatmapsByAnswerRate();
 

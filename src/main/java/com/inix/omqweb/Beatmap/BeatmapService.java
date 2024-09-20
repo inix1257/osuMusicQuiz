@@ -218,6 +218,16 @@ public class BeatmapService {
         return beatmapRepository.findDistinctTitles();
     }
 
+    @Cacheable(value = "possibleAnswers_artist")
+    public List<String> getPossibleArtists() {
+        return beatmapRepository.findDistinctArtists();
+    }
+
+    @Cacheable(value = "possibleAnswers_creator")
+    public List<String> getPossibleCreators() {
+        return beatmapRepository.findDistinctCreators();
+    }
+
     public boolean addPlaycount(int beatmapsetId, int answer_playcount, int total_playcount) {
         Beatmap beatmap = beatmapRepository.findById(beatmapsetId).orElse(null);
         if (beatmap == null) {
@@ -248,7 +258,7 @@ public class BeatmapService {
         beatmapReportRepository.save(beatmapReport);
     }
 
-    @CacheEvict(value = {"beatmapCount", "possibleAnswers"}, allEntries = true)
+    @CacheEvict(value = {"beatmapCount", "possibleAnswers", "possibleAnswers_artist", "possibleAnswers_creator"}, allEntries = true)
     public Beatmap addBeatmap(String beatsetmap_id) throws IOException, ParseException {
         URL url = new URL("https://osu.ppy.sh/api/get_beatmaps?k=" + apiKey + "&s=" + beatsetmap_id);
         BufferedReader bf; String line = ""; String result="";
