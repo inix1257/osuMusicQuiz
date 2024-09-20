@@ -19,7 +19,7 @@ export default {
       cooldownTime: 7,
       autoskip: true,
       difficulty: ["EASY", "NORMAL"],
-      mode: "DEFAULT",
+      gameMode: 'DEFAULT',
       isLoading: false,
       startYear: 2007,
       endYear: new Date().getFullYear(),
@@ -135,7 +135,7 @@ export default {
         guessingTime: this.guessingTime,
         cooldownTime: this.cooldownTime,
         autoskip: this.autoskip,
-        mode: this.mode,
+        gameMode: this.gameMode,
         startYear: this.startYear,
         endYear: this.endYear,
         poolMode: this.poolMode,
@@ -151,7 +151,7 @@ export default {
       }
 
       // Check if any field is empty
-      if (!createGameDTO.name || !createGameDTO.totalQuestions || !createGameDTO.difficulty || !createGameDTO.mode) {
+      if (!createGameDTO.name || !createGameDTO.totalQuestions || !createGameDTO.difficulty || !createGameDTO.gameMode) {
         alert("An error occurred. Please try again.")
         this.isLoading = false;
         return;
@@ -196,6 +196,7 @@ export default {
         difficulty: this.difficulty,
         startYear: this.startYear,
         endYear: this.endYear,
+        gameMode: this.gameMode,
         poolMode: this.poolMode,
         displayMode: this.displayMode,
         selectedGenres: this.selectedGenres,
@@ -207,17 +208,18 @@ export default {
     loadSettings() {
       const settings = JSON.parse(localStorage.getItem('roomCreateSettings'));
       if (settings) {
-        this.totalQuestions = settings.totalQuestions;
-        this.guessingTime = settings.guessingTime;
-        this.cooldownTime = settings.cooldownTime;
-        this.autoskip = settings.autoskip;
-        this.difficulty = settings.difficulty;
-        this.startYear = settings.startYear;
-        this.endYear = settings.endYear;
-        this.poolMode = settings.poolMode;
-        this.displayMode = settings.displayMode;
-        this.selectedGenres = settings.selectedGenres;
-        this.selectedLanguages = settings.selectedLanguages;
+        this.totalQuestions = settings.totalQuestions ?? this.totalQuestions;
+        this.guessingTime = settings.guessingTime ?? this.guessingTime;
+        this.cooldownTime = settings.cooldownTime ?? this.cooldownTime;
+        this.autoskip = settings.autoskip ?? this.autoskip;
+        this.difficulty = settings.difficulty ?? this.difficulty;
+        this.startYear = settings.startYear ?? this.startYear;
+        this.endYear = settings.endYear ?? this.endYear;
+        this.gameMode = settings.gameMode ?? this.gameMode;
+        this.poolMode = settings.poolMode ?? this.poolMode;
+        this.displayMode = settings.displayMode ?? this.displayMode;
+        this.selectedGenres = settings.selectedGenres ?? this.selectedGenres;
+        this.selectedLanguages = settings.selectedLanguages ?? this.selectedLanguages;
       }
     }
   },
@@ -303,13 +305,6 @@ export default {
             <label for="insane">Insane</label>
           </div>
         </div>
-        <div class="form-row" v-if="false">
-          <label>Mode</label>
-          <select disabled v-model="mode" class="dropdown">
-            <option value="DEFAULT">Default</option>
-            <!--              <option value="PATTERN">Pattern</option>-->
-          </select>
-        </div>
         <div class="form-row">
           <label>Guess / Cooldown Time</label>
           <select v-model="guessingTime" class="dropdown">
@@ -342,6 +337,14 @@ export default {
         <div class="form-row" v-if="isExpanded">
           <label for="autoskip">Autoskip Guess Phase</label>
           <input type="checkbox" id="autoskip" v-model="autoskip">
+        </div>
+        <div class="form-row" v-if="isExpanded">
+          <label>Game Mode</label>
+          <select v-model="gameMode" class="dropdown">
+            <option value="DEFAULT">Default</option>
+            <option value="ARTIST">Artist</option>
+            <option value="CREATOR">Mapper</option>
+          </select>
         </div>
         <div class="form-row" v-if="isExpanded">
           <label>Pool Mode</label>

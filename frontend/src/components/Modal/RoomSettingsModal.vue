@@ -90,6 +90,7 @@ export default {
         autoskip: this.localGame.autoskip,
         startYear: this.localGame.startYear,
         endYear: this.localGame.endYear,
+        gameMode: this.localGame.gameMode,
         poolMode: this.localGame.poolMode,
         displayMode: this.localGame.displayMode,
         genreType: this.localGame.genreType,
@@ -195,12 +196,6 @@ export default {
           </div>
         </div>
         <div class="form-row">
-          <label>Mode</label>
-          <select disabled v-model="localGame.mode" class="dropdown">
-            <option value="DEFAULT">Default</option>
-          </select>
-        </div>
-        <div class="form-row">
           <label>Guess Time</label>
           <select v-model="localGame.guessingTime" class="dropdown">
             <option value="10">10</option>
@@ -227,6 +222,14 @@ export default {
           <input type="number" v-model="localGame.startYear" class="input-gameinfo input-yearrange">
           ~
           <input type="number" v-model="localGame.endYear" class="input-gameinfo input-yearrange">
+        </div>
+        <div class="form-row">
+          <label>Game Mode</label>
+          <select v-model="localGame.gameMode" class="dropdown">
+            <option value="DEFAULT">Default</option>
+            <option value="ARTIST">Artist</option>
+            <option value="CREATOR">Mapper</option>
+          </select>
         </div>
         <div class="form-row">
           <label>Pool Mode</label>
