@@ -133,7 +133,7 @@ public class GameManager {
         game.setOwner(owner);
         game.setLastActivity(new Date());
 
-        game.setMode(createGameDTO.getMode());
+        game.setGameMode(createGameDTO.getGameMode());
         game.setCreationDate(new Date());
 
         if(games.containsKey(game.getUuid())) {
@@ -346,16 +346,19 @@ public class GameManager {
         int correctAnswerCount = 0;
 
         Beatmap beatmap = game.getBeatmaps().get(game.getQuestionIndex());
-        double guessRate = (double) beatmap.getPlaycount_answer() / (double) beatmap.getPlaycount();
-        double difficultyBonus = AnswerUtil.getDifficultyBonus(guessRate);
 
         for (Map.Entry<Player, PlayerAnswer> entry : game.getPlayerAnswers().entrySet()) {
-            double similarity = AnswerUtil.checkAnswer(entry.getValue().getAnswer(), beatmap.getTitle());
-            Long timeDiff = entry.getValue().getSubmittedTime() - game.getLastGuess().getTime();
-            double speedBonus = AnswerUtil.getSpeedBonus(timeDiff);
+            String answerToCheck;
+
+            switch (game.getGameMode()) {
+                case ARTIST -> answerToCheck = beatmap.getArtist();
+                case CREATOR -> answerToCheck = beatmap.getCreator();
+                default -> answerToCheck = beatmap.getTitle();
+            }
+
+            double similarity = AnswerUtil.checkAnswer(entry.getValue().getAnswer(), answerToCheck);
 
             if(similarity >= 0.96d) { // Using similarity over 0.96, might replace with exact match later?
-                Player player = entry.getKey();
                 entry.getValue().setCorrect(true);
                 correctAnswerCount++;
             }
@@ -442,29 +445,31 @@ public class GameManager {
                     systemMessageHandler.onBlurReveal(game, encodedId, encodedKey);
                 }
 
-                for(Player player : game.getPlayers()) {
-                    PlayerAnswer playerAnswer = game.getPlayerAnswers().get(player);
+                if (game.isRanked()) {
+                    for (Player player : game.getPlayers()) {
+                        PlayerAnswer playerAnswer = game.getPlayerAnswers().get(player);
 
-                    if (playersToUpdate.contains(player)) {
+                        if (playersToUpdate.contains(player)) {
+                            switch (beatmap.getBeatmapDifficulty()) {
+                                case EASY -> player.setMaps_guessed_easy(player.getMaps_guessed_easy() + 1);
+                                case NORMAL -> player.setMaps_guessed_normal(player.getMaps_guessed_normal() + 1);
+                                case HARD -> player.setMaps_guessed_hard(player.getMaps_guessed_hard() + 1);
+                                case INSANE -> player.setMaps_guessed_insane(player.getMaps_guessed_insane() + 1);
+                            }
+
+                            if (playerAnswer.isCorrect()) {
+                                player.setPoints(player.getPoints().add(BigDecimal.valueOf(playerAnswer.getTotalPoints())));
+                            }
+                        }
+
+                        saveHistoryDetail(game, player, beatmap, playerAnswer);
+
                         switch (beatmap.getBeatmapDifficulty()) {
-                            case EASY -> player.setMaps_guessed_easy(player.getMaps_guessed_easy() + 1);
-                            case NORMAL -> player.setMaps_guessed_normal(player.getMaps_guessed_normal() + 1);
-                            case HARD -> player.setMaps_guessed_hard(player.getMaps_guessed_hard() + 1);
-                            case INSANE -> player.setMaps_guessed_insane(player.getMaps_guessed_insane() + 1);
+                            case EASY -> player.setMaps_played_easy(player.getMaps_played_easy() + 1);
+                            case NORMAL -> player.setMaps_played_normal(player.getMaps_played_normal() + 1);
+                            case HARD -> player.setMaps_played_hard(player.getMaps_played_hard() + 1);
+                            case INSANE -> player.setMaps_played_insane(player.getMaps_played_insane() + 1);
                         }
-
-                        if (playerAnswer.isCorrect()) {
-                            player.setPoints(player.getPoints().add(BigDecimal.valueOf(playerAnswer.getTotalPoints())));
-                        }
-                    }
-
-                    saveHistoryDetail(game, player, beatmap, playerAnswer);
-
-                    switch (beatmap.getBeatmapDifficulty()) {
-                        case EASY -> player.setMaps_played_easy(player.getMaps_played_easy() + 1);
-                        case NORMAL -> player.setMaps_played_normal(player.getMaps_played_normal() + 1);
-                        case HARD -> player.setMaps_played_hard(player.getMaps_played_hard() + 1);
-                        case INSANE -> player.setMaps_played_insane(player.getMaps_played_insane() + 1);
                     }
                 }
 
@@ -530,7 +535,7 @@ public class GameManager {
                     .lobbyHistory(LobbyHistory.builder().session_id(game.getSessionId().toString()).build())
                     .player(player)
                     .beatmap(beatmap)
-                    .gametype(game.getMode().name())
+                    .gametype(game.getGameMode().name())
                     .answer(playerAnswer.isCorrect())
                     .timetaken(playerAnswer.getTimeTaken())
                     .difficulty_bonus(difficultyBonus)
@@ -598,6 +603,7 @@ public class GameManager {
                 .totalQuestions(game.getTotalQuestions())
                 .guessingTime(game.getGuessingTime())
                 .cooldownTime(game.getCooldownTime())
+                .gameMode(game.getGameMode())
                 .poolMode(game.getPoolMode())
                 .genreType(new ArrayList<>(game.getGenreType()))
                 .languageType(new ArrayList<>(game.getLanguageType()))
@@ -646,6 +652,10 @@ public class GameManager {
             messageService.sendSystemMessage(game.getUuid(), "Year range has been changed from " + prevGame.getStartYear() + " - " + prevGame.getEndYear() + " to " + game.getStartYear() + " - " + game.getEndYear());
         }
 
+        if (!prevGame.getGameMode().equals(game.getGameMode())) {
+            messageService.sendSystemMessage(game.getUuid(), "Game mode has been changed from " + prevGame.getGameMode() + " to " + game.getGameMode());
+        }
+
         if (!prevGame.getPoolMode().equals(game.getPoolMode())) {
             messageService.sendSystemMessage(game.getUuid(), "Pool mode has been changed from " + prevGame.getPoolMode() + " to " + game.getPoolMode());
         }
@@ -682,6 +692,7 @@ public class GameManager {
         game.setStartYear(Math.max(2007, gameSettingsDTO.getStartYear()));
         game.setEndYear(Math.min(Year.now().getValue(), gameSettingsDTO.getEndYear()));
         game.setPoolMode(gameSettingsDTO.getPoolMode());
+        game.setGameMode(gameSettingsDTO.getGameMode());
         game.setDisplayMode(gameSettingsDTO.getDisplayMode());
         game.setGenreType(gameSettingsDTO.getGenreType());
         game.setLanguageType(gameSettingsDTO.getLanguageType());
@@ -690,8 +701,14 @@ public class GameManager {
             game.setStartYear(game.getEndYear());
         }
 
+        game.setRanked(true);
+
         // Ranked game should have both audio and background display modes, otherwise unranked
-        game.setRanked(game.getDisplayMode().contains(DisplayMode.AUDIO) && game.getDisplayMode().contains(DisplayMode.BACKGROUND));
+        // Artist and Creator (Mapper) gameModes are unranked
+        if ((!game.getDisplayMode().contains(DisplayMode.AUDIO) || !game.getDisplayMode().contains(DisplayMode.BACKGROUND))
+        || (game.getGameMode() == GameMode.ARTIST || game.getGameMode() == GameMode.CREATOR)) {
+            game.setRanked(false);
+        }
 
         game.getDifficulty().clear();
         game.getDifficulty().addAll(gameSettingsDTO.getDifficulty());
