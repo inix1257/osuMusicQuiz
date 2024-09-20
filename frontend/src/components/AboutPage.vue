@@ -26,7 +26,7 @@ export default {
     </div>
     <div class="about-answer">
       Beatmaps with more than a certain number of favorites or playcounts will be automatically imported (the threshold may vary).<br>
-      Some beatmaps might be manually handpicked by myself and a few helpers.
+      Some beatmaps might be manually handpicked by the dev and a few helpers.
     </div>
     <div class="about-question">
       "Too Many Requests"
@@ -40,6 +40,10 @@ export default {
 </template>
 
 <style scoped>
+div {
+  color: #fff;
+}
+
 .about-question {
   font-weight: bold;
   margin-top: 3em;
