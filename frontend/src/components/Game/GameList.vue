@@ -6,8 +6,13 @@
             <div class="gameroom-hostname">{{ gameroom.owner.username }}</div>
     </div>
     <div class="gameroom-info">
-      <div class="gameroom-header">
+      <div class="gameroom-header-extrainfo">
         <font-awesome-icon :icon="['fas', 'lock']" v-if="gameroom.private"/>
+        <font-awesome-icon :icon="['fas', 'volume-xmark']" v-if="!gameroom.displayMode.includes('AUDIO')"/>
+        <font-awesome-icon :icon="['fas', 'eye-slash']" v-if="!gameroom.displayMode.includes('BACKGROUND')"/>
+        <h2 class="gameroom-unranked" v-if="!gameroom.ranked">Unranked</h2>
+      </div>
+      <div class="gameroom-header">
         <h2 class="gameroom-name">{{ gameroom.name }}</h2>
       </div>
       <div class="gameroom-details">
@@ -17,12 +22,9 @@
             {{ difficultyName(diff) }}
           </div>
         </div>
-        <div>Maps: {{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }}</div>
-        <div>
-          ({{ gameroom.startYear }} ~ {{ gameroom.endYear }})
-        </div>
-        <div v-if="gameroom.poolMode && gameroom.poolMode !== 'DEFAULT'">{{ poolModeFormat(gameroom.poolMode) }}</div>
         <div :class="gameroom.playing ? 'playing' : 'idle'">{{ gameroom.playing ? 'Playing' : 'Idle' }}</div>
+        <div>Maps: {{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }} ({{ gameroom.startYear }} ~ {{ gameroom.endYear }})</div>
+        <div v-if="gameroom.poolMode && gameroom.poolMode !== 'DEFAULT'">{{ poolModeFormat(gameroom.poolMode) }}</div>
       </div>
       <div class="player-info-row">
         <div v-for="(player) in filteredPlayers(this.gameroom.players)" :key="player.id" class="player-info">
@@ -55,7 +57,7 @@ export default {
   },
   methods: {
     joinGame(gameId) {
-      // Check login status before joining the game
+      // Check login status before joining the game, just in case...
       if (!useUserStore().getMe().id) {
         alert('You need to login to join the game.');
         return;
@@ -145,11 +147,14 @@ export default {
   width: 95%;
 }
 
+.gameroom-header-extrainfo {
+  gap: 0.5em;
+  display: flex;
+}
+
 .gameroom-header {
-  height: 50%;
   display: flex;
   align-items: baseline;
-  gap: 10px;
 }
 
 .gameroom-hostname {
@@ -189,11 +194,18 @@ export default {
 
 .gameroom-name {
   font-size: 1.8em;
+  margin: 0.2em;
+}
+
+.gameroom-unranked {
+  color: #e85151;
+  font-size: 1.0em;
+  margin: 0;
 }
 
 .gameroom-details {
   display: flex;
-  gap: 30px;
+  gap: 1.2em;
   margin-bottom: 10px;
 }
 
