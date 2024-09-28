@@ -1,121 +1,79 @@
 <template>
-  <div class="leaderboard-div">
-    <h1>Leaderboard</h1>
-    <table class="centered-table">
-      <thead>
-      <tr>
-        <th>Rank</th>
-        <th></th>
-        <th class="username-column">Username</th>
-        <th class="points-column">Points</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr class="spaced-row" v-for="(player, index) in players" :key="index" v-on:click.stop="showUserpage = true; userpageId = player.id">
-        <td>{{ index + 1 }}</td>
-        <td><img :src="player.avatar_url" alt="Profile Picture" class="avatar" /></td>
-        <td>{{ player.username }}</td>
-        <td>{{ player.points }}</td>
-      </tr>
-
-      </tbody>
-    </table>
-    <div class="button-container">
-      <button class="full-leaderboard-button" @click="goToFullLeaderboard">Show Full Leaderboard</button>
+  <div class="leaderboard-container">
+    <div v-if="currentLeaderboard === 0" class="leaderboard-div">
+      <h1>Total Leaderboard</h1>
+      <Leaderboard :players="totalPlayers" />
     </div>
-    <div class="modal-overlay" v-if="showUserpage" @click.stop="showUserpage = false">
-      <UserPage :playerId="userpageId"></UserPage>
-    </div>
+<!--    <div v-if="currentLeaderboard === 1" class="leaderboard-div">-->
+<!--      <h1>Donator Leaderboard</h1>-->
+<!--      <Leaderboard :players="donatorPlayers" />-->
+<!--    </div>-->
+<!--    <div v-if="currentLeaderboard === 2" class="leaderboard-div">-->
+<!--      <h1>Another Leaderboard</h1>-->
+<!--      <Leaderboard :players="anotherPlayers" />-->
+<!--    </div>-->
   </div>
 </template>
 
 <script>
 import apiService from "@/api/apiService";
-import UserPage from "@/components/UserPage.vue";
+import Leaderboard from "@/components/Leaderboard.vue";
 
 export default {
-  components: {UserPage},
+  components: { Leaderboard },
   data() {
     return {
-      showUserpage: false,
-      userpageId: null,
-      players: [],
+      currentLeaderboard: 0,
+      intervalId: null,
+      totalPlayers: [],
+      donatorPlayers: [],
+      anotherPlayers: [],
     };
   },
   methods: {
-    openUserpage(id) {
-      window.open(`https://osu.ppy.sh/users/${id}`, '_blank')
-    },
+    async fetchLeaderboardData() {
+      const totalResponse = await apiService.get('/api/leaderboard?page=0&limit=5');
+      this.totalPlayers = totalResponse.data.players;
 
-    goToFullLeaderboard() {
-      this.$router.push('/leaderboard');
-    }
+      // const donatorResponse = await apiService.get('/api/leaderboard/donator');
+      // this.donatorPlayers = donatorResponse.data.players;
+      //
+      // const anotherResponse = await apiService.get('/api/leaderboard/another');
+      // this.anotherPlayers = anotherResponse.data.players;
+    },
+    startSlideshow() {
+      this.intervalId = setInterval(() => {
+        this.currentLeaderboard = (this.currentLeaderboard + 1) % 3;
+      }, 5000);
+    },
   },
   async created() {
-    const response = await apiService.get('/api/leaderboard?page=0&limit=5');
-
-    this.players = response.data.players;
+    await this.fetchLeaderboardData();
+    // this.startSlideshow();
+  },
+  beforeUnmount() {
+    clearInterval(this.intervalId);
   },
 };
 </script>
 
 <style scoped>
-.leaderboard-div {
+.leaderboard-container {
   background-color: var(--color-secondary);
   border-radius: 20px;
   padding: 20px;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
 }
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+.leaderboard-div {
+  //position: absolute;
+  //width: 100%;
+  //height: 100%;
+  //transition: opacity 1s ease-in-out;
 }
 
-.centered-table {
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.spaced-row td {
-  padding: 0 30px;
-}
-
-.username-column {
-  min-width: 200px;
-}
-
-.points-column {
-  min-width: 100px;
-}
-
-.spaced-row {
-  cursor: pointer;
-}
-
-.button-container {
-  display: flex;
-  justify-content: right;
-}
-
-.full-leaderboard-button {
-  background-color: var(--color-primary);
-  border: none;
-  color: white;
-  padding: 8px 16px;
+h1 {
   text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 0.8em;
-  cursor: pointer;
-  border-radius: 4px;
-  transition-duration: 0.4s;
-}
-
-.full-leaderboard-button:hover {
-  background-color: white;
-  color: black;
+  margin-top: 0.2em;
+  margin-bottom: 0;
 }
 </style>
