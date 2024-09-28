@@ -560,8 +560,12 @@ export default {
 
         var encryptedBeatmapInfo = JSON.parse(message.body);
         this.ownGuessRight = false;
-        this.imageSourceBase64 = encryptedBeatmapInfo.base64;
-        this.audioSourceBase64 = encryptedBeatmapInfo.base64;
+        if (this.game.displayMode.includes('BACKGROUND')) {
+          this.imageSourceBase64 = encryptedBeatmapInfo.base64;
+        }
+        if (this.game.displayMode.includes('AUDIO')) {
+          this.audioSourceBase64 = encryptedBeatmapInfo.base64;
+        }
         this.timeLeft = this.game.guessingTime - 1;
         this.game.questionIndex++;
         this.countdownInterval = setInterval(() => {
@@ -593,6 +597,7 @@ export default {
           audioPlayer.currentTime = 0;
           audioPlayer.play()
         }
+
 
         var leaderboard = JSON.parse(message.body);
 
@@ -1363,6 +1368,7 @@ UserPage {
 }
 
 .question-image {
+  user-select: none;
   position: relative;
   width: 71vh;
   height: 40vh;

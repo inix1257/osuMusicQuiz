@@ -56,6 +56,10 @@ public class SystemMessageHandler {
         sendMessage(game, "blurReveal", encodedId + "/" + encodedKey);
     }
 
+    public void onBlurReveal(Game game, String key) {
+        sendMessage(game, "blurReveal", key);
+    }
+
     public void onGameProgressUpdate(Game game, EncryptedBeatmapInfo encryptedBeatmapInfo) {
         sendMessage(game, "gameprogress", encryptedBeatmapInfo);
     }

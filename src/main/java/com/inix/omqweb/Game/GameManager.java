@@ -53,14 +53,17 @@ public class GameManager {
 //    @PostConstruct
     private void createDebugLobbies() {
         // Create lobbies for debug purpose
-        List<Player> players = playerRepository.findRandomPlayers();
+        for (int i = 0; i < 5; i++) {
+            List<Player> players = playerRepository.findRandomPlayers();
 
-        for (int i = 0; i < 3; i++) {
             CreateGameDTO createGameDTO = CreateGameDTO.builder()
                     .name("Lobby " + (i + 1))
                     .totalQuestions(10)
                     .guessingTime(10)
                     .cooldownTime(5)
+                    .password("123")
+                    .displayMode(List.of(DisplayMode.AUDIO))
+                    .poolMode(PoolMode.TOUHOU)
                     .difficulty(List.of(GameDifficulty.EASY, GameDifficulty.NORMAL, GameDifficulty.HARD, GameDifficulty.INSANE))
                     .startYear(2007)
                     .endYear(2021)
@@ -443,6 +446,9 @@ public class GameManager {
                     String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
                     String encodedKey = aesUtil.encrypt(encodedId);
                     systemMessageHandler.onBlurReveal(game, encodedId, encodedKey);
+                }else{
+                    String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
+                    systemMessageHandler.onBlurReveal(game, encodedId);
                 }
 
                 if (game.isRanked()) {
