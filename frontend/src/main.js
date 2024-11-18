@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import MainPage from './components/MainPage.vue';
 import App from "@/App.vue";
+import IntroPage from "@/components/IntroPage.vue";
 import GamePage from "@/components/Game/GamePage.vue";
 import CallBack from "@/CallBack.vue";
 import { pinia } from './store';
@@ -20,6 +21,7 @@ import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
 import { faMinimize, faMaximize } from "@fortawesome/free-solid-svg-icons";
 import { faCrown } from "@fortawesome/free-solid-svg-icons";
+import { faShareNodes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import FullLeaderboard from "@/components/FullLeaderboard.vue";
 import DebugPage from "@/components/DebugPage.vue";
@@ -90,6 +92,7 @@ library.add(faCaretDown, faCaretUp)
 library.add(faMoon, faSun)
 library.add(faMinimize, faMaximize)
 library.add(faCrown)
+library.add(faShareNodes)
 
 const app = createApp(App);
 app.use(router)
