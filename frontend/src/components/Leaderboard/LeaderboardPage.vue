@@ -1,8 +1,12 @@
 <template>
   <div class="leaderboard-container">
-    <div v-if="currentLeaderboard === 0" class="leaderboard-div">
-      <h1>Total Leaderboard</h1>
+    <div class="leaderboard-div">
+      <h1>Leaderboard</h1>
       <Leaderboard :players="totalPlayers" />
+    </div>
+    <div class="leaderboard-div">
+      <h1>Top Donators</h1>
+      <DonationLeaderboard :playerInfo="topDonators" />
     </div>
 <!--    <div v-if="currentLeaderboard === 1" class="leaderboard-div">-->
 <!--      <h1>Donator Leaderboard</h1>-->
@@ -17,23 +21,27 @@
 
 <script>
 import apiService from "@/api/apiService";
-import Leaderboard from "@/components/Leaderboard.vue";
+import Leaderboard from "@/components/Leaderboard/Leaderboard.vue";
+import DonationLeaderboard from "@/components/Leaderboard/DonationLeaderboard.vue";
 
 export default {
-  components: { Leaderboard },
+  components: { Leaderboard, DonationLeaderboard },
   data() {
     return {
       currentLeaderboard: 0,
       intervalId: null,
       totalPlayers: [],
-      donatorPlayers: [],
-      anotherPlayers: [],
+      topDonators: [],
     };
   },
   methods: {
     async fetchLeaderboardData() {
-      const totalResponse = await apiService.get('/api/leaderboard?page=0&limit=5');
-      this.totalPlayers = totalResponse.data.players;
+      const response = await apiService.get('/api/leaderboard');
+      this.totalPlayers = response.data.topPlayers;
+      this.topDonators = response.data.topDonators;
+
+      // const totalResponse = await apiService.get('/api/leaderboard?page=0&limit=5');
+      // this.totalPlayers = totalResponse.data.players;
 
       // const donatorResponse = await apiService.get('/api/leaderboard/donator');
       // this.donatorPlayers = donatorResponse.data.players;
@@ -59,21 +67,21 @@ export default {
 
 <style scoped>
 .leaderboard-container {
+  border-radius: 20px;
+  padding: 1em;
+}
+
+.leaderboard-div {
   background-color: var(--color-secondary);
   border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
-}
-.leaderboard-div {
-  //position: absolute;
-  //width: 100%;
-  //height: 100%;
-  //transition: opacity 1s ease-in-out;
+  padding: 1em;
+  margin-bottom: 1em;
 }
 
 h1 {
+  font-size: 1.2em;
   text-align: center;
   margin-top: 0.2em;
-  margin-bottom: 0;
+  margin-bottom: 1em;
 }
 </style>

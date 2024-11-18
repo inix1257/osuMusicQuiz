@@ -1,27 +1,23 @@
 <template>
-  <div class="leaderboard-div">
+  <div>
     <table class="centered-table">
       <thead>
       <tr>
         <th>Rank</th>
         <th></th>
         <th class="username-column">Username</th>
-        <th class="points-column">Points</th>
+        <th class="points-column"></th>
       </tr>
       </thead>
       <tbody>
-      <tr class="spaced-row" v-for="(player, index) in players" :key="index" v-on:click.stop="showUserpage = true; userpageId = player.id">
+      <tr class="spaced-row" v-for="(playerData, index) in playerInfo" :key="index" v-on:click.stop="showUserpage = true; userpageId = playerData.player.id">
         <td>{{ index + 1 }}</td>
-        <td><img :src="player.avatar_url" alt="Profile Picture" class="avatar" /></td>
-        <td>{{ player.username }}</td>
-        <td>{{ player.points }}</td>
+        <td><img :src="playerData.player.avatar_url" alt="Profile Picture" class="avatar" /></td>
+        <td>{{ playerData.player.username }}</td>
+        <td>{{ playerData.totalAmount }}</td>
       </tr>
-
       </tbody>
     </table>
-    <div class="button-container">
-      <button class="full-leaderboard-button" @click="goToFullLeaderboard">Show Full Leaderboard</button>
-    </div>
     <div class="modal-overlay" v-if="showUserpage" @click.stop="showUserpage = false">
       <UserPage :playerId="userpageId"></UserPage>
     </div>
@@ -34,11 +30,16 @@ import UserPage from "@/components/UserPage.vue";
 
 export default {
   components: {UserPage},
+  props: {
+    playerInfo: {
+      type: Array,
+      required: true,
+    },
+  },
   data() {
     return {
       showUserpage: false,
       userpageId: null,
-      players: [],
     };
   },
   methods: {
@@ -51,22 +52,17 @@ export default {
     }
   },
   async created() {
-    const response = await apiService.get('/api/leaderboard?page=0&limit=5');
-
-    this.players = response.data.players;
+    // const response = await apiService.get('/api/leaderboard');
+    //
+    // this.players = response.data.players;
   },
 };
 </script>
 
 <style scoped>
-.leaderboard-div {
-  border-radius: 20px;
-  padding: 20px;
-}
-
 .avatar {
-  width: 40px;
-  height: 40px;
+  width: 2em;
+  height: 2em;
   border-radius: 50%;
   box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
 }
@@ -77,7 +73,7 @@ export default {
 }
 
 .spaced-row td {
-  padding: 0 30px;
+  padding: 0 1.2em;
 }
 
 .username-column {
