@@ -168,8 +168,6 @@ public class osuAPIService {
         ResponseEntity<AccessTokenDTO> response = restTemplate.exchange("https://osu.ppy.sh/oauth/token", HttpMethod.POST, entity, AccessTokenDTO.class);
 
         clientAccessToken = response.getBody().getAccess_token();
-
-        System.out.println("Client access token: " + clientAccessToken);
     }
 
     private String cursor_string = "";
