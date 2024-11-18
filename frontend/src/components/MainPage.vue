@@ -1,6 +1,6 @@
 <script>
 import { useUserStore} from '@/stores/userStore';
-import LeaderboardPage from "@/components/LeaderboardPage.vue";
+import LeaderboardPage from "@/components/Leaderboard/LeaderboardPage.vue";
 import AnnouncementPage from "@/components/AnnouncementPage.vue";
 import GameroomPage from "@/components/Game/GameList.vue";
 import apiService from "../api/apiService";
@@ -161,7 +161,7 @@ export default {
           <button @click="openModal" class="create-game-button">Create Game</button>
         </div>
         <LeaderboardPage />
-        <AnnouncementPage />
+<!--        <AnnouncementPage />-->
       </div>
 
       <RoomCreateModal v-if="isModalOpen" @close-modal="isModalOpen = false" />
