@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+    <IntroPage v-if="showIntroPage" @close-intro="showIntroPage = false"/>
     <div id="status-bar">
       <router-link to="/" class="logo">
         <h1>omq</h1>
@@ -7,9 +8,9 @@
       <div>
         osu! Music Quiz
       </div>
-      <p class="beatmap-count">
-        featuring<span class="beatmap-count-span">{{ beatmapCount }}</span>beatmaps
-      </p>
+<!--      <p class="beatmap-count">-->
+<!--        featuring<span class="beatmap-count-span">{{ beatmapCount }}</span>beatmaps-->
+<!--      </p>-->
       <a :href="discordInviteLink" target="_blank">
 <!--        <img v-bind:src="icon_discord" alt="Discord" class="logo_icon" />-->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="logo_icon">
@@ -22,6 +23,7 @@
       </div>
       <a href="#" @click.stop="showDonatePage = true">Donate</a>
       <a href="#" @click.stop="showHelpPage = true">Help</a>
+      <a href="#" @click.stop="showIntroPage = true">Daily</a>
       <router-link to="/log" v-if="this.me.id">Log</router-link>
       <div class="links"/>
       <font-awesome-icon class="icon-darkmode-toggle" v-if="theme === 'lightMode'" :icon="['fas', 'sun']"
@@ -37,7 +39,7 @@
           <font-awesome-icon icon="sign-out-alt"/>
         </button>
         <button class="button-icon" @click="login" v-else>
-          Login via osu
+          Login with osu
           <font-awesome-icon icon="sign-in-alt"/>
         </button>
       </div>
@@ -68,10 +70,12 @@ import UserPage from "@/components/UserPage.vue";
 import AboutPage from "@/components/AboutPage.vue";
 import GameLog from "@/components/GameLog.vue";
 import DonationPage from "@/components/DonationPage.vue";
+import IntroPage from "@/components/IntroPage.vue";
 
 export default {
   name: 'App',
   components: {
+    IntroPage,
     DonationPage,
     GameLog,
     AboutPage,
@@ -102,6 +106,7 @@ export default {
       showHelpPage: false,
       showDonatePage: false,
       showLogPage: false,
+      showIntroPage: false,
       adminUserId: process.env.VUE_APP_OSU_ADMINUSERID
     }
   },
@@ -159,6 +164,19 @@ export default {
 
   mounted() {
     let localTheme = localStorage.getItem('theme');
+    let dailyTime = localStorage.getItem('dailyTime');
+
+    if (dailyTime) {
+      let dailyDate = new Date(dailyTime).toUTCString().split(' ')[0];
+      let currentDate = new Date().toUTCString().split(' ')[0];
+
+      if (dailyDate !== currentDate) {
+        this.showIntroPage = true;
+      }
+    } else {
+      this.showIntroPage = true;
+    }
+
     this.theme = localTheme ? localTheme : 'darkMode';
     document.documentElement.setAttribute('data-theme', this.theme)
   },
@@ -235,7 +253,7 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 1.5em;
 }
 
 .logo {
