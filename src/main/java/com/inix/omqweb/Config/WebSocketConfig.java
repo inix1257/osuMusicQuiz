@@ -16,7 +16,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/room");
+        registry.enableSimpleBroker("/room", "/daily");
         registry.setApplicationDestinationPrefixes("/send");
     }
 
