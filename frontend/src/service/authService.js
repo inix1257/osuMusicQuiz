@@ -9,6 +9,9 @@ export async function getUserData(token) {
     }).then((response) => {
         return response.data;
     }).catch(async (error) => {
+        if (error.response.status === 401) {
+            return null;
+        }
         if (error.response.status === 403) {
             alert("You have been banned from OMQ.")
             localStorage.removeItem("accessToken");
