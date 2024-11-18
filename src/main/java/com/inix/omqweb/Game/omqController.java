@@ -206,8 +206,13 @@ public class omqController {
     }
 
     @GetMapping("/leaderboard")
-    public ResponseEntity<?> getLeaderboard(@RequestParam int page, @RequestParam int limit) {
-        return ResponseEntity.ok(gameManager.getLeaderboard(page, limit));
+    public ResponseEntity<?> getLeaderboard() {
+        return ResponseEntity.ok(gameManager.getLeaderboard());
+    }
+
+    @GetMapping("/fullleaderboard")
+    public ResponseEntity<?> getFullLeaderboard(@RequestParam int page, @RequestParam int limit) {
+        return ResponseEntity.ok(gameManager.getFullLeaderboard(page, limit));
     }
 
     @GetMapping("/statistics")
