@@ -1,6 +1,9 @@
 package com.inix.omqweb.Game;
 
 import com.inix.omqweb.Beatmap.*;
+import com.inix.omqweb.Donation.Donation;
+import com.inix.omqweb.Donation.DonationRepository;
+import com.inix.omqweb.Donation.PlayerDonationDTO;
 import com.inix.omqweb.History.*;
 import com.inix.omqweb.Message.MessageService;
 import com.inix.omqweb.Message.SystemMessageHandler;
@@ -13,9 +16,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,7 @@ public class GameManager {
     private final BeatmapService beatmapService;
     private final MessageService messageService;
     private final PlayerRepository playerRepository;
+    private final DonationRepository donationRepository;
     private final LobbyHistoryRepository lobbyHistoryRepository;
     private final LobbyHistoryDetailRepository lobbyHistoryDetailRepository;
     private final ResourceService resourceService;
@@ -61,7 +63,6 @@ public class GameManager {
                     .totalQuestions(10)
                     .guessingTime(10)
                     .cooldownTime(5)
-                    .password("123")
                     .displayMode(List.of(DisplayMode.AUDIO))
                     .poolMode(PoolMode.TOUHOU)
                     .difficulty(List.of(GameDifficulty.EASY, GameDifficulty.NORMAL, GameDifficulty.HARD, GameDifficulty.INSANE))
@@ -921,12 +922,34 @@ public class GameManager {
         }
     }
 
-    public LeaderboardDTO getLeaderboard(int page, int limit) {
+    public LeaderboardDTO getLeaderboard() {
+        List<Player> players = playerRepository.findByBanFalseOrderByPointsDesc(PageRequest.of(0, 5));
+        List<Object[]> groupedDonations = donationRepository.findDonationsGroupedByPlayer();
+        List<Donation> recentDonations = donationRepository.findRecentDonations();
+
+        List<PlayerDonationDTO> donators = groupedDonations.stream()
+                .map(result -> new PlayerDonationDTO((Player) result[0], (Double) result[1]))
+                .sorted(Comparator.comparingDouble(PlayerDonationDTO::getTotalAmount).reversed())
+                .limit(5)
+                .toList();
+
+        int totalPlayers = playerRepository.findAll().size();
+
+        LeaderboardDTO leaderboardDTO = new LeaderboardDTO();
+        leaderboardDTO.setTopPlayers(players);
+        leaderboardDTO.setTopDonators(donators);
+        leaderboardDTO.setRecentDonations(recentDonations);
+        leaderboardDTO.setTotalItems(totalPlayers);
+
+        return leaderboardDTO;
+    }
+
+    public LeaderboardDTO getFullLeaderboard(int page, int limit) {
         List<Player> players = playerRepository.findByBanFalseOrderByPointsDesc(PageRequest.of(page, limit));
         int totalPlayers = playerRepository.findAll().size();
 
         LeaderboardDTO leaderboardDTO = new LeaderboardDTO();
-        leaderboardDTO.setPlayers(players);
+        leaderboardDTO.setTopPlayers(players);
         leaderboardDTO.setTotalItems(totalPlayers);
 
         return leaderboardDTO;
