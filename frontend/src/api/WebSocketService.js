@@ -28,12 +28,9 @@ export default class WebSocketService {
                     this.stompClient.subscribe(`/room/${this.gameId}/system/blurReveal`, callbacks.onBlurReveal);
                     this.stompClient.subscribe(`/room/${this.gameId}/system/playerKick`, callbacks.onPlayerKick);
                     this.stompClient.subscribe(`/room/${this.gameId}/system/playerInactivityKick`, callbacks.onPlayerInactivityKick);
-                    console.log('WebSocket connection established');
                     resolve(true);
                 },
                 (error) => {
-                    console.error('WebSocket connection error', error);
-                    console.log('Reconnecting in 5 seconds...');
                     resolve(false);
                 }
             )
