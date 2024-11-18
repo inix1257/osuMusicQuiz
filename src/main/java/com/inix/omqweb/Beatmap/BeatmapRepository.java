@@ -69,4 +69,7 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
     List<Beatmap> findRandomBeatmapsWithMarkers();
 
     List<Beatmap> findAll(Specification<Beatmap> spec);
+
+    @Query(value = "SELECT * FROM beatmap b WHERE b.beatmapset_id NOT IN (SELECT d.beatmapset_id FROM daily_guess d) AND (answer_rate > 0.3) AND (playcount >= 100) ORDER BY RAND() LIMIT 1", nativeQuery = true)
+    Beatmap findRandomBeatmapNotInDailyGuess();
 }
