@@ -448,13 +448,14 @@ export default {
     }
 
     await this.joinGame(roompw, false);
-
     var possibleAnswerURL = 'possibleAnswers';
 
-    if (this.game.gameMode === 'ARTIST') {
-      possibleAnswerURL = 'possibleAnswers_artist';
-    } else if (this.game.gameMode === 'CREATOR') {
-      possibleAnswerURL = 'possibleAnswers_creator';
+    if (this.game) {
+      if (this.game.gameMode === 'ARTIST') {
+        possibleAnswerURL = 'possibleAnswers_artist';
+      } else if (this.game.gameMode === 'CREATOR') {
+        possibleAnswerURL = 'possibleAnswers_creator';
+      }
     }
 
     apiService.get(`${process.env.VUE_APP_API_URL}/api/${possibleAnswerURL}`, {})
@@ -465,8 +466,9 @@ export default {
           console.error('Error getting beatmap', error);
         });
 
-    window.addEventListener('beforeunload', this.beforeUnload);
-    window.addEventListener('unload', this.requestLeaveRoom);
+    // window.addEventListener('beforeunload', this.beforeUnload);
+    // window.addEventListener('unload', this.requestLeaveRoom);
+
 
     setTimeout(() => {
       const audioPlayer = this.$refs.audio;
@@ -482,6 +484,7 @@ export default {
     });
 
     this.resetInactivityTimer();
+
 
     this.webSocketService = new WebSocketService(this.gameId);
     this.webSocketService.connect({
@@ -727,8 +730,8 @@ export default {
       this.webSocketService.disconnect();
     }
 
-    window.removeEventListener('beforeunload', this.beforeUnload);
-    window.removeEventListener('unload', this.requestLeaveRoom);
+    // window.removeEventListener('beforeunload', this.beforeUnload);
+    // window.removeEventListener('unload', this.requestLeaveRoom);
 
     clearInterval(this.countdownInterval)
     clearInterval(this.inactivityTimer)
@@ -955,7 +958,6 @@ export default {
 
           <div v-if="currentBeatmap && !isGuessing" class="beatmap-info-container">
             <a :href="getBeatmapUrl" target="_blank">
-
               <h2>Beatmap Information</h2>
               <div class="beatmap-info-inner">
                 <p>Artist: <strong>{{ currentBeatmap.artist }}</strong></p>
@@ -968,6 +970,7 @@ export default {
                 <p v-if="answers[me.id]">Difficulty Bonus: {{ answers[me.id].difficultyBonus.toFixed(2) }}</p>
                 <p v-if="answers[me.id]">Speed Bonus: {{ answers[me.id].speedBonus.toFixed(2) }}</p>
                 <p v-if="answers[me.id] && answers[me.id].poolSizeBonus < 1.00">Pool Size Penalty: {{ answers[me.id].poolSizeBonus.toFixed(2) }}</p>
+                <p v-if="answers[me.id] && answers[me.id].poolSizeBonus > 1.00">Pool Size Bonus: {{ answers[me.id].poolSizeBonus.toFixed(2) }}</p>
                 <p v-if="answers[me.id]">Total Points: {{ answers[me.id].totalPoints.toFixed(2) }}</p>
                 <div class="beatmap-info-clickme">
                   Click to view the beatmap on osu!
