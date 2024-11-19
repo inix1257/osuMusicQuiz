@@ -3,6 +3,7 @@
     <div class="leaderboard-div">
       <h1>Leaderboard</h1>
       <Leaderboard :players="totalPlayers" />
+
     </div>
     <div class="leaderboard-div">
       <h1>Top Donators</h1>

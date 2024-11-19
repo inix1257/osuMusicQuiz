@@ -20,22 +20,24 @@ export default {
     },
 
     nextPage() {
-      if (this.page < this.maxPage - 1) { // Add this condition
+      this.players = [];
+      if (this.page < this.maxPage - 1) {
         this.page++;
         this.fetchData();
       }
     },
 
     previousPage() {
+      this.players = [];
       if (this.page > 0) {
         this.page--;
         this.fetchData();
       }
     },
 
-    async fetchData() { // Extract the data fetching logic into a separate method
-      const response = await apiService.get('/api/leaderboard?page=' + this.page + '&limit=50');
-      this.players = response.data.players;
+    async fetchData() {
+      const response = await apiService.get('/api/fullleaderboard?page=' + this.page + '&limit=50');
+      this.players = response.data.topPlayers;
       this.maxPage = Math.ceil(response.data.totalItems / 50);
     }
   },

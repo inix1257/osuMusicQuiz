@@ -14,13 +14,13 @@
         <td>{{ index + 1 }}</td>
         <td><img :src="player.avatar_url" alt="Profile Picture" class="avatar" /></td>
         <td>{{ player.username }}</td>
-        <td>{{ player.points }}</td>
+        <td>{{ formatPoints(player.points) }}</td>
       </tr>
       </tbody>
     </table>
-<!--    <div class="button-container">-->
-<!--      <button class="full-leaderboard-button" @click="goToFullLeaderboard">Show Full Leaderboard</button>-->
-<!--    </div>-->
+    <div class="button-container">
+      <button class="full-leaderboard-button" @click="goToFullLeaderboard">Show Full Leaderboard</button>
+    </div>
     <div class="modal-overlay" v-if="showUserpage" @click.stop="showUserpage = false">
       <UserPage :playerId="userpageId"></UserPage>
     </div>
@@ -52,12 +52,14 @@ export default {
 
     goToFullLeaderboard() {
       this.$router.push('/leaderboard');
+    },
+
+    formatPoints(points) {
+      if (points >= 1000) {
+        return (points / 1000).toFixed(1) + 'k';
+      }
+      return points;
     }
-  },
-  async created() {
-    // const response = await apiService.get('/api/leaderboard');
-    //
-    // this.players = response.data.players;
   },
 };
 </script>
