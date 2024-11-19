@@ -361,9 +361,9 @@ export default {
       </div>
 
       <div class="question-image-container">
-        <div class="question-image-cover" v-if="retryCount < 3">(bg reveal at 3rd try)</div>
+        <div class="question-image-cover" v-if="(retryCount < 3 && !revealStatus)">(bg reveal at 3rd try)</div>
         <div class="image-wrapper">
-          <img v-if="retryCount >= 3" :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
+          <img v-if="retryCount >= 3 || revealStatus" :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
         </div>
       </div>
       <audio ref="audioPlayer" :src="'/audio/' + this.audioSourceBase64"
