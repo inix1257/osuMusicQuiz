@@ -22,6 +22,7 @@ import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
 import { faMinimize, faMaximize } from "@fortawesome/free-solid-svg-icons";
 import { faCrown } from "@fortawesome/free-solid-svg-icons";
 import { faShareNodes } from "@fortawesome/free-solid-svg-icons";
+import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import FullLeaderboard from "@/components/FullLeaderboard.vue";
 import DebugPage from "@/components/DebugPage.vue";
@@ -93,6 +94,7 @@ library.add(faMoon, faSun)
 library.add(faMinimize, faMaximize)
 library.add(faCrown)
 library.add(faShareNodes)
+library.add(faPlay, faStop)
 
 const app = createApp(App);
 app.use(router)
