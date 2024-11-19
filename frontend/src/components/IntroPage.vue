@@ -38,6 +38,7 @@ export default {
       dailyGuessLog: [],
       showCopiedMessage: false,
       correctGuess: null,
+      timeLeft: '',
     }
   },
 
@@ -65,6 +66,9 @@ export default {
     if (!this.me) {
       return;
     }
+
+    this.updateTimeLeft();
+    setInterval(this.updateTimeLeft, 1000);
 
     this.loginStatus = true;
 
@@ -103,9 +107,37 @@ export default {
     }
   },
 
+  beforeUnmount() {
+    if (this.webSocketService) {
+      this.webSocketService.disconnect();
+    }
+
+    clearInterval(this.updateTimeLeft);
+
+    const audioPlayer = this.$refs.audioPlayer;
+    if (audioPlayer) {
+      audioPlayer.pause();
+    }
+
+    this.webSocketService = null;
+  },
+
   methods: {
     closeIntroPage() {
       this.$emit('close-intro');
+    },
+
+    updateTimeLeft() {
+      const now = new Date();
+      const utcNow = new Date(now.toISOString().slice(0, 19) + 'Z');
+      const nextMidnight = new Date(Date.UTC(utcNow.getUTCFullYear(), utcNow.getUTCMonth(), utcNow.getUTCDate() + 1, 0, 0, 0));
+      const timeDiff = nextMidnight - utcNow;
+
+      const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+      this.timeLeft = `${hours}h ${minutes}m ${seconds}s`;
     },
 
     login() {
@@ -259,10 +291,15 @@ export default {
 <template>
   <div class="modal-overlay">
     <div>
-      <button class="close-button" @click="closeIntroPage">
-        <font-awesome-icon :icon="['fas', 'x']" />
-      </button>
-      <h1 class="text-osudle">Daily osudle {{ dailyNumber }}</h1>
+      <div class="osudle-header">
+        <div class="header-content">
+          <h1 class="text-osudle">Daily osudle {{ dailyNumber }}</h1>
+          <button class="close-button" @click="closeIntroPage">
+            <font-awesome-icon :icon="['fas', 'x']" />
+          </button>
+        </div>
+      </div>
+
       <img :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
       <br>
       <audio ref="audioPlayer" :src="'/audio/' + this.audioSourceBase64" controls></audio>
@@ -287,7 +324,8 @@ export default {
           {{ option }}
         </div>
       </div>
-      <div>
+      <div class="share-div">
+        <div v-if="revealStatus" class="text-nextdle">Next osudle in: <span class="text-nextdletime">{{ timeLeft }}</span></div>
         <div v-if="showCopiedMessage" class="copied-message">Copied to clipboard</div>
         <button class="share-button" v-if="revealStatus" @click="generateShareLink">Share  <font-awesome-icon :icon="['fas', 'share-nodes']" /></button>
       </div>
@@ -409,6 +447,9 @@ input {
 }
 
 .close-button {
+  position: relative;
+  top: 0;
+  right: 2em;
   color: var(--color-text);
   background: none;
   border: none;
@@ -460,4 +501,45 @@ input {
   font-weight: bold;
   color: red;
 }
+
+.share-div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2em;
+}
+
+.text-nextdle {
+  font-size: 1.2em;
+  color: var(--color-text);
+}
+
+.text-nextdletime {
+  font-weight: bold;
+}
+
+.osudle-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.header-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.text-osudle {
+  flex-grow: 1;
+  text-align: center;
+}
+
+.close-button {
+  position: absolute;
+  right: 0;
+}
+
 </style>
