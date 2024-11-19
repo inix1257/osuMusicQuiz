@@ -39,6 +39,11 @@ export default {
       showCopiedMessage: false,
       correctGuess: null,
       timeLeft: '',
+      volume: 0.4,
+      isPlaying: false,
+      currentTime: 0,
+      duration: 0,
+      playbackTimeout: null,
     }
   },
 
@@ -103,7 +108,8 @@ export default {
 
     const audioPlayer = this.$refs.audioPlayer;
     if (audioPlayer) {
-      audioPlayer.volume = 0.3;
+      audioPlayer.volume = this.volume;
+      audioPlayer.addEventListener('timeupdate', this.updateProgress);
     }
   },
 
@@ -117,6 +123,7 @@ export default {
     const audioPlayer = this.$refs.audioPlayer;
     if (audioPlayer) {
       audioPlayer.pause();
+      audioPlayer.removeEventListener('timeupdate', this.updateProgress);
     }
 
     this.webSocketService = null;
@@ -242,7 +249,60 @@ export default {
       }, 3000);
 
       return str;
-    }
+    },
+
+    playAudio() {
+      const audioPlayer = this.$refs.audioPlayer;
+      if (audioPlayer) {
+        this.controlAudioPlayback(audioPlayer);
+        audioPlayer.play();
+        this.duration = audioPlayer.duration;
+      }
+    },
+
+    controlAudioPlayback(audioPlayer) {
+      var playbackDuration = 0;
+      if (this.retryCount <= 3) {
+        playbackDuration = parseInt(this.retryCount) * 2 + 1;
+      }else{
+        playbackDuration = 10;
+      }
+
+      audioPlayer.currentTime = 0;
+      if (!this.correctGuess) {
+        this.playbackTimeout = setTimeout(() => {
+          audioPlayer.pause();
+        }, playbackDuration * 1000);
+      }
+    },
+
+    updateProgress() {
+      const audioPlayer = this.$refs.audioPlayer;
+      if (audioPlayer) {
+        this.currentTime = audioPlayer.currentTime;
+        this.duration = audioPlayer.duration;
+      }
+    },
+
+    stopAudio() {
+      const audioPlayer = this.$refs.audioPlayer;
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+      }
+      if (this.playbackTimeout) {
+        clearTimeout(this.playbackTimeout);
+        this.playbackTimeout = null;
+      }
+    },
+
+    onPlay() {
+      this.isPlaying = true;
+    },
+
+    onPause() {
+      this.isPlaying = false;
+    },
 
 
   },
@@ -300,10 +360,21 @@ export default {
         </div>
       </div>
 
-      <img :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
-      <br>
-      <audio ref="audioPlayer" :src="'/audio/' + this.audioSourceBase64" controls></audio>
-      <br>
+      <div class="question-image-container">
+        <div class="question-image-cover" v-if="retryCount < 3">(bg reveal at 3rd try)</div>
+        <div class="image-wrapper">
+          <img v-if="retryCount >= 3" :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
+        </div>
+      </div>
+      <audio ref="audioPlayer" :src="'/audio/' + this.audioSourceBase64"
+      @play="onPlay" @pause="onPause"></audio>
+      <div class="progress-container">
+        <progress :value="currentTime" :max="duration"></progress>
+      </div>
+      <div class="audio-player-controls">
+        <button v-if="!isPlaying" @click="playAudio"><font-awesome-icon :icon="['fas', 'play']" /></button>
+        <button v-else @click="stopAudio"><font-awesome-icon :icon="['fas', 'stop']" /></button>
+      </div>
       <div v-if="retryCount !== 0"><span :class="guessClass(correctGuess)">{{ getGuessStatus }}</span> ({{ retryCount }}/5)</div>
       <div v-if="!loginStatus">
         <p>You need to login with osu! to play daily osudle</p>
@@ -542,4 +613,87 @@ input {
   right: 0;
 }
 
+.audio-player-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  gap: 10px;
+}
+
+.audio-player-controls button {
+  width: 50px;
+  height: 50px;
+  font-size: 1.5em;
+  border: 2px solid var(--color-text);
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  cursor: pointer;
+  border-radius: 50%; /* Make the button circular */
+}
+
+.progress-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+}
+
+progress {
+  width: 100%;
+  height: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+progress::-webkit-progress-bar {
+  background-color: var(--color-disabled);
+  border-radius: 5px;
+}
+
+progress::-webkit-progress-value {
+  background-color: var(--color-secondary);
+  border-radius: 5px;
+}
+
+.image-wrapper {
+  position: relative;
+  width: 71vh;
+  height: 40vh;
+}
+
+.question-image {
+  user-select: none;
+  position: relative;
+  width: 71vh;
+  height: 40vh;
+  object-fit: contain;
+  border: 3px solid black;
+  background-color: var(--color-disabled);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.question-image-cover {
+  position: absolute;
+  background-color: rgba(49, 49, 49, 1);
+  width: 72vh;
+  height: 41vh;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.question-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
 </style>
