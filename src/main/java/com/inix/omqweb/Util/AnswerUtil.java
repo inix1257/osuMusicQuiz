@@ -52,6 +52,9 @@ public class AnswerUtil {
     }
 
     public static double getSpeedBonus(Long timeDiffMillis) {
+        if (timeDiffMillis == null || timeDiffMillis == 0) {
+            return 0d;
+        }
         double timeDiffInSec = timeDiffMillis / 1000d;
         double bonus = 0.1d * Math.log(1d / timeDiffInSec) + 1.3;
 
@@ -60,15 +63,18 @@ public class AnswerUtil {
 
     public static double getDifficultyBonus(double guessRate) {
         // guessRate = 0.0d ~ 1.0d
-        double bonus = 2 * Math.log(1d / guessRate) + 1;
+        double bonus = 1.25 * Math.log(2d / guessRate) + 1;
 
-        return Math.min(Math.max(bonus, 1d), 5d); // 1 ~ 5
+        return Math.min(Math.max(bonus, 1d), 4d); // 1 ~ 4
     }
 
     public static double getPoolSizeBonus(int poolSize) {
-        // poolSize = 0 ~ 100
-        double bonus = 0.1 * Math.pow(poolSize, 0.4); // 0.0 ~ 316 (approx)
+        if (poolSize >= 316) {
+            return 0.1736 * Math.log(poolSize); // 1 ~ 1.5 (approx)
+        } else {
+            double bonus = 0.1 * Math.pow(poolSize, 0.4);
 
-        return Math.min(Math.max(bonus, 0.3d), 1d); // 0.3 ~ 1
+            return Math.min(Math.max(bonus, 0.3d), 1d); // 0.3 ~ 1
+        }
     }
 }
