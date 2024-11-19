@@ -122,6 +122,7 @@ export default {
           <th class="col-sub">Difficulty Bonus</th>
           <th class="col-sub">Time Taken</th>
           <th class="col-sub">Speed Bonus</th>
+          <th class="col-sub">Pool Size Bonus</th>
           <th class="col-sub">Total Points</th>
         </tr>
         <tr v-for="(history, index) in filteredHistories(sessionId)" :key="index" class="history-row">
@@ -131,7 +132,8 @@ export default {
           <td class="col-sub">{{ history.difficulty_bonus.toFixed(2) }}</td>
           <td class="col-sub">{{ history.timetaken }}ms</td>
           <td class="col-sub">{{ history.speed_bonus.toFixed(2) }}</td>
-          <td class="col-sub">{{ history.answer ? (history.speed_bonus * history.difficulty_bonus).toFixed(2) : 0 }}</td>
+          <td class="col-sub">{{ history.lobbyHistory.poolsize_bonus.toFixed(2) }}</td>
+          <td class="col-sub">{{ history.answer ? (history.speed_bonus * history.difficulty_bonus * history.lobbyHistory.poolsize_bonus).toFixed(2) : 0 }}</td>
         </tr>
       </table>
       <hr>
