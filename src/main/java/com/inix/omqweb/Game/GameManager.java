@@ -769,6 +769,8 @@ public class GameManager {
         game.setBeatmaps(beatmaps);
         game.setBeatmapsPoolSize(totalBeatmapPoolSize);
 
+        double poolSizeBonus = AnswerUtil.getPoolSizeBonus(game.getBeatmapsPoolSize());
+
         game.setSessionId(UUID.randomUUID());
 
         game.setPlaying(true);
@@ -819,6 +821,7 @@ public class GameManager {
                 .cooldown_time(game.getCooldownTime())
                 .start_year(game.getStartYear())
                 .end_year(game.getEndYear())
+                .poolsize_bonus(poolSizeBonus)
                 .pool_mode(String.valueOf(game.getPoolMode()))
                 .genre(game.getGenreType().stream().map(Enum::name).collect(Collectors.joining(",")))
                 .language(game.getLanguageType().stream().map(Enum::name).collect(Collectors.joining(",")))

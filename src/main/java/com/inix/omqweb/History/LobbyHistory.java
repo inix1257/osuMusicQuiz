@@ -28,6 +28,7 @@ public class LobbyHistory {
     private int cooldown_time;
     private int start_year;
     private int end_year;
+    private double poolsize_bonus;
     private String pool_mode;
     private String genre;
     private String language;
