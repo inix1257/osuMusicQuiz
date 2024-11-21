@@ -12,4 +12,6 @@ public interface AchievementAcquirementRepository extends JpaRepository<Achievem
 
     @Query(value = "SELECT * FROM achievements_acquirement WHERE player_id = :playerId AND achievement_id = :achievementId", nativeQuery = true)
     AchievementAcquirement findAchievementAcquirementsByPlayerAndAchievement(String playerId, int achievementId);
+
+    boolean existsByPlayerAndAchievement(Player player, Achievement achievement);
 }

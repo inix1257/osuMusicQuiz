@@ -28,7 +28,7 @@ public class AchievementController {
     }
 
     @PostMapping
-    public void acquireAchievement(@RequestBody CurrentAchievementUpdateDTO currentAchievementUpdateDTO, HttpServletRequest request) {
+    public void updateTitleAchievement(@RequestBody CurrentAchievementUpdateDTO currentAchievementUpdateDTO, HttpServletRequest request) {
         Player player = (Player) request.getAttribute("userInfo");
 
         if (player == null) {
