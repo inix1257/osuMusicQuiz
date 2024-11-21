@@ -126,14 +126,14 @@ export default {
       <div class="gameroom-container">
         <div class="gameroom-upper-container">
           <div class="gameroom-statistics">
-            <span class="gameroom-statistics-number">{{ getGameroomCount() }}</span> rooms, <span
+            <span class="gameroom-statistics-number">{{ getGameroomCount() }}</span> lobbies, <span
               class="gameroom-statistics-number">{{ getGameroomPlayers() }}</span> players online
           </div>
 
           <input type="text" v-model="searchTerm" placeholder="Search game rooms by title or player..." class="gameroom-searchinput">
 
         </div>
-        <div class="gameroom-upper-searchoptions-container">
+        <div class="gameroom-upper-searchoptions-container" v-if="false">
           <div>
             <input type="checkbox" id="publicRooms" v-model="showPublicRoomsOnly">
             <label for="publicRooms">Show Public Rooms Only</label>
@@ -194,6 +194,8 @@ export default {
 }
 
 .gameroom-list {
+  border-radius: 10px;
+  padding: 10px;
   height: 100%;
   overflow: auto;
 }
@@ -237,6 +239,7 @@ export default {
 }
 
 .button-row {
+  margin-top: 20px;
   display: flex;
   justify-content: center;
   gap: 20px;
