@@ -69,7 +69,6 @@ export default {
 <style scoped>
 .leaderboard-container {
   border-radius: 20px;
-  padding: 1em;
 }
 
 .leaderboard-div {
