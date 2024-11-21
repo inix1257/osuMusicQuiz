@@ -198,6 +198,7 @@ body {
 
 html[data-theme="darkMode"] {
   --color-body: #3c3c3c;
+  --color-bodysecondary: #434343;
   --color-text: #ffffff;
   --color-disabled: #474747;
   --color-primary: #95a5d6;
@@ -209,6 +210,7 @@ html[data-theme="darkMode"] {
 
 html[data-theme="lightMode"] {
   --color-body: rgb(204, 207, 215);
+  --color-bodysecondary: #ffffff;
   --color-text: #151515;
   --color-disabled: #d3d3d3;
   --color-primary: #95a5d6;
@@ -247,7 +249,8 @@ html, body {
   color: var(--color-text);
   padding: 10px;
   text-align: center;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(to right, transparent, var(--color-primary), transparent) 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -372,5 +375,10 @@ a {
   border-radius: 10px;
   padding: 10px;
   z-index: 1001;
+}
+
+#status-bar a:hover,
+#status-bar .router-link:hover {
+  color: var(--color-primary);
 }
 </style>
