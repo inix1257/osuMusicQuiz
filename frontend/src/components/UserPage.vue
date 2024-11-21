@@ -18,6 +18,8 @@ export default {
       achievements: [],
       current_achievement: {},
       selectedAchievement: null,
+      notificationMessage: "",
+      showNotification: false,
     }
   },
   props: {
@@ -40,12 +42,23 @@ export default {
     },
 
     onAchievementUpdate() {
+      clearTimeout(this.showNotification);
       apiService.post('/api/achievement', {
         userId: this.player.id,
         achievementId: this.selectedAchievement.id
       })
           .then(response => {
-            this.getUserData();
+            apiService.get(`/api/user?id=${this.playerId}`)
+                .then((response) => {
+                  this.player = response.data;
+                  this.selectedAchievement = response.data.current_title_achievement;
+
+                  this.notificationMessage = "Achievement updated to " + this.selectedAchievement.name;
+                  this.showNotification = true;
+                  setTimeout(() => {
+                    this.showNotification = false;
+                  }, 3000);
+                })
           })
     }
   },
@@ -81,6 +94,9 @@ export default {
 
 <template>
     <div class="user-info-container">
+      <div class="notification-push" v-if="showNotification">
+        {{ notificationMessage }}
+      </div>
       <div class="user-info" v-if="player.id">
         <a :href="`https://osu.ppy.sh/users/${player.id}`" target="_blank" @click.stop="">
           <div class="user-header">
@@ -280,5 +296,16 @@ export default {
 
 .difficulty-insane {
   color: #e53f3f;
+}
+
+.notification-push {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
 }
 </style>
