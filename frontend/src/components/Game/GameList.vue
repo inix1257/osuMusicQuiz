@@ -1,5 +1,6 @@
 <template>
   <div @click="joinGame(gameroom.uuid)" class="gameroom">
+    <div class="hover-cover"></div>
     <div class="owner-info">
       <img :src="gameroom.owner.avatar_url" :alt="gameroom.owner.username" class="avatar owner-avatar"
            :title="gameroom.owner.username">
@@ -8,8 +9,12 @@
     <div class="gameroom-info">
       <div class="gameroom-header-extrainfo">
         <font-awesome-icon :icon="['fas', 'lock']" v-if="gameroom.private"/>
-        <font-awesome-icon :icon="['fas', 'volume-xmark']" v-if="!gameroom.displayMode.includes('AUDIO')"/>
-        <font-awesome-icon :icon="['fas', 'eye-slash']" v-if="!gameroom.displayMode.includes('BACKGROUND')"/>
+        <div v-if="!gameroom.displayMode.includes('AUDIO')">
+          <font-awesome-icon :icon="['fas', 'volume-xmark']"/>
+        </div>
+        <div v-if="!gameroom.displayMode.includes('BACKGROUND')">
+          <font-awesome-icon :icon="['fas', 'eye-slash']"/>
+        </div>
         <h2 class="gameroom-unranked" v-if="!gameroom.ranked">Unranked</h2>
       </div>
       <div class="gameroom-header">
@@ -136,15 +141,31 @@ export default {
 
 <style scoped>
 .gameroom {
+  position: relative;
   display: flex;
   background-color: var(--color-gameroom);
   border-radius: 10px;
-  border: 3px solid var(--color-gameroom);
-  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.2);
   padding: 20px;
   margin-bottom: 20px;
   cursor: pointer;
-  width: 95%;
+}
+
+.hover-cover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 2;
+}
+
+.gameroom:hover .hover-cover {
+  opacity: 1;
 }
 
 .gameroom-header-extrainfo {
