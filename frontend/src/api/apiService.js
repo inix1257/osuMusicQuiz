@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const apiClient = axios.create({
     baseURL: process.env.VUE_APP_API_URL,
-    withCredentials: false, // This is the default
+    withCredentials: false,
     headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -10,13 +10,10 @@ const apiClient = axios.create({
     }
 });
 
-// Add a response interceptor
 apiClient.interceptors.response.use(undefined, async error => {
     if (error.config && error.response) {
         if (error.response.status === 401) {
-            // Check if we're already trying to refresh the token
             if (error.config.url === '/api/getRefreshToken') {
-                // If we are, don't try again
                 return Promise.reject(error);
             }
 
