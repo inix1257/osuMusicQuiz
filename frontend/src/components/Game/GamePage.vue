@@ -123,6 +123,7 @@ export default {
         gameId: this.gameId,
         senderId: this.me.id,
         senderUsername: this.me.username,
+        senderAvatarUrl: this.me.avatar_url,
         content: content,
         answer: false,
       });
@@ -1085,6 +1086,7 @@ UserPage {
 }
 
 .game-content {
+  width: 80vw;
   position: relative;
   flex: 3;
 }
@@ -1245,7 +1247,6 @@ UserPage {
   overflow-x: auto;
   margin-top: 16px;
   height: 30vh;
-  width: 80vw;
   padding-left: 10px;
   padding-right: 10px;
 }
