@@ -1,13 +1,11 @@
 const { defineConfig } = require('@vue/cli-service')
 
-const host = "localhost"; //back-end host
-const port = "8080"; //back-end port
+const host = "localhost";
+const port = "8080";
 
-// const host = "localhost"; //back-end host
-// const port = "8080"; //back-end port
 module.exports = defineConfig({
   transpileDependencies: true,
-  filenameHashing: false,
+  filenameHashing: true,
   productionSourceMap: true,
   css: { sourceMap: true },
   outputDir: "../src/main/resources/static", //webpack build 시 결과물 위치
