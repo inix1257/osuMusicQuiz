@@ -166,10 +166,8 @@ export default {
     },
 
     formatTimestamp(timestamp) {
-      // Create a Date object from the timestamp
       const date = new Date(timestamp);
 
-      // Convert the Date object to a string using locale settings
       const localTimestamp = date.toLocaleString('en-US', {
         year: 'numeric',
         month: '2-digit',
@@ -180,7 +178,6 @@ export default {
         hour12: false
       });
 
-      // Format the local timestamp using moment.js
       return moment(localTimestamp, 'MM/DD/YYYY, HH:mm:ss').format('h:mm:ss a');
     },
 
@@ -190,21 +187,15 @@ export default {
 
     formatDecimal(value) {
       if (value === 0) {
-        return '0 pts';
+        return '0';
       }
-      return value.toFixed(2) + ' pts';
+      return value.toFixed(2);
     },
 
     selectAutocompleteOption(index) {
-      // Ignore if the game is not in progress
       if (!this.isGuessing) {
         return;
       }
-
-      // Ignore empty answers
-      // if (!this.autocompleteOptions[index] || this.autocompleteOptions[index] === "") {
-      //   return;
-      // }
 
       if (index !== -1) {
         this.answerInput = this.autocompleteOptions[index];
@@ -216,7 +207,6 @@ export default {
     },
 
     kickPlayer(player) {
-      // Ask if this is a ban
       var playerId = player.id;
       var url = '/api/kickPlayer';
 
@@ -255,11 +245,8 @@ export default {
         gameId: this.gameId,
         targetUserId: playerId
       })
-          .then((response) => {
-            // Handle response
-          })
-          .catch((error) => {
-            // Handle error
+          .catch(() => {
+            alert("An error occurred while transferring the host. Please try again later.")
           });
     },
 
@@ -1014,9 +1001,11 @@ export default {
               <p @click.stop="transferHost(player)">Host</p>
               <p @click.stop="showDropdown = false">Cancel</p>
             </div>
+            <font-awesome-icon v-if="this.game.owner.id === player.id" class="player-hosticon" :icon="['fas', 'crown']" />
             <img :src="player.avatar_url" alt="Player's avatar" class="player-avatar" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
-              <p class="player-username">
-                {{ player.username }}</p>
+            <div class="player-username-div">
+              <p class="player-username">{{ player.username }}</p>
+            </div>
             <p class="player-title">{{ player.current_title_achievement ? player.current_title_achievement.title_name : "" }}</p>
             <p class="player-points">{{ formatDecimal(player.totalPoints ? player.totalPoints : 0) }}
                 <span class="player-totalguess">({{ player.totalGuess ? player.totalGuess : 0 }})</span></p>
@@ -1310,9 +1299,28 @@ UserPage {
   box-sizing: border-box;
 }
 
+.player-username-div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
 .player-username{
-  margin-top: 10px;
+  font-weight: bold;
+  font-size: 1.4em;
+  overflow: hidden;
+  margin-top: 4px;
   margin-bottom: 2px;
+}
+
+.player-hosticon {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  width: 24px;
+  height: 24px;
+  color: #f1c40f;
 }
 
 .player-title {
@@ -1340,12 +1348,6 @@ UserPage {
 .player-totalguess {
   font-size: 0.8em;
   color: #999;
-}
-
-.player-username {
-  font-weight: bold;
-  font-size: 1.2em;
-  overflow: hidden;
 }
 
 .player-answer {
@@ -1545,12 +1547,13 @@ UserPage {
   position: absolute;
   left: 6px;
   bottom: 0px;
+  padding: 4px;
   width: 24px;
   height: 24px;
   cursor: pointer;
   background-color: var(--color-secondary);
   border-radius: 5px;
-  border: 2px solid var(--color-text);
+  border: 1px solid var(--color-text);
   z-index: 3;
 }
 
