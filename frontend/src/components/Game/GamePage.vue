@@ -424,7 +424,7 @@ export default {
       this.inactivityTimer = setTimeout(() => {
         alert("You have been flagged as inactive. Click OK if you are still here.")
         this.resetInactivityTimer();
-      }, 60000 * 4); // 4 minutes
+      }, 60000 * 9); // 9 minutes
     },
 
     setInputPlaceholder() {
@@ -474,9 +474,15 @@ export default {
     setTimeout(() => {
       const audioPlayer = this.$refs.audio;
       if (audioPlayer) {
-        audioPlayer.volume = this.volume / 100;
+        const volume = localStorage.getItem("volume");
+        if (volume) {
+          this.volume = volume;
+          audioPlayer.volume = volume / 100;
+        } else {
+          audioPlayer.volume = 0.2;
+        }
       }
-    }, 2000);
+    }, 1000);
 
     const messageContainer = this.$el.querySelector('.message-wrapper');
     messageContainer.addEventListener('scroll', () => {
@@ -544,11 +550,11 @@ export default {
         }
       },
       onGameProgress: (message) => {
-        // Ignore if game is null
         if (!this.game) {
           return;
         }
         // Handle game progress updates
+        this.isPlaying = true;
         this.isGuessing = true;
         this.answerInput = "";
         this.inputFocused = false;
@@ -628,6 +634,9 @@ export default {
             player.guessedRight = false;
           }
         });
+
+        // Sort the players array by totalPoints
+        this.players.sort((a, b) => b.totalPoints - a.totalPoints);
       },
       onAnswer: (message) => {
         // Handle answer updates
@@ -865,7 +874,7 @@ export default {
             <button v-on:click="leaveRoom" class="leave-room-button">
               <font-awesome-icon :icon="['fas', 'door-open']" class="info-icon" />
             </button>
-            <div class="game-name">{{ this.game.name }}</div>
+            <div class="game-name icon-container">{{ this.game.name }}</div>
             <div>Host: {{ this.game.owner.username }} / {{ players.length }} players</div>
             <div v-if="!this.game.ranked" class="game-room-info-unranked">Unranked</div>
           </div>
@@ -899,13 +908,13 @@ export default {
 <!--              <div class="info-text">Mode</div>-->
 <!--            </div>-->
             <div class="icon-text-container">
-              <div class="info-icon">{{ this.game.questionIndex }}/{{ this.game.totalQuestions }}</div>
+              <div class="icon-container">{{ this.game.questionIndex }}/{{ this.game.totalQuestions }}</div>
               <div class="info-text">Current / Total</div>
             </div>
           </div>
         </div>
 
-        <RoomSettingsModal v-if="this.game && isRoomSettingsModalOpen" v-on:toggleRoomSettingsModal="toggleRoomSettingsModal" :game="game" />
+        <RoomSettingsModal actionType="update" v-if="this.game && isRoomSettingsModalOpen" v-on:toggleRoomSettingsModal="toggleRoomSettingsModal" :game="game" @close-modal="isRoomSettingsModalOpen = false" />
 
         <div v-if="this.game">
           <div class="question-image-container">
@@ -945,7 +954,10 @@ export default {
                      :readonly="!isGuessing"
                      v-on:keydown.up.prevent="selectedOptionIndex > 0 ? selectedOptionIndex-- : selectedOptionIndex = autocompleteOptions.length - 1"
                      v-on:keydown.down.prevent="selectedOptionIndex < autocompleteOptions.length - 1 ? selectedOptionIndex++ : selectedOptionIndex = 0"
-                     v-on:keydown.enter.prevent="selectAutocompleteOption(selectedOptionIndex)" v-on:focus="inputFocused = true" class="answer-input">
+                     v-on:keydown.enter.prevent="selectAutocompleteOption(selectedOptionIndex)"
+                     v-on:keydown.tab.prevent="selectAutocompleteOption(selectedOptionIndex)"
+                     v-on:keydown.right.prevent="selectAutocompleteOption(selectedOptionIndex)"
+                     v-on:focus="inputFocused = true" class="answer-input">
               <font-awesome-icon :icon="['fas', 'check']" class="check-icon" :class="{ visible: answerSubmitted }" />
               <font-awesome-icon :icon="['fas', 'maximize']" class="button-switch-viewmode" v-if="!compactViewMode" @click="compactViewMode = true"/>
               <font-awesome-icon :icon="['fas', 'minimize']" class="button-switch-viewmode" v-else @click="compactViewMode = false"/>
@@ -1086,7 +1098,7 @@ UserPage {
 }
 
 .game-content {
-  width: 80vw;
+  width: 85vw;
   position: relative;
   flex: 3;
 }
@@ -1163,6 +1175,7 @@ UserPage {
 }
 
 .icon-container {
+  font-size: 1.2em;
   background-color: var(--color-secondary);
   border-radius: 5px;
   padding: 4px;
@@ -1446,22 +1459,6 @@ UserPage {
   border: 2px solid #ef3838;
   box-sizing: border-box;
   border-radius: 5px;
-}
-
-.difficulty-easy {
-  color: #20c020;
-}
-
-.difficulty-normal {
-  color: #226f9a;
-}
-
-.difficulty-hard {
-  color: #e7c125;
-}
-
-.difficulty-insane {
-  color: #e53f3f;
 }
 
 .gameroom-difficulty {
