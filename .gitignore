@@ -38,18 +38,8 @@ out/
 
 ### VS Code ###
 .vscode/
-/oldmaps.txt
-/src/main/resources/application.properties
-/src/main/resources/static/img/discord.svg
-/src/main/resources/static/img/github.svg
-/src/main/resources/static/img/siren.png
-/src/main/resources/static/img/usereport.png
-/src/main/resources/static/js/app.376f6884a32225ca.js
-/src/main/resources/static/js/chunk-vendors.376f6884a32225ca.js
-/src/main/resources/static/js/node_modules_pixi_js_lib_environment-browser_browserAll_mjs.376f6884a32225ca.js
-/src/main/resources/static/js/node_modules_pixi_js_lib_environment-webworker_webworkerAll_mjs.376f6884a32225ca.js
-/src/main/resources/static/favicon.ico
-/src/main/resources/static/index.html
+/parse.txt
+/src/main/resources/*
 /logs/*
 /gradle/wrapper/gradle-wrapper.jar
 /gradle/wrapper/gradle-wrapper.properties
