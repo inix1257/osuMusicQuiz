@@ -63,6 +63,6 @@ public class Beatmap {
     @PostLoad
     @PostPersist
     public void setBeatmapDifficulty() {
-        beatmapDifficulty = DifficultyCalc.getDifficulty(playcount, playcount_answer);
+        beatmapDifficulty = DifficultyCalc.getDifficulty(answer_rate);
     }
 }
