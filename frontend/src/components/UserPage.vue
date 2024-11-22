@@ -282,22 +282,6 @@ export default {
   margin-top: 16px;
 }
 
-.difficulty-easy {
-  color: #20c020;
-}
-
-.difficulty-normal {
-  color: #226f9a;
-}
-
-.difficulty-hard {
-  color: #e7c125;
-}
-
-.difficulty-insane {
-  color: #e53f3f;
-}
-
 .notification-push {
   position: fixed;
   bottom: 20px;
