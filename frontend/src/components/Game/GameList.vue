@@ -265,22 +265,6 @@ export default {
   font-size: 1.0em;
 }
 
-.difficulty-easy {
-  color: #20c020;
-}
-
-.difficulty-normal {
-  color: #226f9a;
-}
-
-.difficulty-hard {
-  color: #e7c125;
-}
-
-.difficulty-insane {
-  color: #e53f3f;
-}
-
 .playing {
   color: #dc4040;
 }
