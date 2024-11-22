@@ -19,7 +19,7 @@
       <div v-if="this.me && this.me.id===adminUserId">
         <router-link to="/debug">Debug</router-link>
       </div>
-      <a href="#" @click.stop="showDonatePage = true">Donate</a>
+      <a href="#" @click.stop="showDonatePage = true"><font-awesome-icon :icon="['fas', 'heart']" style="color: hotpink;"/></a>
       <a href="#" @click.stop="showHelpPage = true">Help</a>
       <a href="#" @click.stop="showIntroPage = true">Daily</a>
       <router-link to="/log" v-if="this.me.id">Log</router-link>
@@ -210,7 +210,7 @@ html[data-theme="darkMode"] {
 
 html[data-theme="lightMode"] {
   --color-body: rgb(204, 207, 215);
-  --color-bodysecondary: #ffffff;
+  --color-bodysecondary: #eaeaea;
   --color-text: #151515;
   --color-disabled: #d3d3d3;
   --color-primary: #95a5d6;
@@ -380,5 +380,21 @@ a {
 #status-bar a:hover,
 #status-bar .router-link:hover {
   color: var(--color-primary);
+}
+
+.difficulty-easy {
+  color: #20c020;
+}
+
+.difficulty-normal {
+  color: #226f9a;
+}
+
+.difficulty-hard {
+  color: #e7c125;
+}
+
+.difficulty-insane {
+  color: #e53f3f;
 }
 </style>
