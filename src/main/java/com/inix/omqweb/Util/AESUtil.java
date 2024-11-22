@@ -17,9 +17,12 @@ public class AESUtil {
     @Value("${aes.secretKey}")
     private String secretKey;
 
-//    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 1000 * 60 * 60 * 24)
     public void generateRandomKey() {
-        // TODO: Generate random keys every X minutes, or generate random value each time when the game starts etc.
+        Random random = new Random();
+        byte[] randomBytes = new byte[16];
+        random.nextBytes(randomBytes);
+        secretKey = Base64.getUrlEncoder().encodeToString(randomBytes);
     }
 
     public String encrypt(String valueToEnc) {
@@ -40,8 +43,8 @@ public class AESUtil {
             Key key = generateKey();
             Cipher c = Cipher.getInstance(ALGORITHM);
             c.init(Cipher.DECRYPT_MODE, key);
-            byte[] decordedValue = Base64.getUrlDecoder().decode(encryptedValue);
-            byte[] decValue = c.doFinal(decordedValue);
+            byte[] decodedValue = Base64.getUrlDecoder().decode(encryptedValue);
+            byte[] decValue = c.doFinal(decodedValue);
             return new String(decValue);
         } catch (Exception e) {
             throw new RuntimeException("Failed to decrypt the value:" + encryptedValue);
