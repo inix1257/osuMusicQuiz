@@ -20,20 +20,10 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 @RequiredArgsConstructor
 public class WebConfig implements WebMvcConfigurer {
-
     private final RequestInterceptor requestInterceptor;
 
     @Value("${mainUrl}")
     String mainUrl;
-
-//    @Override
-//    public void addCorsMappings(CorsRegistry registry) {
-//        registry.addMapping("/**")
-//                .allowedOrigins(mainUrl)
-//                .allowedMethods("GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS")
-//                .allowedHeaders("*")
-//                .allowCredentials(true);
-//    }
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
