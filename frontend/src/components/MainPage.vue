@@ -4,13 +4,13 @@ import LeaderboardPage from "@/components/Leaderboard/LeaderboardPage.vue";
 import AnnouncementPage from "@/components/AnnouncementPage.vue";
 import GameroomPage from "@/components/Game/GameList.vue";
 import apiService from "../api/apiService";
-import RoomCreateModal from "@/components/Modal/RoomCreateModal.vue";
+import RoomSettingsModal from "@/components/Modal/RoomSettingsModal.vue";
 
 
 export default {
   name: 'MainPage',
   components: {
-    RoomCreateModal,
+    RoomSettingsModal,
     LeaderboardPage,
     AnnouncementPage,
     GameroomPage
@@ -36,7 +36,6 @@ export default {
   methods: {
     openModal() {
       this.isModalOpen = true;
-      // this.isLoading = true;
 
       const token = localStorage.getItem("accessToken");
 
@@ -161,10 +160,9 @@ export default {
           <button @click="openModal" class="create-game-button">Create Game</button>
         </div>
         <LeaderboardPage />
-<!--        <AnnouncementPage />-->
       </div>
 
-      <RoomCreateModal v-if="isModalOpen" @close-modal="isModalOpen = false" />
+      <RoomSettingsModal v-if="isModalOpen" actionType="create" @close-modal="isModalOpen = false" />
     </div>
   </div>
 </template>
