@@ -12,6 +12,8 @@ import com.inix.omqweb.BeatmapReport.BeatmapReportDTO;
 import com.inix.omqweb.BeatmapReport.BeatmapReportRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -39,6 +41,8 @@ public class BeatmapService {
     private final BeatmapReportRepository beatmapReportRepository;
     private final ResourceService resourceService;
     private final AESUtil aesUtil;
+
+    private final Logger logger = LoggerFactory.getLogger(BeatmapService.class);
 
     @Value("${osu.apiKey}")
     private String apiKey;
@@ -114,24 +118,8 @@ public class BeatmapService {
         System.out.println("Saved: " + beatmapRepository.saveAll(beatmaps).size());
     }
 
-//    @PostConstruct
-//    @CacheEvict(value = {"possibleAnswers"}, allEntries = true)
-    public void fixMarkers() {
-        List<Beatmap> beatmaps = beatmapRepository.findRandomBeatmapsWithMarkers();
-
-        for (Beatmap beatmap : beatmaps) {
-            if (beatmap.getTitle().contains(" (TV Size)")) {
-                beatmap.setTitle(beatmap.getTitle().replace(" (TV Size)", ""));
-            }
-        }
-
-        beatmapRepository.saveAll(beatmaps);
-
-        System.out.println("Done removing markers");
-    }
-
     @PostConstruct
-    @Scheduled(fixedDelay = 60000) // Refresh every minute
+    @Scheduled(fixedDelay = 1000 * 60 * 60) // Refresh every hour
     public double[] getDifficultyRanges() {
         List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByAnswerRate();
         int totalBeatmaps = beatmaps.size();
@@ -149,6 +137,8 @@ public class BeatmapService {
         DifficultyCalc.DIFF_EASY_BAR = ranges[0];
         DifficultyCalc.DIFF_NORMAL_BAR = ranges[1];
         DifficultyCalc.DIFF_HARD_BAR = ranges[2];
+
+        logger.info("Difficulty ranges updated: " + Arrays.toString(ranges));
 
         return ranges;
     }
@@ -261,7 +251,7 @@ public class BeatmapService {
     @CacheEvict(value = {"beatmapCount", "possibleAnswers", "possibleAnswers_artist", "possibleAnswers_creator"}, allEntries = true)
     public Beatmap addBeatmap(String beatsetmap_id) throws IOException, ParseException {
         URL url = new URL("https://osu.ppy.sh/api/get_beatmaps?k=" + apiKey + "&s=" + beatsetmap_id);
-        BufferedReader bf; String line = ""; String result="";
+        BufferedReader bf; String line; String result="";
         bf = new BufferedReader(new InputStreamReader(url.openStream()));
 
         while((line=bf.readLine())!=null){
@@ -298,9 +288,6 @@ public class BeatmapService {
                 .blur(false)
                 .build();
 
-//        resourceService.getAudioAsync(Integer.parseInt(beatsetmap_id));
-//        resourceService.getImageAsync(Integer.parseInt(beatsetmap_id), false);
-
         System.out.println("Adding beatmap: " + beatmap.getArtistAndTitle());
 
         return beatmapRepository.save(beatmap);
@@ -322,8 +309,6 @@ public class BeatmapService {
         beatmap.setBlur(true);
         beatmap.setPlaycount(10);
         beatmap.setPlaycount_answer(5);
-
-//        return null;
 
         return beatmapRepository.save(beatmap);
     }

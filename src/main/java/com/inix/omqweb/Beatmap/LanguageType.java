@@ -1,5 +1,8 @@
 package com.inix.omqweb.Beatmap;
 
+import lombok.Getter;
+
+@Getter
 public enum LanguageType {
     ANY(0),
     UNSPECIFIED(1),
@@ -23,7 +26,4 @@ public enum LanguageType {
         this.value = value;
     }
 
-    public int getValue() {
-        return value;
-    }
 }
