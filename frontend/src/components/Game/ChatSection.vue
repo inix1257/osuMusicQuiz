@@ -25,11 +25,12 @@ export default {
       this.chatInput = "";
     },
     highlightMessage(message) {
-      const stringToHighlight = this.me.username;
-      const highlightedString = `<span class="message-highlight">${stringToHighlight}</span>`;
+      const originalStringToHighlight = this.me.username;
+      const escapedStringToHighlight = originalStringToHighlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape special characters
+      const highlightedString = `<span class="message-highlight">${originalStringToHighlight}</span>`;
       const strongMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      return strongMessage.replace(new RegExp(stringToHighlight, 'gi'), highlightedString);
-    },
+      return strongMessage.replace(new RegExp(`(${escapedStringToHighlight})`, 'gi'), highlightedString);
+    }
   },
 
   computed: {
@@ -77,7 +78,7 @@ export default {
   flex-direction: column;
   justify-content: flex-end;
   height: 80vh;
-  width: 20vw;
+  width: 15vw;
   padding: 10px;
   border: 2px solid var(--color-text);
   overflow-y: auto;
