@@ -116,9 +116,6 @@ export default {
       this.loadSettings();
     } else if (this.actionType === 'update') {
       this.loadRoomSettings();
-
-      console.log(this.selectedGenres)
-      console.log(this.selectedLanguages)
     }
   },
 
