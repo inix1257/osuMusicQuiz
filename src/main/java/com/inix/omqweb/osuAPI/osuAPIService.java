@@ -33,6 +33,7 @@ import java.util.List;
 public class osuAPIService {
     private final PlayerRepository playerRepository;
     private final BeatmapService beatmapService;
+    private final CacheService<String, Player> cacheService;
 
     private final Logger logger = LoggerFactory.getLogger(osuAPIService.class);
 
@@ -101,6 +102,11 @@ public class osuAPIService {
     public ResponseEntity<Player> getMeByToken(String token) {
         if (token == null) return null;
 
+        Player cachedPlayer = cacheService.get(token);
+        if (cachedPlayer != null) {
+            return ResponseEntity.ok(cachedPlayer);
+        }
+
         HttpHeaders headers = new HttpHeaders();
         headers.add("Content-Type", "application/x-www-form-urlencoded");
         headers.add("Accept", "application/json");
@@ -111,7 +117,6 @@ public class osuAPIService {
         RestTemplate restTemplate = new RestTemplate();
 
         ResponseEntity<Player> response;
-
 
         try {
             response = restTemplate.exchange("https://osu.ppy.sh/api/v2/me", HttpMethod.GET, entity, Player.class);
@@ -124,29 +129,33 @@ public class osuAPIService {
             }
         }
 
+        Player player = response.getBody();
+
         // Get player if exists, else create new player by builder
-        Player player = playerRepository.findById(response.getBody().getId()).orElse(
+        Player dbPlayer = playerRepository.findById(player.getId()).orElse(
                 Player.builder()
                         .ban(false)
                         .points(BigDecimal.valueOf(0))
                         .build()
         );
-        player.setId(response.getBody().getId());
-        player.setUsername(response.getBody().getUsername());
-        player.setAvatar_url(response.getBody().getAvatar_url());
-        player.setCover_url(response.getBody().getCover_url());
-        player.setCountry_code(response.getBody().getCountry_code());
-        player.setRank(playerRepository.countByPointsGreaterThanAndBanFalse(player.getPoints()) + 1);
-        player.setJoin_date(response.getBody().getJoin_date());
+        dbPlayer.setId(player.getId());
+        dbPlayer.setUsername(player.getUsername());
+        dbPlayer.setAvatar_url(player.getAvatar_url());
+        dbPlayer.setCover_url(player.getCover_url());
+        dbPlayer.setCountry_code(player.getCountry_code());
+        dbPlayer.setRank(playerRepository.countByPointsGreaterThanAndBanFalse(dbPlayer.getPoints()) + 1);
+        dbPlayer.setJoin_date(player.getJoin_date());
 
-        if (player.getRegister_date() == null) {
-            logger.info("New player registered: " + player.getUsername());
-            player.setRegister_date(java.sql.Timestamp.valueOf(LocalDateTime.now()));
+        if (dbPlayer.getRegister_date() == null) {
+            logger.info("New player registered: " + dbPlayer.getUsername());
+            dbPlayer.setRegister_date(java.sql.Timestamp.valueOf(LocalDateTime.now()));
         }
 
-        playerRepository.save(player);
+        cacheService.put(token, dbPlayer);
 
-        return ResponseEntity.ok(player);
+        playerRepository.save(dbPlayer);
+
+        return ResponseEntity.ok(dbPlayer);
     }
 
     @PostConstruct
