@@ -22,7 +22,16 @@ public class osuAPICallbackController {
 
     @GetMapping("/callback")
     public String callback(@RequestParam String code, Model model) {
+        if (code == null || code.isEmpty()) {
+            return "error";
+        }
+
         ResponseEntity<AccessTokenDTO> responseEntity = osuAPIService.getToken(code);
+
+        if (responseEntity == null) {
+            return "error";
+        }
+
         AccessTokenDTO token = responseEntity.getBody();
         model.addAttribute("accessToken", token.getAccess_token());
         model.addAttribute("refreshToken", token.getRefresh_token());
