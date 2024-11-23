@@ -1,5 +1,6 @@
 package com.inix.omqweb.Game;
 
+import com.inix.omqweb.Achievement.AchievementService;
 import com.inix.omqweb.Beatmap.*;
 import com.inix.omqweb.Donation.Donation;
 import com.inix.omqweb.Donation.DonationRepository;
@@ -16,6 +17,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -43,6 +45,8 @@ public class GameManager {
     private final ConcurrentHashMap<UUID, Game> games = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    private final AchievementService achievementService;
+
     private final int MIN_COOLDOWN_TIME = 3;
     private final int MAX_COOLDOWN_TIME = 15;
     private final int MIN_GUESSING_TIME = 10;
@@ -53,6 +57,7 @@ public class GameManager {
     private boolean DEBUG_STATUS = false;
 
 //    @PostConstruct
+//    @Profile("dev")
     private void createDebugLobbies() {
         // Create lobbies for debug purpose
         for (int i = 0; i < 5; i++) {
@@ -63,6 +68,7 @@ public class GameManager {
                     .totalQuestions(10)
                     .guessingTime(10)
                     .cooldownTime(5)
+//                    .password("asd")
                     .displayMode(List.of(DisplayMode.AUDIO))
                     .poolMode(PoolMode.TOUHOU)
                     .difficulty(List.of(GameDifficulty.EASY, GameDifficulty.NORMAL, GameDifficulty.HARD, GameDifficulty.INSANE))
@@ -112,7 +118,7 @@ public class GameManager {
 
                         long playerDiff = new Date().getTime() - player.getLast_activity().getTime();
 
-                        if (playerDiff > 300000) {
+                        if (playerDiff > 1000 * 60 * 10) {
                             kickInactivePlayer(game, player);
                         }
                     }
@@ -431,6 +437,8 @@ public class GameManager {
 
                 game.setAllAnswered(false);
 
+                systemMessageHandler.onAnswerUpdate(game, beatmap);
+
                 systemMessageHandler.onGameLeaderboardUpdate(game, leaderboard);
 
                 ConcurrentHashMap<String, PlayerAnswer> answers = new ConcurrentHashMap<>();
@@ -440,8 +448,6 @@ public class GameManager {
                 }
 
                 systemMessageHandler.onPlayersAnswersUpdate(game, answers);
-
-                systemMessageHandler.onAnswerUpdate(game, beatmap);
 
                 if (beatmap.isBlur()) {
                     String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
@@ -628,23 +634,19 @@ public class GameManager {
 
         // Compare the previous settings with the new settings, print what has changed
         if (!prevGame.getName().equals(game.getName())) {
-            messageService.sendSystemMessage(game.getUuid(), "Room name has been changed from " + prevGame.getName() + " to " + game.getName());
-        }
-
-        if (prevGame.isPrivate() != game.isPrivate()) {
-            messageService.sendSystemMessage(game.getUuid(), "Room privacy has been changed to " + (game.isPrivate() ? "private" : "public"));
+            messageService.sendSystemMessage(game.getUuid(), "Room name has been changed to **" + game.getName() + "**");
         }
 
         if (prevGame.getTotalQuestions() != game.getTotalQuestions()) {
-            messageService.sendSystemMessage(game.getUuid(), "Total questions have been changed from " + prevGame.getTotalQuestions() + " to " + game.getTotalQuestions());
+            messageService.sendSystemMessage(game.getUuid(), "Total questions have been changed to **" + game.getTotalQuestions() + "**");
         }
 
         if (prevGame.getGuessingTime() != game.getGuessingTime()) {
-            messageService.sendSystemMessage(game.getUuid(), "Guessing time has been changed from " + prevGame.getGuessingTime() + " to " + game.getGuessingTime());
+            messageService.sendSystemMessage(game.getUuid(), "Guessing time has been changed to **" + game.getGuessingTime() + "**");
         }
 
         if (prevGame.getCooldownTime() != game.getCooldownTime()) {
-            messageService.sendSystemMessage(game.getUuid(), "Cooldown time has been changed from " + prevGame.getCooldownTime() + " to " + game.getCooldownTime());
+            messageService.sendSystemMessage(game.getUuid(), "Cooldown time has been changed to **" + game.getCooldownTime() + "**");
         }
 
         if (prevGame.isAutoskip() != game.isAutoskip()) {
@@ -652,40 +654,79 @@ public class GameManager {
         }
 
         if (!prevGame.getDifficulty().equals(game.getDifficulty())) {
-            messageService.sendSystemMessage(game.getUuid(), "Difficulty has been changed from " + prevGame.getDifficulty() + " to " + game.getDifficulty());
+            messageService.sendSystemMessage(game.getUuid(), "Difficulty has been changed to **" + game.getDifficulty() + "**");
         }
 
         if (prevGame.getStartYear() != game.getStartYear() || prevGame.getEndYear() != game.getEndYear()) {
-            messageService.sendSystemMessage(game.getUuid(), "Year range has been changed from " + prevGame.getStartYear() + " - " + prevGame.getEndYear() + " to " + game.getStartYear() + " - " + game.getEndYear());
+            messageService.sendSystemMessage(game.getUuid(), "Year range has been changed to **" + game.getStartYear() + " - " + game.getEndYear() + "**");
         }
 
         if (!prevGame.getGameMode().equals(game.getGameMode())) {
-            messageService.sendSystemMessage(game.getUuid(), "Game mode has been changed from " + prevGame.getGameMode() + " to " + game.getGameMode());
+            messageService.sendSystemMessage(game.getUuid(), "Game mode has been changed to **" + game.getGameMode() + "**");
         }
 
         if (!prevGame.getPoolMode().equals(game.getPoolMode())) {
-            messageService.sendSystemMessage(game.getUuid(), "Pool mode has been changed from " + prevGame.getPoolMode() + " to " + game.getPoolMode());
+            messageService.sendSystemMessage(game.getUuid(), "Pool mode has been changed to **" + game.getPoolMode() + "**");
         }
 
         if (!prevGame.getDisplayMode().equals(game.getDisplayMode())) {
-            messageService.sendSystemMessage(game.getUuid(), "Display mode has been changed from " + prevGame.getDisplayMode() + " to " + game.getDisplayMode());
+            messageService.sendSystemMessage(game.getUuid(), "Display mode has been changed to **" + game.getDisplayMode() + "**");
         }
 
-        if (!prevGame.getGenreType().equals(game.getGenreType())) {
-            messageService.sendSystemMessage(game.getUuid(), "Genre has been changed from " + prevGame.getGenreType() + " to " + game.getGenreType());
+        if (!prevGame.getGenreType().stream().filter(genre -> genre != GenreType.ANY).toList()
+                .equals(game.getGenreType().stream().filter(genre -> genre != GenreType.ANY).collect(Collectors.toList()))) {
+            List<GenreType> addedGenres = game.getGenreType().stream().filter(genre -> genre != GenreType.ANY).collect(Collectors.toList());
+            addedGenres.removeAll(prevGame.getGenreType().stream().filter(genre -> genre != GenreType.ANY).toList());
+
+            List<GenreType> removedGenres = prevGame.getGenreType().stream().filter(genre -> genre != GenreType.ANY).collect(Collectors.toList());
+            removedGenres.removeAll(game.getGenreType().stream().filter(genre -> genre != GenreType.ANY).toList());
+
+            if (!addedGenres.isEmpty()) {
+                messageService.sendSystemMessage(game.getUuid(), "Genres added: **" + addedGenres.stream().map(Enum::name).collect(Collectors.joining(", ")) + "**");
+            }
+            if (!removedGenres.isEmpty()) {
+                messageService.sendSystemMessage(game.getUuid(), "Genres removed: **" + removedGenres.stream().map(Enum::name).collect(Collectors.joining(", ")) + "**");
+            }
         }
 
-        if (!prevGame.getLanguageType().equals(game.getLanguageType())) {
-            messageService.sendSystemMessage(game.getUuid(), "Language has been changed from " + prevGame.getLanguageType() + " to " + game.getLanguageType());
+        if (!prevGame.getLanguageType().stream().filter(language -> language != LanguageType.ANY).toList()
+                .equals(game.getLanguageType().stream().filter(language -> language != LanguageType.ANY).collect(Collectors.toList()))) {
+            List<LanguageType> addedLanguages = game.getLanguageType().stream().filter(language -> language != LanguageType.ANY).collect(Collectors.toList());
+            addedLanguages.removeAll(prevGame.getLanguageType().stream().filter(language -> language != LanguageType.ANY).toList());
+
+            List<LanguageType> removedLanguages = prevGame.getLanguageType().stream().filter(language -> language != LanguageType.ANY).collect(Collectors.toList());
+            removedLanguages.removeAll(game.getLanguageType().stream().filter(language -> language != LanguageType.ANY).toList());
+
+            if (!addedLanguages.isEmpty()) {
+                messageService.sendSystemMessage(game.getUuid(), "Languages added: **" + addedLanguages.stream().map(Enum::name).collect(Collectors.joining(", ")) + "**");
+            }
+            if (!removedLanguages.isEmpty()) {
+                messageService.sendSystemMessage(game.getUuid(), "Languages removed: **" + removedLanguages.stream().map(Enum::name).collect(Collectors.joining(", ")) + "**");
+            }
         }
 
         if (prevGame.isRanked() && !game.isRanked()) {
-            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby does not meet the requirements for ranked play. Games will be unranked and profile stats will not be updated.");
+            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby do not meet the requirements for ranked play. Games will be unranked and profile stats will not be updated.");
         }
 
         if (!prevGame.isRanked() && game.isRanked()) {
-            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby meets the requirements for ranked play. Games will be ranked and profile stats will be updated.");
+            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby meet the requirements for ranked play. Games will be ranked and profile stats will be updated.");
         }
+
+        String tags = "";
+
+        if (game.getPoolMode() == PoolMode.TOUHOU) {
+            tags = "touhou";
+        } else if (game.getPoolMode() == PoolMode.VOCALOID) {
+            tags = "vocaloid";
+        }
+
+        BeatmapPool beatmapPool = beatmapService.getBeatmapsByYearRangeAndDifficulty(game.getStartYear(), game.getEndYear(),
+                game.getDifficulty(), game.getTotalQuestions(), tags,
+                game.getGenreType(), game.getLanguageType());
+        int totalBeatmapPoolSize = beatmapPool.getTotalBeatmapPoolSize();
+
+        messageService.sendSystemMessage(game.getUuid(), "Estimated beatmap pool size: " + totalBeatmapPoolSize);
 
         return game;
     }
@@ -753,6 +794,7 @@ public class GameManager {
         if (totalBeatmapPoolSize < game.getTotalQuestions()) {
             // Beatmap pool sanity check
             if (totalBeatmapPoolSize < 10) {
+                logger.error("Beatmap pool size should be at least 10. Found: " + beatmaps.size() + ". Game will not be started.");
                 messageService.sendSystemMessage(game.getUuid(), "Beatmap pool size should be at least 10. Found: " + beatmaps.size() + ". Game will not be started.");
                 return false;
             }
@@ -760,10 +802,6 @@ public class GameManager {
 
             messageService.sendSystemMessage(game.getUuid(), "Not enough beatmaps found for the selected year range and difficulty. Game will be played with " + game.getTotalQuestions() + " beatmaps.");
             systemMessageHandler.onRoomSettingsUpdate(game);
-        }
-
-        if (totalBeatmapPoolSize < 100) {
-            messageService.sendSystemMessage(game.getUuid(), "Pool size is less than 100. Pool size penalty will be applied.");
         }
 
         game.setBeatmaps(beatmaps);
@@ -792,7 +830,7 @@ public class GameManager {
         try{
             sendEncodedBeatmapId(game);
         }catch (Exception e) {
-            logger.error("Failed to start the game: ", e);
+            logger.error("Failed to send encoded beatmapId: ", e);
         }
 
         game.setLastContinue(new Date());
@@ -838,6 +876,8 @@ public class GameManager {
         if (game == null) {
             return false;
         }
+
+        achievementService.checkAchievements(game);
 
         game.setPlaying(false);
         game.setGuessing(false);
@@ -886,7 +926,7 @@ public class GameManager {
 
         game.getPlayers().remove(targetPlayer);
 
-        logger.info("Player: " + targetPlayer.getUsername() + " has been inactive for 5 minutes. Kicking player.");
+        logger.info("Player: " + targetPlayer.getUsername() + " has been inactive for 10 minutes. Kicking player.");
 
         // if the game is empty
         if (game.getPlayers().isEmpty()) {
