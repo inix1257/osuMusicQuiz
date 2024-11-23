@@ -78,7 +78,7 @@ export default {
   flex-direction: column;
   justify-content: flex-end;
   height: 80vh;
-  width: 15vw;
+  width: 18vw;
   padding: 10px;
   border: 2px solid var(--color-text);
   overflow-y: auto;
