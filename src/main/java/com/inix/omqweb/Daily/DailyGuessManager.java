@@ -31,7 +31,7 @@ public class DailyGuessManager {
 //    @PostConstruct
     public void init() {
         List<DailyGuess> dailyGuesses = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 30; i++) {
             Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
             calendar.add(Calendar.DAY_OF_YEAR, dayCount++);
             calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -51,8 +51,10 @@ public class DailyGuessManager {
         dailyGuessRepository.saveAll(dailyGuesses);
     }
 
+    /*
+    This method uses UTC time, reminder to fix if this needs to get changed to local time
+     */
     public DailyGuess getFirstDailyGuessAfterDate() {
-        // This method uses UTC time, reminder to fix if this needs to get changed to local time
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         calendar.set(Calendar.HOUR_OF_DAY, 0);
         calendar.set(Calendar.MINUTE, 0);
