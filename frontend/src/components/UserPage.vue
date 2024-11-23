@@ -24,7 +24,7 @@ export default {
   },
   props: {
     playerId: {
-      type: Number,
+      type: String,
       required: true
     }
   },
@@ -34,6 +34,22 @@ export default {
           .then((response) => {
             this.player = response.data;
             this.selectedAchievement = response.data.current_title_achievement;
+
+            if (this.me.id === this.player.id) {
+              apiService.get(`/api/achievement`)
+                  .then((response) => {
+                    this.achievements = response.data;
+
+                    const nullAchievement = {
+                      id: -1,
+                      name: "None",
+                      description: "No achievement selected",
+                      icon_url: ""
+                    }
+
+                    this.achievements.unshift(nullAchievement);
+                  })
+            }
           })
     },
 
@@ -65,20 +81,6 @@ export default {
 
   mounted() {
     this.getUserData();
-
-    apiService.get(`/api/achievement`)
-        .then((response) => {
-          this.achievements = response.data;
-
-          const nullAchievement = {
-            id: -1,
-            name: "None",
-            description: "No achievement selected",
-            icon_url: ""
-          }
-
-          this.achievements.unshift(nullAchievement);
-        })
   },
 
   computed: {
