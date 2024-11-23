@@ -78,39 +78,37 @@ export default {
     },
 
     deleteGame(uuid) {
-      apiService.post(`${process.env.VUE_APP_API_URL}/api/deleteGame`, {
-        gameId: uuid
-      })
+      if (confirm("Are you sure you want to delete this game?: " + uuid)) {
+        apiService.post(`${process.env.VUE_APP_API_URL}/api/deleteGame`, {
+          gameId: uuid
+        })
+      }
     },
 
     kickPlayer(uuid, userId) {
-      apiService.post('/api/kickPlayer', {
-        gameId: uuid,
-        targetUserId: userId
-      })
+      if (confirm("Are you sure you want to kick this player?: " + userId)) {
+        apiService.post('/api/kickPlayer', {
+          gameId: uuid,
+          targetUserId: userId
+        })
+      }
     },
 
     banPlayer(uuid, userId) {
-      apiService.post('/api/banPlayer', {
-        gameId: uuid,
-        targetUserId: userId
-      })
+      if (confirm("Are you sure you want to ban this player?: " + userId)) {
+        apiService.post('/api/banPlayer', {
+          gameId: uuid,
+          targetUserId: userId
+        })
+      }
     },
 
     sendAnnouncement() {
-      apiService.post(`${process.env.VUE_APP_API_URL}/api/ingameAnnouncement`, {
-        content: this.announcementContent
-      })
-          .then((response) => {
-            if (response.data) {
-              // handle success
-            } else {
-              // handle failure
-            }
-          })
-          .catch((error) => {
-            // handle error
-          });
+      if (confirm("Are you sure you want to send this announcement?: " + this.announcementContent)) {
+        apiService.post(`${process.env.VUE_APP_API_URL}/api/ingameAnnouncement`, {
+          content: this.announcementContent
+        })
+      }
     },
 
     addBeatmap() {
