@@ -190,6 +190,7 @@ export default {
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sen:wght@400..800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap');
 
 body {
   background-color: var(--color-body);
