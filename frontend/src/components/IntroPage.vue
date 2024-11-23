@@ -466,6 +466,7 @@ input {
 }
 
 .autocomplete-dropdown {
+  font-family: 'Exo 2', 'Sen', serif;
   position: absolute;
   background-color: var(--color-secondary);
   border: 1px solid #ccc;
