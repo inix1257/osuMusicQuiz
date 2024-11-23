@@ -9,11 +9,13 @@ import icon_report from "@/assets/siren.png";
 import apiService from "../../api/apiService";
 import UserPage from "@/components/UserPage.vue";
 import ChatSection from "@/components/Game/ChatSection.vue";
+import BeatmapInfo from "@/components/Game/components/BeatmapInfo.vue";
+import IngameSettingsPage from "@/components/Game/components/IngameSettingsPage.vue";
 
 
 export default {
   name: 'GamePage',
-  components: {ChatSection, UserPage, FontAwesomeIcon, RoomSettingsModal},
+  components: {IngameSettingsPage, BeatmapInfo, ChatSection, UserPage, FontAwesomeIcon, RoomSettingsModal},
   setup() {
     const userStore = useUserStore();
 
@@ -72,6 +74,12 @@ export default {
       inactivityTimer: null,
       showInactivityWarning: false,
       answerInputPlaceHolder: "Guess the title of the beatmap!",
+      settings: {
+        submitEnter: true,
+        submitRightArrow: false,
+        submitTab: false,
+        chatHighlight: false
+      }
     };
   },
   methods: {
@@ -285,13 +293,6 @@ export default {
       }
     },
 
-    getRate(guessed, played) {
-      if (played === 0) {
-        return 0; // Avoid division by zero
-      }
-      return ((guessed / played) * 100).toFixed(2) + "%";
-    },
-
     toggleRoomSettingsModal() {
       if (this.isPlaying && !this.isRoomSettingsModalOpen) {
         this.showSettingsWarning = true;
@@ -421,6 +422,20 @@ export default {
         this.answerInputPlaceHolder = "Guess the artist of the beatmap!";
       } else if (this.game.gameMode === 'CREATOR') {
         this.answerInputPlaceHolder = "Guess the mapper of the beatmap!";
+      }
+    },
+
+    updateSettings(newSettings) {
+      this.settings = newSettings;
+    },
+
+    handleKeyPress(event) {
+      if (this.settings.submitEnter && event.key === 'Enter') {
+        this.selectAutocompleteOption(this.selectedOptionIndex);
+      } else if (this.settings.submitRightArrow && event.key === 'ArrowRight') {
+        this.selectAutocompleteOption(this.selectedOptionIndex);
+      } else if (this.settings.submitTab && event.key === 'Tab') {
+        this.selectAutocompleteOption(this.selectedOptionIndex);
       }
     }
   },
@@ -622,7 +637,6 @@ export default {
           }
         });
 
-        // Sort the players array by totalPoints
         this.players.sort((a, b) => b.totalPoints - a.totalPoints);
       },
       onAnswer: (message) => {
@@ -659,6 +673,15 @@ export default {
 
         // Check if the player list has changed
         // Do I exist in previous players, but not in the new list?
+        const playerLeft = previousPlayers.find((p) => !this.players.find((p2) => p2.id === p.id));
+        if (playerLeft) {
+          if (this.webSocketService){
+            this.webSocketService.disconnect();
+          }
+          this.kicked = true;
+          this.$router.push('/');
+          alert("You have been kicked from the game.");
+        }
 
         // Update the points of the players
         this.players.forEach((player) => {
@@ -941,9 +964,7 @@ export default {
                      :readonly="!isGuessing"
                      v-on:keydown.up.prevent="selectedOptionIndex > 0 ? selectedOptionIndex-- : selectedOptionIndex = autocompleteOptions.length - 1"
                      v-on:keydown.down.prevent="selectedOptionIndex < autocompleteOptions.length - 1 ? selectedOptionIndex++ : selectedOptionIndex = 0"
-                     v-on:keydown.enter.prevent="selectAutocompleteOption(selectedOptionIndex)"
-                     v-on:keydown.tab.prevent="selectAutocompleteOption(selectedOptionIndex)"
-                     v-on:keydown.right.prevent="selectAutocompleteOption(selectedOptionIndex)"
+                     @keydown="handleKeyPress"
                      v-on:focus="inputFocused = true" class="answer-input">
               <font-awesome-icon :icon="['fas', 'check']" class="check-icon" :class="{ visible: answerSubmitted }" />
               <font-awesome-icon :icon="['fas', 'maximize']" class="button-switch-viewmode" v-if="!compactViewMode" @click="compactViewMode = true"/>
@@ -956,28 +977,17 @@ export default {
             </div>
           </div>
 
-          <div v-if="currentBeatmap && !isGuessing" class="beatmap-info-container">
-            <a :href="getBeatmapUrl" target="_blank">
-              <h2>Beatmap Information</h2>
-              <div class="beatmap-info-inner">
-                <p>Artist: <strong>{{ currentBeatmap.artist }}</strong></p>
-                <p>Title: <strong>{{ currentBeatmap.title }}</strong></p>
-                <p>Mapper: <strong>{{ currentBeatmap.creator }}</strong></p>
-                <p>Answer Rate: <strong>{{ getAnswerRate }}</strong> <span class="beatmap-info-playcount">({{ currentBeatmap.playcount_answer }}/{{ currentBeatmap.playcount }})</span></p>
-                <p><strong><span class="beatmap-info-difficulty" :class="difficultyClass(currentBeatmap.beatmapDifficulty)">[{{ currentBeatmap.beatmapDifficulty }}]</span></strong></p>
-                <p>Ranked on <strong>{{ formatDate(currentBeatmap.approved_date) }}</strong></p>
-                <br>
-                <p v-if="answers[me.id]">Difficulty Bonus: {{ answers[me.id].difficultyBonus.toFixed(2) }}</p>
-                <p v-if="answers[me.id]">Speed Bonus: {{ answers[me.id].speedBonus.toFixed(2) }}</p>
-                <p v-if="answers[me.id] && answers[me.id].poolSizeBonus < 1.00">Pool Size Penalty: {{ answers[me.id].poolSizeBonus.toFixed(2) }}</p>
-                <p v-if="answers[me.id] && answers[me.id].poolSizeBonus > 1.00">Pool Size Bonus: {{ answers[me.id].poolSizeBonus.toFixed(2) }}</p>
-                <p v-if="answers[me.id]">Total Points: {{ answers[me.id].totalPoints.toFixed(2) }}</p>
-                <div class="beatmap-info-clickme">
-                  Click to view the beatmap on osu!
-                </div>
-              </div>
-            </a>
-          </div>
+          <BeatmapInfo
+              v-if="currentBeatmap && !isGuessing"
+              :currentBeatmap="currentBeatmap"
+              :isGuessing="isGuessing"
+              :getBeatmapUrl="getBeatmapUrl"
+              :getAnswerRate="getAnswerRate"
+              :difficultyClass="difficultyClass"
+              :formatDate="formatDate"
+              :answers="answers"
+              :me="me"
+          />
 
           <div class="leaderboard">
             <h2>Leaderboard</h2>
@@ -1041,6 +1051,7 @@ export default {
     <div v-if="showPlayerInfoModal" class="modal-overlay" @click.stop="showPlayerInfoModal = false">
       <UserPage :playerId="userpageId"></UserPage>
     </div>
+    <IngameSettingsPage @update-settings="updateSettings"/>
   </div>
 </template>
 
@@ -1087,7 +1098,8 @@ UserPage {
 }
 
 .game-content {
-  width: 85vw;
+  width: 82vw;
+  max-width: 82vw;
   position: relative;
   flex: 3;
 }
@@ -1128,39 +1140,6 @@ UserPage {
   border: 1px solid #ccc;
   background-color: var(--color-body);
   z-index: 4;
-}
-
-.beatmap-info-container {
-  position: absolute;
-  top: 7vh;
-  right: 20px;
-  padding: 10px;
-  margin-top: 10px;
-  border: 1px solid #ccc;
-  background-color: var(--color-secondary);
-  max-width: 28vh;
-  min-width: 28vh;
-}
-
-.beatmap-info-container a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.beatmap-info-container a:hover {
-  color: inherit;
-}
-
-.beatmap-info-playcount {
-  font-size: 0.6em;
-}
-
-.beatmap-info-clickme {
-  position: absolute;
-  bottom: 4px;
-  right: 4px;
-  font-size: 0.6em;
-  text-align: right;
 }
 
 .icon-container {
@@ -1251,6 +1230,7 @@ UserPage {
   height: 30vh;
   padding-left: 10px;
   padding-right: 10px;
+  gap: 10px;
 }
 
 .players-container-overflow {
@@ -1260,7 +1240,6 @@ UserPage {
 .player-box {
   position: relative;
   padding: 10px;
-  margin-right: 10px;
   text-align: center;
   width: 150px;
   max-width: 150px;
@@ -1269,6 +1248,7 @@ UserPage {
   background-color: rgba(231, 239, 255, 0.2);
   border: 2px solid transparent;
   overflow: visible;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
 }
 
 .player-box-compact {
@@ -1428,7 +1408,7 @@ UserPage {
   font-size: 1.2em;
   text-align: center;
   margin-top: 8px;
-  font-family: 'Sen', serif;
+  font-family: 'Exo 2', 'Sen';
   background-color: var(--color-secondary);
   color: var(--color-text);
 }
@@ -1451,6 +1431,7 @@ UserPage {
 }
 
 .autocomplete-option {
+  font-family: 'Exo 2', 'Sen', serif;
   display:flex;
   justify-content: center;
   align-items: center;
