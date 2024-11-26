@@ -8,6 +8,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class TotalGuessDTO {
     private int totalGuess;
     private double totalPoints;
+    private boolean isCorrect;
+    private boolean isAliasCorrect;
 
     CopyOnWriteArrayList<Double> speedPoints = new CopyOnWriteArrayList<>();
 }
