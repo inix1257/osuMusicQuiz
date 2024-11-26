@@ -94,9 +94,9 @@ export default {
         gameId: this.gameId,
         userId: this.userId
       })
-          .then((response) => {
+          .then(() => {
           })
-          .catch((error) => {
+          .catch(() => {
             alert("An error occurred while starting the game. Please try again later.")
           })
           .finally(() => {

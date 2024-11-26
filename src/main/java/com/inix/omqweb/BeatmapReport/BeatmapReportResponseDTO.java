@@ -1,8 +1,5 @@
 package com.inix.omqweb.BeatmapReport;
 
-import com.inix.omqweb.Beatmap.Beatmap;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import lombok.Data;
 
 @Data

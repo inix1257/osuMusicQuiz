@@ -2,7 +2,6 @@ import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import MainPage from './components/MainPage.vue';
 import App from "@/App.vue";
-import IntroPage from "@/components/DailyPage.vue";
 import GamePage from "@/components/Game/GamePage.vue";
 import CallBack from "@/CallBack.vue";
 import { pinia } from './store';

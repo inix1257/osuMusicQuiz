@@ -8,7 +8,6 @@ import com.inix.omqweb.Beatmap.BeatmapService;
 import com.inix.omqweb.Util.ProfileUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
-import com.inix.omqweb.osuAPI.osuAPIService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.Objects;
 import java.util.UUID;
 
 @RestController
@@ -58,24 +56,18 @@ public class omqController {
     public ResponseEntity<Game> joinGame(@RequestBody JoinGameDTO joinGameDTO, HttpServletRequest request) {
         Player player = (Player) request.getAttribute("userInfo");
 
-        switch (gameManager.joinGame(joinGameDTO, player)) {
-            case Game.GAME_JOIN_STATUS_SUCCESS:
-                return ResponseEntity.ok(gameManager.getGameById(UUID.fromString(joinGameDTO.getGameId())));
-            case Game.GAME_JOIN_STATUS_NOT_EXIST:
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-            case Game.GAME_JOIN_STATUS_USER_ALREADY_EXISTS, Game.GAME_JOIN_STATUS_USER_ALREADY_IN_ANOTHER_GAME:
-                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
-            case Game.GAME_JOIN_STATUS_GAME_IS_PLAYING:
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
-            case Game.GAME_JOIN_STATUS_INCORRECT_PASSWORD:
-                return ResponseEntity.status(HttpStatus.LOCKED).body(null);
-            case Game.GAME_JOIN_STATUS_INVALID_TOKEN:
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-            case Game.GAME_JOIN_STATUS_USER_IS_BANNED:
-                return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
-            default:
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        }
+        return switch (gameManager.joinGame(joinGameDTO, player)) {
+            case Game.GAME_JOIN_STATUS_SUCCESS ->
+                    ResponseEntity.ok(gameManager.getGameById(UUID.fromString(joinGameDTO.getGameId())));
+            case Game.GAME_JOIN_STATUS_NOT_EXIST -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            case Game.GAME_JOIN_STATUS_USER_ALREADY_EXISTS, Game.GAME_JOIN_STATUS_USER_ALREADY_IN_ANOTHER_GAME ->
+                    ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            case Game.GAME_JOIN_STATUS_GAME_IS_PLAYING -> ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            case Game.GAME_JOIN_STATUS_INCORRECT_PASSWORD -> ResponseEntity.status(HttpStatus.LOCKED).body(null);
+            case Game.GAME_JOIN_STATUS_INVALID_TOKEN -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            case Game.GAME_JOIN_STATUS_USER_IS_BANNED -> ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
+            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        };
     }
 
     @Profile("dev")

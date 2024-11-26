@@ -1,7 +1,6 @@
 <script>
 import {useUserStore} from "@/stores/userStore";
 import apiService from "@/api/apiService";
-import {getUserData} from "@/service/authService";
 import moment from "moment";
 
 export default {
@@ -63,7 +62,7 @@ export default {
         userId: this.player.id,
         achievementId: this.selectedAchievement.id
       })
-          .then(response => {
+          .then(() => {
             apiService.get(`/api/user?id=${this.playerId}`)
                 .then((response) => {
                   this.player = response.data;
@@ -114,7 +113,7 @@ export default {
           <p class="user-points"><strong>{{ player.points }}</strong> pts</p>
           <p class="user-level">(Level <strong>{{ player.level }}</strong>)</p>
         </div>
-        <div v-if="me.id == player.id">
+        <div v-if="me.id === player.id">
           Current Title:
           <select @click.stop="" v-model="selectedAchievement" @change="onAchievementUpdate" class="user-title-selection">
             <option v-for="achievement in achievements" :key="achievement.id" :value="achievement">
@@ -230,7 +229,7 @@ export default {
 .user-username {
   font-size: 2.5em;
   font-weight: bold;
-  margin-bottom: 0px;
+  margin-bottom: 0;
 }
 
 .user-title {

@@ -5,10 +5,8 @@ import com.inix.omqweb.Beatmap.BeatmapRepository;
 import com.inix.omqweb.Util.AnswerUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,9 +24,7 @@ public class DailyGuessManager {
 
     private final ConcurrentHashMap<String, DailyGuessLog> playerGuesses = new ConcurrentHashMap<>();
 
-    int dayCount = 0;
-
-//    @PostConstruct
+    //    @PostConstruct
     public void init() {
         List<DailyGuess> dailyGuesses = new ArrayList<>();
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
