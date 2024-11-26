@@ -4,5 +4,6 @@ public enum GameDifficulty {
     EASY,
     NORMAL,
     HARD,
-    INSANE
+    INSANE,
+    EXTRA
 }
