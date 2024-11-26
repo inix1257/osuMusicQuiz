@@ -85,10 +85,10 @@ export default {
 
   computed: {
     totalGuesses() {
-      return this.player.maps_guessed_easy + this.player.maps_guessed_normal + this.player.maps_guessed_hard + this.player.maps_guessed_insane;
+      return this.player.maps_guessed_easy + this.player.maps_guessed_normal + this.player.maps_guessed_hard + this.player.maps_guessed_insane + this.player.maps_guessed_extra;
     },
     totalPlays() {
-      return this.player.maps_played_easy + this.player.maps_played_normal + this.player.maps_played_hard + this.player.maps_played_insane;
+      return this.player.maps_played_easy + this.player.maps_played_normal + this.player.maps_played_hard + this.player.maps_played_insane + this.player.maps_played_extra;
     }
   }
 }
@@ -140,6 +140,10 @@ export default {
               player.maps_guessed_insane
             }}/{{ player.maps_played_insane }}
             ({{ (player.maps_guessed_insane / player.maps_played_insane * 100 || 0).toFixed(2) }}%)</p>
+          <p class="user-stats"><span class="difficulty-extra">EXTRA</span>: {{
+              player.maps_guessed_extra
+            }}/{{ player.maps_played_extra }}
+            ({{ (player.maps_guessed_extra / player.maps_played_extra * 100 || 0).toFixed(2) }}%)</p>
         </div>
 
         <p class="user-stats"><strong>Total</strong>: {{ totalGuesses }}/{{ totalPlays }} ({{ (totalGuesses / totalPlays * 100 || 0).toFixed(2) }}%)</p>
