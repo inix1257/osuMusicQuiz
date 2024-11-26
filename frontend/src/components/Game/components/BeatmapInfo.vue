@@ -19,6 +19,7 @@
             class="beatmap-info-value">{{ answers[me.id].poolSizeBonus.toFixed(2) }}</span></p>
         <p v-if="answers[me.id] && answers[me.id].poolSizeBonus > 1.00">Pool Size Bonus <span
             class="beatmap-info-value">{{ answers[me.id].poolSizeBonus.toFixed(2) }}</span></p>
+        <p v-if="answers[me.id] && answers[me.id].aliasCorrect">Alias Penalty <span class="beatmap-info-value">0.5</span></p>
         <p v-if="answers[me.id]">Total Points <span class="beatmap-info-value">{{
             answers[me.id].totalPoints.toFixed(2)
           }}</span></p>
