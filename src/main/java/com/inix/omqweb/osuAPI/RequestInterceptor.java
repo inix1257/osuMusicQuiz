@@ -37,8 +37,8 @@ public class RequestInterceptor implements HandlerInterceptor {
             String clientIP = request.getRemoteAddr();
             AtomicInteger count = requestCounts.computeIfAbsent(clientIP, k -> new AtomicInteger(0));
 
-            int MAX_REQUESTS_PER_SECOND = 100;
-            if (count.incrementAndGet() > MAX_REQUESTS_PER_SECOND) {
+            int MAX_REQUESTS_PER_MINUTE = 100;
+            if (count.incrementAndGet() > MAX_REQUESTS_PER_MINUTE) {
                 response.setStatus(HttpStatus.SC_TOO_MANY_REQUESTS);
                 return false;
             }
@@ -53,6 +53,9 @@ public class RequestInterceptor implements HandlerInterceptor {
             String token = request.getHeader("Authorization");
 
             if (token == null) {
+                if (requestURL.equals("/api/daily")) {
+                    return true;
+                }
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }
@@ -60,6 +63,9 @@ public class RequestInterceptor implements HandlerInterceptor {
             ResponseEntity<Player> userInfo = osuAPIService.getMeByToken(token);
 
             if (userInfo == null) {
+                if (requestURL.equals("/api/daily")) {
+                    return true;
+                }
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }
