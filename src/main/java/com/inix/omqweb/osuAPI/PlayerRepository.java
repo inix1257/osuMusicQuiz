@@ -14,6 +14,6 @@ public interface PlayerRepository extends JpaRepository<Player, String> {
 
     int countByPointsGreaterThanAndBanFalse(BigDecimal points);
 
-    @Query(value = "SELECT * FROM Player ORDER BY RAND() LIMIT 30", nativeQuery = true)
+    @Query(value = "SELECT * FROM Player ORDER BY RAND() LIMIT 10", nativeQuery = true)
     List<Player> findRandomPlayers();
 }
