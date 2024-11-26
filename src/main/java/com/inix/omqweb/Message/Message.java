@@ -26,6 +26,7 @@ public class Message {
 
     private String senderId;
     private String senderUsername;
+    private String senderAvatarUrl;
 
     private String content;
     private boolean answer;
