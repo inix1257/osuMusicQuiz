@@ -43,6 +43,6 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(requestInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns("/api/gamerooms", "/api/leaderboard", "/api/announcement", "/api/statistics", "/api/user",
-                "/api/possibleAnswers", "/api/daily", "/api/fullleaderboard");
+                "/api/possibleAnswers", "/api/fullleaderboard");
     }
 }
