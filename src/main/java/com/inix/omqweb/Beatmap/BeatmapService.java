@@ -2,14 +2,13 @@ package com.inix.omqweb.Beatmap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.inix.omqweb.Beatmap.Alias.*;
+import com.inix.omqweb.BeatmapReport.*;
 import com.inix.omqweb.Game.GameDifficulty;
 import com.inix.omqweb.Game.ResourceService;
 import com.inix.omqweb.Util.AESUtil;
 import com.inix.omqweb.Util.DifficultyCalc;
 import com.inix.omqweb.osuAPI.PlayerRepository;
-import com.inix.omqweb.BeatmapReport.BeatmapReport;
-import com.inix.omqweb.BeatmapReport.BeatmapReportDTO;
-import com.inix.omqweb.BeatmapReport.BeatmapReportRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -31,6 +30,7 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -40,6 +40,7 @@ public class BeatmapService {
     private final PlayerRepository playerRepository;
     private final BeatmapReportRepository beatmapReportRepository;
     private final ResourceService resourceService;
+    private final AliasRepository aliasRepository;
     private final AESUtil aesUtil;
 
     private final Logger logger = LoggerFactory.getLogger(BeatmapService.class);
@@ -48,7 +49,6 @@ public class BeatmapService {
     private String apiKey;
 
 //    @PostConstruct
-//    @Profile("dev")
     private void fetchBeatmaps() {
         String filePath = "./parse.txt";
 
@@ -57,7 +57,7 @@ public class BeatmapService {
                 System.out.println("Fetching data for beatmapset_id: " + line);
                 resourceService.getImage(Integer.parseInt(line), true);
 //                resourceService.getAudio(Integer.parseInt(line));
-                addBlur(line);
+//                addBlur(line);
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {
@@ -124,19 +124,22 @@ public class BeatmapService {
         List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByAnswerRate();
         int totalBeatmaps = beatmaps.size();
 
-        int firstQuartileIndex = totalBeatmaps / 4;
-        int secondQuartileIndex = totalBeatmaps / 2;
-        int thirdQuartileIndex = firstQuartileIndex + secondQuartileIndex;
+        int diffIndex_easy = (int) (totalBeatmaps * 0.2);
+        int diffIndex_normal = (int) (totalBeatmaps * 0.4);
+        int diffIndex_hard = (int) (totalBeatmaps * 0.65);
+        int diffIndex_insane = (int) (totalBeatmaps * 0.9);
 
-        double[] ranges = new double[3];
+        double[] ranges = new double[4];
 
-        ranges[0] = beatmaps.get(firstQuartileIndex).getAnswer_rate();
-        ranges[1] = beatmaps.get(secondQuartileIndex).getAnswer_rate();
-        ranges[2] = beatmaps.get(thirdQuartileIndex).getAnswer_rate();
+        ranges[0] = beatmaps.get(diffIndex_easy).getAnswer_rate();
+        ranges[1] = beatmaps.get(diffIndex_normal).getAnswer_rate();
+        ranges[2] = beatmaps.get(diffIndex_hard).getAnswer_rate();
+        ranges[3] = beatmaps.get(diffIndex_insane).getAnswer_rate();
 
         DifficultyCalc.DIFF_EASY_BAR = ranges[0];
         DifficultyCalc.DIFF_NORMAL_BAR = ranges[1];
         DifficultyCalc.DIFF_HARD_BAR = ranges[2];
+        DifficultyCalc.DIFF_INSANE_BAR = ranges[3];
 
         logger.info("Difficulty ranges updated: " + Arrays.toString(ranges));
 
@@ -160,20 +163,34 @@ public class BeatmapService {
         // Determine difficulty range
         double[][] difficultyRange = getDifficultyRanges(difficulties);
 
-        BeatmapPool beatmapPool = new BeatmapPool();
-        beatmapPool.setBeatmaps(beatmapRepository.findBeatmapsByApprovedDateRangeAndDifficulty(startDate, endDate,
+        List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByApprovedDateRangeAndDifficulty(startDate, endDate,
                 difficultyRange[0][0], difficultyRange[0][1],
                 difficultyRange[1][0], difficultyRange[1][1],
                 difficultyRange[2][0], difficultyRange[2][1],
                 difficultyRange[3][0], difficultyRange[3][1],
+                difficultyRange[4][0], difficultyRange[4][1],
                 limit, "%" + tag + "%",
                 genres.stream().map(GenreType::getValue).toList(),
-                languages.stream().map(LanguageType::getValue).toList()));
+                languages.stream().map(LanguageType::getValue).toList());
+
+        // Fetch aliases for all beatmaps in a single query
+        List<Integer> beatmapIds = beatmaps.stream().map(Beatmap::getBeatmapset_id).toList();
+        System.out.println("Beatmap ids: " + beatmapIds);
+        List<Alias> aliases = aliasRepository.findAllByBeatmapIds(beatmapIds);
+
+        // Map aliases to their respective beatmaps
+        Map<Integer, List<Alias>> beatmapAliasesMap = aliases.stream().collect(Collectors.groupingBy(alias -> alias.getBeatmap().getBeatmapset_id()));
+        beatmaps.forEach(beatmap -> beatmap.setAliases(beatmapAliasesMap.getOrDefault(beatmap.getBeatmapset_id(), Collections.emptyList())));
+
+        BeatmapPool beatmapPool = new BeatmapPool();
+        beatmapPool.setBeatmaps(beatmaps);
         beatmapPool.setTotalBeatmapPoolSize(beatmapRepository.countBeatmapsByApprovedDateRangeAndDifficulty(startDate, endDate,
                 difficultyRange[0][0], difficultyRange[0][1],
                 difficultyRange[1][0], difficultyRange[1][1],
                 difficultyRange[2][0], difficultyRange[2][1],
-                difficultyRange[3][0], difficultyRange[3][1], "%" + tag + "%",
+                difficultyRange[3][0], difficultyRange[3][1],
+                difficultyRange[4][0], difficultyRange[4][1],
+                "%" + tag + "%",
                 genres.stream().map(GenreType::getValue).toList(),
                 languages.stream().map(LanguageType::getValue).toList()));
 
@@ -181,7 +198,7 @@ public class BeatmapService {
     }
 
     public double[][] getDifficultyRanges(List<GameDifficulty> difficulties) {
-        double[][] ranges = new double[4][2];
+        double[][] ranges = new double[5][2];
 
         // Define the difficulty ranges
         Map<GameDifficulty, double[]> difficultyRanges = new HashMap<>();
@@ -189,6 +206,7 @@ public class BeatmapService {
         difficultyRanges.put(GameDifficulty.NORMAL, new double[]{DifficultyCalc.DIFF_NORMAL_BAR, DifficultyCalc.DIFF_EASY_BAR});
         difficultyRanges.put(GameDifficulty.HARD, new double[]{DifficultyCalc.DIFF_HARD_BAR, DifficultyCalc.DIFF_NORMAL_BAR});
         difficultyRanges.put(GameDifficulty.INSANE, new double[]{DifficultyCalc.DIFF_INSANE_BAR, DifficultyCalc.DIFF_HARD_BAR});
+        difficultyRanges.put(GameDifficulty.EXTRA, new double[]{DifficultyCalc.DIFF_EXTRA_BAR, DifficultyCalc.DIFF_INSANE_BAR});
 
         // Fill the ranges array with the ranges for the specified difficulties
         for (int i = 0; i < difficulties.size(); i++) {
@@ -196,7 +214,7 @@ public class BeatmapService {
         }
 
         // Fill the remaining elements with [-1.0, -1.0] to indicate that they are not used
-        for (int i = difficulties.size(); i < 4; i++) {
+        for (int i = difficulties.size(); i < 5; i++) {
             ranges[i] = new double[]{-1.0, -1.0};
         }
 
@@ -293,7 +311,7 @@ public class BeatmapService {
         return beatmapRepository.save(beatmap);
     }
 
-    private Beatmap addBlur(String beatmapset_id) {
+    public Beatmap addBlur(String beatmapset_id) {
         Beatmap beatmap = beatmapRepository.findById(Integer.parseInt(beatmapset_id)).orElse(null);
         if (beatmap == null) {
             return null;
@@ -309,6 +327,8 @@ public class BeatmapService {
         beatmap.setBlur(true);
         beatmap.setPlaycount(10);
         beatmap.setPlaycount_answer(5);
+
+        logger.info("Adding blur to beatmap: " + beatmap.getArtistAndTitle());
 
         return beatmapRepository.save(beatmap);
     }
@@ -332,5 +352,97 @@ public class BeatmapService {
         }
 
         return tagList;
+    }
+
+    public Beatmap getBeatmapById(int beatmapsetId) {
+        return beatmapRepository.findById(beatmapsetId).orElse(null);
+    }
+
+    public List<BeatmapReportResponseDTO> getMostReportedBeatmaps() {
+        List<BeatmapReportProjection> projections = beatmapReportRepository.findMostReportedBeatmaps();
+        return projections.stream()
+                .map(projection -> {
+                    BeatmapReportResponseDTO dto = new BeatmapReportResponseDTO();
+                    dto.setBeatmapsetId(projection.getBeatmapsetId());
+                    dto.setReportCount(projection.getReportCount());
+                    dto.setBlur(projection.isBlur());
+                    dto.setArtist(projection.getArtist());
+                    dto.setTitle(projection.getTitle());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public void deleteReport(String beatmapsetId) {
+        List<BeatmapReport> beatmapReports = beatmapReportRepository.findAllByBeatmapsetId(Integer.parseInt(beatmapsetId));
+        beatmapReportRepository.deleteAll(beatmapReports);
+
+        logger.info("Deleted reports for beatmap: " + beatmapsetId);
+    }
+
+    public void addAlias(AliasAddDTO aliasAddDTO) {
+        List<Beatmap> target = null, source = null;
+
+        switch (aliasAddDTO.getType()) {
+            case "ARTIST":
+                target = beatmapRepository.findBeatmapsByArtist(aliasAddDTO.getTarget());
+                source = beatmapRepository.findBeatmapsByArtist(aliasAddDTO.getSource());
+                break;
+            case "TITLE":
+                target = beatmapRepository.findBeatmapsByTitle(aliasAddDTO.getTarget());
+                source = beatmapRepository.findBeatmapsByTitle(aliasAddDTO.getSource());
+                break;
+            case "CREATOR":
+                target = beatmapRepository.findBeatmapsByCreator(aliasAddDTO.getTarget());
+                source = beatmapRepository.findBeatmapsByCreator(aliasAddDTO.getSource());
+                break;
+        }
+
+        if (target == null || source == null) {
+            logger.error("Invalid alias: " + aliasAddDTO);
+            return;
+        }
+
+        // Fetch all existing aliases for the relevant beatmaps
+        List<Integer> sourceBeatmapIds = source.stream().map(Beatmap::getBeatmapset_id).toList();
+        List<Alias> existingAliases = aliasRepository.findAllByBeatmapIds(sourceBeatmapIds);
+
+        // Create a set of existing alias keys for quick lookup
+        Set<String> existingAliasKeys = existingAliases.stream()
+                .map(alias -> alias.getBeatmap().getBeatmapset_id() + "_" + alias.getAliasType() + "_" + alias.getName())
+                .collect(Collectors.toSet());
+
+        Set<Alias> aliasesToSave = new HashSet<>();
+
+        for (Beatmap targetBeatmap : target) {
+            for (Beatmap sourceBeatmap : source) {
+                String aliasName = switch (aliasAddDTO.getType()) {
+                    case "ARTIST" -> targetBeatmap.getArtist();
+                    case "TITLE" -> targetBeatmap.getTitle();
+                    case "CREATOR" -> targetBeatmap.getCreator();
+                    default -> throw new IllegalArgumentException("Invalid alias type: " + aliasAddDTO.getType());
+                };
+
+                if (Objects.equals(aliasName, sourceBeatmap.getArtist()) || Objects.equals(aliasName, sourceBeatmap.getTitle()) || Objects.equals(aliasName, sourceBeatmap.getCreator())) {
+                    continue;
+                }
+
+                AliasId aliasId = new AliasId(sourceBeatmap.getBeatmapset_id(), aliasName, AliasType.valueOf(aliasAddDTO.getType()).getValue());
+                Alias alias = Alias.builder()
+                        .aliasId(aliasId)
+                        .beatmap(sourceBeatmap)
+                        .build();
+
+                aliasesToSave.add(alias);
+            }
+        }
+
+        for (Alias alias : aliasesToSave) {
+            System.out.println("Alias: " + alias);
+        }
+
+        aliasRepository.saveAll(aliasesToSave);
+
+        logger.info("Added " + aliasesToSave.size() + " aliases for " + aliasAddDTO);
     }
 }

@@ -1,12 +1,14 @@
 package com.inix.omqweb.Beatmap;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.inix.omqweb.Beatmap.Alias.Alias;
 import com.inix.omqweb.Game.GameDifficulty;
 import com.inix.omqweb.Util.DifficultyCalc;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
+import java.util.List;
 
 @Entity
 @Setter
@@ -38,17 +40,19 @@ public class Beatmap {
     private GameDifficulty beatmapDifficulty;
 
     @Transient
+    @JsonIgnore
     private int id;
 
     @Transient
-//    @JsonIgnore
+    @JsonIgnore
     private int favourite_count;
 
     @Transient
+    @JsonIgnore
     private float bpm;
 
     @Transient
-//    @JsonIgnore
+    @JsonIgnore
     private int play_count;
 
     public String getArtistAndTitle() {
@@ -57,8 +61,12 @@ public class Beatmap {
 
     @Override
     public String toString() {
-        return getArtistAndTitle();
+        return getArtistAndTitle() + " alias: " + aliases;
     }
+
+    @Transient
+    @JsonIgnore
+    List<Alias> aliases;
 
     @PostLoad
     @PostPersist

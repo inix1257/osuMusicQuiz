@@ -14,6 +14,10 @@ import java.util.List;
 public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
     List<Beatmap> findBeatmapsByCreator(String creator);
 
+    List<Beatmap> findBeatmapsByTitle(String title);
+
+    List<Beatmap> findBeatmapsByArtist(String artist);
+
     @Query(value = "SELECT * FROM beatmap ORDER BY RAND() LIMIT :limit", nativeQuery = true)
     List<Beatmap> findRandom(int limit);
 
@@ -45,10 +49,12 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
             "(answer_rate BETWEEN :diffL0 AND :diffU0) OR" +
             "(answer_rate BETWEEN :diffL1 AND :diffU1) OR" +
             "(answer_rate BETWEEN :diffL2 AND :diffU2) OR" +
-            "(answer_rate BETWEEN :diffL3 AND :diffU3)) AND tags LIKE :tags AND genre IN :genres AND language IN :languages " +
+            "(answer_rate BETWEEN :diffL3 AND :diffU3) OR" +
+            "(answer_rate BETWEEN :diffL4 AND :diffU4)" +
+            ") AND tags LIKE :tags AND genre IN :genres AND language IN :languages " +
             "ORDER BY RAND() LIMIT :limit", nativeQuery = true)
     List<Beatmap> findBeatmapsByApprovedDateRangeAndDifficulty(Timestamp startDate, Timestamp endDate,
-                                                               double diffL0, double diffU0, double diffL1, double diffU1, double diffL2, double diffU2, double diffL3, double diffU3,
+                                                               double diffL0, double diffU0, double diffL1, double diffU1, double diffL2, double diffU2, double diffL3, double diffU3, double diffL4, double diffU4,
                                                                int limit, String tags,
                                                                @Param("genres") List<Integer> genres, @Param("languages") List<Integer> languages);
 
@@ -56,9 +62,11 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
             "((playcount_answer/playcount) BETWEEN :diffL0 AND :diffU0) OR " +
             "((playcount_answer/playcount) BETWEEN :diffL1 AND :diffU1) OR " +
             "((playcount_answer/playcount) BETWEEN :diffL2 AND :diffU2) OR " +
-            "((playcount_answer/playcount) BETWEEN :diffL3 AND :diffU3)) AND tags LIKE :tags AND genre IN :genres AND language IN :languages", nativeQuery = true)
+            "((playcount_answer/playcount) BETWEEN :diffL3 AND :diffU3) OR " +
+            "((playcount_answer/playcount) BETWEEN :diffL4 AND :diffU4)) " +
+            "AND tags LIKE :tags AND genre IN :genres AND language IN :languages", nativeQuery = true)
     int countBeatmapsByApprovedDateRangeAndDifficulty(Timestamp startDate, Timestamp endDate,
-                                                      double diffL0, double diffU0, double diffL1, double diffU1, double diffL2, double diffU2, double diffL3, double diffU3,
+                                                      double diffL0, double diffU0, double diffL1, double diffU1, double diffL2, double diffU2, double diffL3, double diffU3, double diffL4, double diffU4,
                                                       String tags,
                                                       List<Integer> genres, List<Integer> languages);
 
@@ -70,6 +78,9 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
 
     List<Beatmap> findAll(Specification<Beatmap> spec);
 
-    @Query(value = "SELECT * FROM beatmap b WHERE b.beatmapset_id NOT IN (SELECT d.beatmapset_id FROM daily_guess d) AND (answer_rate > 0.3) AND (playcount >= 100) ORDER BY RAND() LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM beatmap b WHERE b.beatmapset_id NOT IN (SELECT d.beatmapset_id FROM daily_guess d) AND (answer_rate > 0.3) AND (playcount >= 100) AND (blur = false) ORDER BY RAND() LIMIT 1", nativeQuery = true)
     Beatmap findRandomBeatmapNotInDailyGuess();
+
+    @Query(value = "SELECT * FROM beatmap WHERE beatmapset_id = :beatmapset_id", nativeQuery = true)
+    Beatmap findBeatmapByBeatmapset_id(int beatmapset_id);
 }
