@@ -420,6 +420,10 @@ export default {
                     <input type="checkbox" id="insane" value="INSANE" v-model="difficulty">
                     <label for="insane" class="difficulty-insane">Insane</label>
                   </div>
+                  <div class="checkbox-div">
+                    <input type="checkbox" id="extra" value="EXTRA" v-model="difficulty">
+                    <label for="extra" class="difficulty-extra">Extra</label>
+                  </div>
                 </div>
               </div>
               <div class="form-row">
