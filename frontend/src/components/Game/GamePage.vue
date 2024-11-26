@@ -11,11 +11,15 @@ import UserPage from "@/components/UserPage.vue";
 import ChatSection from "@/components/Game/ChatSection.vue";
 import BeatmapInfo from "@/components/Game/components/BeatmapInfo.vue";
 import IngameSettingsPage from "@/components/Game/components/IngameSettingsPage.vue";
+import PlayerBox from "@/components/Game/components/PlayerBox.vue";
+import PlayerBoxCompact from "@/components/Game/components/PlayerBoxCompact.vue";
 
 
 export default {
   name: 'GamePage',
-  components: {IngameSettingsPage, BeatmapInfo, ChatSection, UserPage, FontAwesomeIcon, RoomSettingsModal},
+  components: {
+    PlayerBoxCompact,
+    PlayerBox, IngameSettingsPage, BeatmapInfo, ChatSection, UserPage, FontAwesomeIcon, RoomSettingsModal},
   setup() {
     const userStore = useUserStore();
 
@@ -37,6 +41,7 @@ export default {
       isLoading: true,
       answerSubmitted: false,
       ownGuessRight: false,
+      ownGuessRightAlias: false,
       players: [],
       answers: [],
       imageSourceBase64: "",
@@ -110,7 +115,9 @@ export default {
       })
           .then((response) => {
             if (response.data) {
-              //
+              if (this.webSocketService) {
+                this.webSocketService.disconnect();
+              }
             } else {
               console.error('Error leaving game');
             }
@@ -214,55 +221,6 @@ export default {
       this.submitAnswer()
     },
 
-    kickPlayer(player) {
-      var playerId = player.id;
-      var url = '/api/kickPlayer';
-
-      this.showDropdown = false;
-
-      if (!confirm("Do you want to kick " + player.username + "?")) {
-        return;
-      }
-
-      if (confirm("Do you want to ban " + player.username + " from this lobby?")) {
-        url = '/api/banPlayer';
-      }
-
-      apiService.post(url, {
-        gameId: this.gameId,
-        targetUserId: playerId
-      })
-          .then((response) => {
-            // Handle response
-          })
-          .catch((error) => {
-            // Handle error
-          });
-    },
-
-    transferHost(player) {
-      var playerId = player.id;
-
-      this.showDropdown = false;
-
-      if (!confirm("Do you want to transfer the host to " + player.username + "?")) {
-        return;
-      }
-
-      apiService.post(`${process.env.VUE_APP_API_URL}/api/transferHost`, {
-        gameId: this.gameId,
-        targetUserId: playerId
-      })
-          .catch(() => {
-            alert("An error occurred while transferring the host. Please try again later.")
-          });
-    },
-
-    openDropdown(player) {
-      this.dropdownUser = player;
-      this.showDropdown = !this.showDropdown;
-    },
-
     difficultyClass(difficulty) {
       switch (difficulty) {
         case 'EASY':
@@ -273,6 +231,8 @@ export default {
           return 'difficulty-hard';
         case 'INSANE':
           return 'difficulty-insane';
+        case 'EXTRA':
+          return 'difficulty-extra';
         default:
           return '';
       }
@@ -288,6 +248,8 @@ export default {
           return 'H';
         case 'INSANE':
           return 'I';
+        case 'EXTRA':
+          return 'X';
         default:
           return '';
       }
@@ -522,6 +484,7 @@ export default {
             player.totalPoints = 0;
             player.totalGuess = 0;
             player.guessedRight = false;
+            player.guessedRightAlias = false;
           });
 
           var possibleAnswerURL = 'possibleAnswers';
@@ -572,6 +535,7 @@ export default {
 
         var encryptedBeatmapInfo = JSON.parse(message.body);
         this.ownGuessRight = false;
+        this.ownGuessRightAlias = false;
         if (this.game.displayMode.includes('BACKGROUND')) {
           this.imageSourceBase64 = encryptedBeatmapInfo.base64;
         }
@@ -625,7 +589,8 @@ export default {
               player.totalPoints = 0;
             }
 
-            player.guessedRight = leaderboardEntry.totalGuess > player.totalGuess;
+            player.guessedRight = leaderboardEntry.correct;
+            player.guessedRightAlias = leaderboardEntry.aliasCorrect;
             if (player.id === this.me.id && player.guessedRight) {
               this.ownGuessRight = true;
             }
@@ -634,6 +599,7 @@ export default {
             player.totalPoints = leaderboardEntry.totalPoints;
           } else {
             player.guessedRight = false;
+            player.guessedRightAlias = false;
           }
         });
 
@@ -650,6 +616,10 @@ export default {
         } else if (this.game.gameMode === 'CREATOR') {
           this.answerInput = this.currentBeatmap.creator;
         }
+
+        this.players.forEach((player) => {
+          player.answerSubmitted = false;
+        });
 
         this.answerSubmitted = false;
       },
@@ -670,18 +640,6 @@ export default {
         // Save the previous player list for points
         const previousPlayers = this.players;
         this.players = JSON.parse(message.body);
-
-        // Check if the player list has changed
-        // Do I exist in previous players, but not in the new list?
-        const playerLeft = previousPlayers.find((p) => !this.players.find((p2) => p2.id === p.id));
-        if (playerLeft) {
-          if (this.webSocketService){
-            this.webSocketService.disconnect();
-          }
-          this.kicked = true;
-          this.$router.push('/');
-          alert("You have been kicked from the game.");
-        }
 
         // Update the points of the players
         this.players.forEach((player) => {
@@ -735,7 +693,7 @@ export default {
           alert("You have been kicked from the game due to inactivity.");
         }
       }
-    }).then(success => {
+    }).then(() => {
       this.isConnected = true;
       this.messages.push({
         systemMessage: true,
@@ -746,10 +704,6 @@ export default {
   },
 
   beforeUnmount() {
-    if (this.webSocketService){
-      this.webSocketService.disconnect();
-    }
-
     // window.removeEventListener('beforeunload', this.beforeUnload);
     // window.removeEventListener('unload', this.requestLeaveRoom);
 
@@ -959,7 +913,7 @@ export default {
           <div class="input-container">
             <div class="input-icon-wrapper">
               <input type="text"
-                     :class="{ answerSubmitted: answerSubmitted, highlight: ownGuessRight }"
+                     :class="{ answerSubmitted: answerSubmitted, highlight: (answers[me.id] && answers[me.id].correct && !answers[me.id].aliasCorrect && !isGuessing), 'highlight-secondary': (answers[me.id] && answers[me.id].aliasCorrect && !isGuessing) }"
                      v-model="answerInput" :placeholder="answerInputPlaceHolder"
                      :readonly="!isGuessing"
                      v-on:keydown.up.prevent="selectedOptionIndex > 0 ? selectedOptionIndex-- : selectedOptionIndex = autocompleteOptions.length - 1"
@@ -987,11 +941,12 @@ export default {
               :formatDate="formatDate"
               :answers="answers"
               :me="me"
+              class="beatmap-info"
           />
 
           <div class="leaderboard">
             <h2>Leaderboard</h2>
-            <div v-for="(player, index) in sortedPlayers" :key="player.id" class="leaderboard-player-info" :class="{ 'leaderboard-player-highlight': player.guessedRight }" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
+            <div v-for="(player, index) in sortedPlayers" :key="player.id" class="leaderboard-player-info" :class="{ 'leaderboard-player-highlight': (answers[player.id] && answers[player.id].correct && !answers[player.id].aliasCorrect && !isGuessing), 'highlight-secondary': (answers[player.id] && answers[player.id].correct && answers[player.id].aliasCorrect && !isGuessing) }" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
               <div class="leaderboard-player-rank">#{{ index + 1 }}</div>
               <div class="leaderboard-player-name">{{ player.username }}</div>
               <div class="leaderboard-player-points">{{ formatDecimal(player.totalPoints ? player.totalPoints : 0) }} <span class="leaderboard-player-totalguess">({{ player.totalGuess ? player.totalGuess : 0 }})</span></div>
@@ -1001,47 +956,29 @@ export default {
 
         <div class="players-container" v-if="!compactViewMode" :class="{'players-container-overflow': players.length > 8}">
 
-          <div v-for="player in players" :key="player.id" class="player-box"
-               :class="{ 'highlight': player.guessedRight, 'player-answer-submitted': player.answerSubmitted }">
-
-            <font-awesome-icon :icon="['fas', 'caret-down']" v-if="me && me.id === game.owner.id && me.id !== player.id"
-                               @click.stop="openDropdown(player)" class="user-dropdown-button"/>
-            <div v-if="showDropdown && this.dropdownUser.id === player.id" class="dropdown-menu">
-              <p @click.stop="kickPlayer(player)">Kick</p>
-              <p @click.stop="transferHost(player)">Host</p>
-              <p @click.stop="showDropdown = false">Cancel</p>
-            </div>
-            <font-awesome-icon v-if="this.game.owner.id === player.id" class="player-hosticon" :icon="['fas', 'crown']" />
-            <img :src="player.avatar_url" alt="Player's avatar" class="player-avatar" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
-            <div class="player-username-div">
-              <p class="player-username">{{ player.username }}</p>
-            </div>
-            <p class="player-title">{{ player.current_title_achievement ? player.current_title_achievement.title_name : "" }}</p>
-            <p class="player-points">{{ formatDecimal(player.totalPoints ? player.totalPoints : 0) }}
-                <span class="player-totalguess">({{ player.totalGuess ? player.totalGuess : 0 }})</span></p>
-
-            <div v-if="!isGuessing && answers[player.id] && answers[player.id].answer" class="player-answer">
-              {{ answers[player.id].answer }}
-            </div>
-
-          </div>
+          <PlayerBox
+              v-for="player in players"
+              :key="player.id"
+              :player="player"
+              :answers="answers"
+              :isGuessing="isGuessing"
+              :me="me"
+              :game="game"
+              @showUserPage="showPlayerInfoModal = true; userpageId = player.id; console.log('asdasd')"
+          />
         </div>
 
         <div class="players-container-compact" v-if="compactViewMode">
-          <div v-for="player in players" :key="player.id" class="player-box-compact"
-               :class="{ 'highlight': player.guessedRight, 'player-answer-submitted': player.answerSubmitted }" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
-            <img :src="player.avatar_url" alt="Player's avatar" class="player-avatar-compact">
-            <div class="player-info-compact">
-              <div class="player-header-compact">
-                <p class="player-username-compact">{{ player.username }}</p>
-                <p class="player-points-compact">{{ formatDecimal(player.totalPoints ? player.totalPoints : 0) }}
-                  <span class="player-totalguess">({{ player.totalGuess ? player.totalGuess : 0 }})</span></p>
-              </div>
-              <div class="player-answer-compact" v-if="!isGuessing">
-                {{ isGuessing ? "" : (answers[player.id] && answers[player.id].answer ? answers[player.id].answer : "") }}
-              </div>
-            </div>
-          </div>
+          <PlayerBoxCompact
+              v-for="player in players"
+              :key="player.id"
+              :player="player"
+              :answers="answers"
+              :isGuessing="isGuessing"
+              :me="me"
+              :game="game"
+              @showUserPage="showPlayerInfoModal = true; userpageId = player.id"
+          />
         </div>
       </div>
       <ChatSection :messages="messages" :isConnected="isConnected" :formatTimestamp="formatTimestamp" @send-message="sendChatMessage" />
@@ -1237,20 +1174,6 @@ UserPage {
   justify-content: flex-start;
 }
 
-.player-box {
-  position: relative;
-  padding: 10px;
-  text-align: center;
-  width: 150px;
-  max-width: 150px;
-  min-width: 150px;
-  border-radius: 10px;
-  background-color: rgba(231, 239, 255, 0.2);
-  border: 2px solid transparent;
-  overflow: visible;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-}
-
 .player-box-compact {
   cursor: pointer;
   display: flex;
@@ -1269,77 +1192,9 @@ UserPage {
   background-color: rgba(231, 239, 255, 0.66);
 }
 
-.player-avatar {
-  cursor: pointer;
-  width: 100%;
-  height: auto;
-  border-radius: 10%;
-  box-shadow: 0px 0px 15px 5px rgba(0, 0, 0, 0.1);
-  border: 3px solid #000000;
-  box-sizing: border-box;
-}
-
-.player-username-div {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.player-username{
-  font-weight: bold;
-  font-size: 1.4em;
-  overflow: hidden;
-  margin-top: 4px;
-  margin-bottom: 2px;
-}
-
-.player-hosticon {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  width: 24px;
-  height: 24px;
-  color: #f1c40f;
-}
-
-.player-title {
-  min-height: 1.2em;
-  font-size: 0.8em;
-  margin-top: 2px;
-  margin-bottom: 2px;
-}
-
-.player-info-hover {
-  position: fixed;
-  width: 200px;
-  background-color: var(--color-secondary);
-  color: var(--color-text);
-  z-index: 1000;
-}
-
-.player-points {
-  font-size: 1.2em;
-  color: var(--color-text);
-  margin-top: 0.2em;
-  margin-bottom: 0.2em;
-}
-
 .player-totalguess {
   font-size: 0.8em;
   color: #999;
-}
-
-.player-answer {
-  margin-top: 0.0em;
-  font-size: 0.8em;
-  color: var(--color-text);
-  background-color: var(--color-secondary);
-  padding: 5px;
-  border-radius: 5px;
-  width: 90%;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .player-answer-compact {
@@ -1356,7 +1211,7 @@ UserPage {
   max-width: 25vw;
 }
 
-.answerSubmitted {
+.player-answer-submitted {
   background-color: var(--color-disabled);
 }
 
@@ -1408,7 +1263,7 @@ UserPage {
   font-size: 1.2em;
   text-align: center;
   margin-top: 8px;
-  font-family: 'Exo 2', 'Sen';
+  font-family: 'Exo 2', 'Sen', serif;
   background-color: var(--color-secondary);
   color: var(--color-text);
 }
@@ -1416,6 +1271,11 @@ UserPage {
 .highlight {
   background-color: rgba(22, 225, 49, 0.33);
   border: 2px solid rgba(22, 225, 49, 0.8);
+}
+
+.highlight-secondary {
+  background-color: rgba(227, 220, 47, 0.52);
+  border: 2px solid rgba(235, 243, 76, 0.8);
 }
 
 .autocomplete-dropdown {
@@ -1478,41 +1338,6 @@ UserPage {
   padding: 16px;
   border-radius: 4px;
   z-index: 1;
-}
-
-.user-dropdown-button {
-  position: absolute;
-  right: 18px;
-  top: 18px;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-  border-radius: 4px;
-  color: #ffffff;
-  background-color: rgba(0, 0, 0, 1);
-}
-
-.dropdown-menu {
-  background-color: rgba(0, 0, 0, 0.8);
-  position: absolute;
-  right: 8px;
-  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-  z-index: 4;
-}
-
-.dropdown-menu p {
-  color: #ffffff;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
-}
-
-.dropdown-menu p:hover {
-  background-color: #f1f1f1;
-}
-
-.showDropdown .dropdown-menu {
-  display: block;
 }
 
 .icon-report {
@@ -1606,41 +1431,83 @@ UserPage {
   transform: translateY(-50%);
 }
 
-.player-info-compact {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  flex-direction: row;
-  gap: 5px;
-  align-items: center;
-  margin-right: 8px;
-}
-
-.player-avatar-compact {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.player-username-compact {
-  font-weight: bold;
-  font-size: 1.2em;
-  margin-bottom: -1.2em;
-}
-
-.player-points-compact {
-  font-size: 1.2em;
-  color: var(--color-text);
-  margin-left: auto;
-}
-
 .players-container-compact {
+  flex-direction: row;
+  justify-content: center;
+  overflow-x: auto;
+  margin-top: 16px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-auto-rows: 4.5em;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-auto-rows: 4em;
   grid-auto-flow: row;
   overflow-y: auto;
   height: 35vh;
+}
+
+/* Add this to your existing CSS in the <style> section */
+
+@media (max-width: 768px) {
+  .game-container {
+    flex-direction: row;
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100vh;
+  }
+
+  .game-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .players-container, .players-container-compact {
+    flex-direction: row;
+    height: auto;
+    overflow-x: visible;
+  }
+
+  .leaderboard {
+    display: none;
+    position: static;
+    width: 100%;
+    max-width: 100%;
+    margin-top: 10px;
+  }
+
+  .question-image {
+    width: 100%;
+    height: auto;
+  }
+
+  .question-image-container {
+    width: 100%;
+    height: auto;
+  }
+
+  .input-icon-wrapper {
+    width: 100%;
+  }
+
+  .answer-input {
+    width: 100%;
+  }
+
+  .game-room-info {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .game-room-info-left, .game-room-info-right {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .game-room-info-middle {
+    margin-top: 10px;
+  }
+
+  .beatmap-info {
+    display: none;
+  }
 }
 </style>
