@@ -12,6 +12,7 @@ public class PlayerAnswer {
     private Long submittedTime;
     private Long timeTaken;
     private boolean isCorrect;
+    private boolean isAliasCorrect;
     private double speedBonus;
     private double difficultyBonus;
     private double poolSizeBonus;
