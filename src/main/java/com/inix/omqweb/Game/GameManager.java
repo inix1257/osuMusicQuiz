@@ -2,6 +2,8 @@ package com.inix.omqweb.Game;
 
 import com.inix.omqweb.Achievement.AchievementService;
 import com.inix.omqweb.Beatmap.*;
+import com.inix.omqweb.Beatmap.Alias.Alias;
+import com.inix.omqweb.Beatmap.Alias.AliasType;
 import com.inix.omqweb.Donation.Donation;
 import com.inix.omqweb.Donation.DonationRepository;
 import com.inix.omqweb.Donation.PlayerDonationDTO;
@@ -11,6 +13,7 @@ import com.inix.omqweb.Message.SystemMessageHandler;
 import com.inix.omqweb.Util.AESUtil;
 import com.inix.omqweb.Util.AnswerUtil;
 import com.inix.omqweb.DTO.*;
+import com.inix.omqweb.Util.ProfileUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
 import jakarta.annotation.PostConstruct;
@@ -18,8 +21,10 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -56,9 +61,11 @@ public class GameManager {
 
     private boolean DEBUG_STATUS = false;
 
-//    @PostConstruct
-//    @Profile("dev")
+    private final ProfileUtil profileUtil;
+
+    @PostConstruct
     private void createDebugLobbies() {
+        if (!profileUtil.isDevEnv()) return;
         // Create lobbies for debug purpose
         for (int i = 0; i < 5; i++) {
             List<Player> players = playerRepository.findRandomPlayers();
@@ -87,46 +94,45 @@ public class GameManager {
     }
 
     @PostConstruct
+    @Scheduled(fixedRate = 1000 * 60)
     public void checkInactiveGames() {
-        if (DEBUG_STATUS) return;
-        // Schedule a task to check for inactive games every minute
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
-            for (Game game : games.values()) {
-                try {
-                    if (game.getLastActivity() == null) {
-                        continue;
-                    }
+        if (profileUtil.isDevEnv()) return;
 
-                    if (game.getPlayers().isEmpty()) {
-                        deleteGame(game);
-                        continue;
-                    }
-
-                    long diff = new Date().getTime() - game.getLastActivity().getTime();
-
-                    if (diff > 300000) {
-                        logger.info("Game: " + game + " has been inactive for 5 minutes. Deleting game.");
-                        deleteGame(game);
-                        continue;
-                    }
-
-                    // Check inactive players
-                    for (Player player : game.getPlayers()) {
-                        if (player.getLast_activity() == null) {
-                            continue;
-                        }
-
-                        long playerDiff = new Date().getTime() - player.getLast_activity().getTime();
-
-                        if (playerDiff > 1000 * 60 * 10) {
-                            kickInactivePlayer(game, player);
-                        }
-                    }
-                } catch (Exception e) {
-                    logger.error("Failed to check for inactive games: ", e);
+        for (Game game : games.values()) {
+            try {
+                if (game.getLastActivity() == null) {
+                    continue;
                 }
+
+                if (game.getPlayers().isEmpty()) {
+                    deleteGame(game);
+                    continue;
+                }
+
+                long diff = new Date().getTime() - game.getLastActivity().getTime();
+
+                if (diff > 300000) {
+                    logger.info("Game: " + game + " has been inactive for 5 minutes. Deleting game.");
+                    deleteGame(game);
+                    continue;
+                }
+
+                // Check inactive players
+                for (Player player : game.getPlayers()) {
+                    if (player.getLast_activity() == null) {
+                        continue;
+                    }
+
+                    long playerDiff = new Date().getTime() - player.getLast_activity().getTime();
+
+                    if (playerDiff > 1000 * 60 * 10) {
+                        kickInactivePlayer(game, player);
+                    }
+                }
+            } catch (Exception e) {
+                logger.error("Failed to check for inactive games: ", e);
             }
-        }, 0, 1, TimeUnit.MINUTES);
+        }
     }
 
     public Game createGame(CreateGameDTO createGameDTO, Player owner) {
@@ -358,19 +364,55 @@ public class GameManager {
         Beatmap beatmap = game.getBeatmaps().get(game.getQuestionIndex());
 
         for (Map.Entry<Player, PlayerAnswer> entry : game.getPlayerAnswers().entrySet()) {
+            List<Alias> aliases = beatmap.getAliases();
             String answerToCheck;
 
             switch (game.getGameMode()) {
-                case ARTIST -> answerToCheck = beatmap.getArtist();
-                case CREATOR -> answerToCheck = beatmap.getCreator();
-                default -> answerToCheck = beatmap.getTitle();
+                case ARTIST -> {
+                    answerToCheck = beatmap.getArtist();
+                    aliases = aliases.stream()
+                            .filter(alias -> alias.getAliasType() == AliasType.ARTIST)
+                            .collect(Collectors.toList());
+                }
+                case CREATOR -> {
+                    answerToCheck = beatmap.getCreator();
+                    aliases = aliases.stream()
+                            .filter(alias -> alias.getAliasType() == AliasType.CREATOR)
+                            .collect(Collectors.toList());
+                }
+                default -> {
+                    answerToCheck = beatmap.getTitle();
+                    aliases = aliases.stream()
+                            .filter(alias -> alias.getAliasType() == AliasType.TITLE)
+                            .collect(Collectors.toList());
+                }
+            }
+
+            boolean checkAnswer = false;
+            boolean checkAliasAnswer = false;
+
+            for (Alias alias : aliases) {
+                String aliasName = alias.getName();
+                double similarity = AnswerUtil.checkAnswer(entry.getValue().getAnswer(), aliasName);
+
+                if (similarity >= 0.96d) {  // Using similarity over 0.96, might replace with exact match later?
+                    checkAliasAnswer = true;
+                    checkAnswer = true;
+                    break;
+                }
             }
 
             double similarity = AnswerUtil.checkAnswer(entry.getValue().getAnswer(), answerToCheck);
 
-            if(similarity >= 0.96d) { // Using similarity over 0.96, might replace with exact match later?
-                entry.getValue().setCorrect(true);
+            if (similarity >= 0.96d) {
+                checkAnswer = true;
+                checkAliasAnswer = false;
+            }
+
+            if (checkAnswer) {
                 correctAnswerCount++;
+                entry.getValue().setCorrect(true);
+                entry.getValue().setAliasCorrect(checkAliasAnswer);
             }
         }
 
@@ -380,8 +422,8 @@ public class GameManager {
     private void continueGame(Game game) {
         Beatmap beatmap = game.getBeatmaps().get(game.getQuestionIndex());
 
+        // Prevent multiple continueGame calls
         if (new Date().getTime() - game.getLastContinue().getTime() < 500) {
-            // Prevent multiple continueGame calls
             ScheduledFuture<?> future = scheduler.schedule(() -> {
                 continueGame(game);
             }, game.getCooldownTime(), TimeUnit.SECONDS);
@@ -411,6 +453,7 @@ public class GameManager {
                     TotalGuessDTO totalGuessDTO = entry.getValue();
                     if (game.getPlayerAnswers().containsKey(entry.getKey())) { // If the player has answered
                         PlayerAnswer playerAnswer = game.getPlayerAnswers().get(entry.getKey());
+
                         Player player = entry.getKey();
                         Long timeDiff = playerAnswer.getSubmittedTime() - game.getLastGuess().getTime();
                         double speedBonus = AnswerUtil.getSpeedBonus(timeDiff);
@@ -422,8 +465,12 @@ public class GameManager {
                         playerAnswer.setTimeTaken(timeDiff);
 
                         if (playerAnswer.isCorrect()) { // If the answer is correct
+                            if (playerAnswer.isAliasCorrect()) point *= 0.5;
+
                             totalGuessDTO.setTotalGuess(totalGuessDTO.getTotalGuess() + 1);
                             totalGuessDTO.setTotalPoints(totalGuessDTO.getTotalPoints() + point);
+                            totalGuessDTO.setCorrect(true);
+                            totalGuessDTO.setAliasCorrect(playerAnswer.isAliasCorrect());
 
                             playerAnswer.setTotalPoints(point);
 //                            entry.getKey().setPoints(entry.getKey().getPoints().add(BigDecimal.valueOf(point)));
@@ -468,6 +515,7 @@ public class GameManager {
                                 case NORMAL -> player.setMaps_guessed_normal(player.getMaps_guessed_normal() + 1);
                                 case HARD -> player.setMaps_guessed_hard(player.getMaps_guessed_hard() + 1);
                                 case INSANE -> player.setMaps_guessed_insane(player.getMaps_guessed_insane() + 1);
+                                case EXTRA -> player.setMaps_guessed_extra(player.getMaps_guessed_extra() + 1);
                             }
 
                             if (playerAnswer.isCorrect()) {
@@ -482,6 +530,7 @@ public class GameManager {
                             case NORMAL -> player.setMaps_played_normal(player.getMaps_played_normal() + 1);
                             case HARD -> player.setMaps_played_hard(player.getMaps_played_hard() + 1);
                             case INSANE -> player.setMaps_played_insane(player.getMaps_played_insane() + 1);
+                            case EXTRA -> player.setMaps_played_extra(player.getMaps_played_extra() + 1);
                         }
                     }
                 }
@@ -877,6 +926,8 @@ public class GameManager {
             return false;
         }
 
+        // If the line below (and its declaration) throws error just comment it out
+        // I haven't uploaded on github to not leak the achievement details
         achievementService.checkAchievements(game);
 
         game.setPlaying(false);
@@ -902,10 +953,10 @@ public class GameManager {
 
         if (isBan) {
             game.getBannedPlayers().add(targetPlayer);
-            messageService.sendSystemMessage(game.getUuid(), targetPlayer.getUsername() + " has been banned from the game.");
+            messageService.sendSystemMessage(game.getUuid(), targetPlayer.getUsername() + " has been banned from the lobby.");
             logger.info("Player: " + targetPlayer.getUsername() + " has been banned from the game " + game);
         } else {
-            messageService.sendSystemMessage(game.getUuid(), targetPlayer.getUsername() + " has been kicked from the game.");
+            messageService.sendSystemMessage(game.getUuid(), targetPlayer.getUsername() + " has been kicked from the lobby.");
             logger.info("Player: " + targetPlayer.getUsername() + " has been kicked from the game " + game);
         }
 
