@@ -61,6 +61,14 @@ export default {
           this.imageSourceBase64 = response.data.base64;
           this.audioSourceBase64 = response.data.base64;
           this.dailyNumber = response.data.dailyNumber;
+          this.retryCount = response.data.retryCount;
+          this.correctGuess = response.data.guessed;
+
+          if (response.data.dailyGuessLog) {
+            this.dailyGuessLog = response.data.dailyGuessLog;
+            this.currentBeatmap = this.dailyGuessLog.dailyGuess.beatmap;
+            this.revealStatus = true;
+          }
         })
         .catch(error => {
           console.error("Error fetching daily osudle:", error);
@@ -187,6 +195,8 @@ export default {
           return 'difficulty-hard';
         case 'INSANE':
           return 'difficulty-insane';
+        case 'EXTRA':
+          return 'difficulty-extra';
         default:
           return '';
       }
@@ -349,14 +359,32 @@ export default {
 </script>
 
 <template>
-  <div class="modal-overlay">
-    <div>
+  <div class="modal-overlay" @click="closeIntroPage">
+    <div v-if="revealStatus" class="beatmap-info-container">
+      <a :href="getBeatmapUrl" target="_blank">
+        <h2>Beatmap Information</h2>
+        <div class="beatmap-info-inner">
+          <p>Artist: <strong>{{ currentBeatmap.artist }}</strong></p>
+          <p>Title: <strong>{{ currentBeatmap.title }}</strong></p>
+          <p>Mapper: <strong>{{ currentBeatmap.creator }}</strong></p>
+          <p>Answer Rate: <strong>{{ getAnswerRate() }}</strong> <span class="beatmap-info-playcount">({{ currentBeatmap.playcount_answer }}/{{ currentBeatmap.playcount }})</span></p>
+          <p><strong><span class="beatmap-info-difficulty" :class="difficultyClass(currentBeatmap.beatmapDifficulty)">[{{ currentBeatmap.beatmapDifficulty }}]</span></strong></p>
+          <p>Ranked on <strong>{{ formatDate(currentBeatmap.approved_date) }}</strong></p>
+          <br>
+          <!--            <p>Total Points: {{ answers[me.id].totalPoints.toFixed(2) }}</p>-->
+          <div class="beatmap-info-clickme">
+            Click to view the beatmap on osu!
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="modal-content" @click.stop="">
+      <button class="close-button" @click="closeIntroPage">
+        <font-awesome-icon :icon="['fas', 'x']" />
+      </button>
       <div class="osudle-header">
         <div class="header-content">
           <h1 class="text-osudle">Daily osudle {{ dailyNumber }}</h1>
-          <button class="close-button" @click="closeIntroPage">
-            <font-awesome-icon :icon="['fas', 'x']" />
-          </button>
         </div>
       </div>
 
@@ -383,42 +411,26 @@ export default {
         Click here to login with osu!
         <font-awesome-icon icon="sign-in-alt"/>
       </button>
-      <input type="text" v-model="answerInput"
-             :placeholder="placeholderText" id="input-answer"
-             :readonly="revealStatus"
-             v-if="loginStatus"
-             v-on:keydown.up.prevent="selectedOptionIndex > 0 ? selectedOptionIndex-- : selectedOptionIndex = autocompleteOptions.length - 1"
-             v-on:keydown.down.prevent="selectedOptionIndex < autocompleteOptions.length - 1 ? selectedOptionIndex++ : selectedOptionIndex = 0"
-             v-on:keydown.enter.prevent="selectAutocompleteOption(selectedOptionIndex)" v-on:focus="inputFocused = true">
-      <div v-if="autocompleteOptions.length && inputFocused" class="autocomplete-dropdown">
-        <div v-for="(option, index) in autocompleteOptions" :key="option" @click="selectAutocompleteOption(index)" :class="{ 'selected': index === selectedOptionIndex }" class="autocomplete-option">
-          {{ option }}
+      <div class="div-input">
+        <input type="text" v-model="answerInput"
+               :placeholder="placeholderText" id="input-answer"
+               :readonly="revealStatus"
+               v-if="loginStatus"
+               v-on:keydown.up.prevent="selectedOptionIndex > 0 ? selectedOptionIndex-- : selectedOptionIndex = autocompleteOptions.length - 1"
+               v-on:keydown.down.prevent="selectedOptionIndex < autocompleteOptions.length - 1 ? selectedOptionIndex++ : selectedOptionIndex = 0"
+               v-on:keydown.enter.prevent="selectAutocompleteOption(selectedOptionIndex)" v-on:focus="inputFocused = true">
+        <div v-if="autocompleteOptions.length && inputFocused" class="autocomplete-dropdown">
+          <div v-for="(option, index) in autocompleteOptions" :key="option" @click="selectAutocompleteOption(index)" :class="{ 'selected': index === selectedOptionIndex }" class="autocomplete-option">
+            {{ option }}
+          </div>
         </div>
       </div>
+
       <div class="share-div">
         <div v-if="revealStatus" class="text-nextdle">Next osudle in: <span class="text-nextdletime">{{ timeLeft }}</span></div>
         <div v-if="showCopiedMessage" class="copied-message">Copied to clipboard</div>
         <button class="share-button" v-if="revealStatus" @click="generateShareLink">Share  <font-awesome-icon :icon="['fas', 'share-nodes']" /></button>
       </div>
-      <div v-if="revealStatus" class="beatmap-info-container">
-        <a :href="getBeatmapUrl" target="_blank">
-          <h2>Beatmap Information</h2>
-          <div class="beatmap-info-inner">
-            <p>Artist: <strong>{{ currentBeatmap.artist }}</strong></p>
-            <p>Title: <strong>{{ currentBeatmap.title }}</strong></p>
-            <p>Mapper: <strong>{{ currentBeatmap.creator }}</strong></p>
-            <p>Answer Rate: <strong>{{ getAnswerRate() }}</strong> <span class="beatmap-info-playcount">({{ currentBeatmap.playcount_answer }}/{{ currentBeatmap.playcount }})</span></p>
-            <p><strong><span class="beatmap-info-difficulty" :class="difficultyClass(currentBeatmap.beatmapDifficulty)">[{{ currentBeatmap.beatmapDifficulty }}]</span></strong></p>
-            <p>Ranked on <strong>{{ formatDate(currentBeatmap.approved_date) }}</strong></p>
-            <br>
-<!--            <p>Total Points: {{ answers[me.id].totalPoints.toFixed(2) }}</p>-->
-            <div class="beatmap-info-clickme">
-              Click to view the beatmap on osu!
-            </div>
-          </div>
-        </a>
-      </div>
-      <h3 @click="closeIntroPage">> Play Multiplayer</h3>
     </div>
 
   </div>
@@ -437,6 +449,21 @@ export default {
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(10px);
+}
+
+.modal-content {
+  position: relative;
+  width: 80%;
+  max-width: 80vh;
+  height: 80%;
+  max-height: 80vh;
+  background-color: var(--color-secondary);
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .question-image {
@@ -516,6 +543,7 @@ input {
   font-size: 2em;
   color: var(--color-text);
   text-align: center;
+  flex-grow: 1;
 }
 
 .close-button {
@@ -548,7 +576,6 @@ input {
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 10px;
-  margin-top: 10px;
   font-size: 1.2em;
   cursor: pointer;
 }
@@ -579,6 +606,7 @@ input {
   justify-content: center;
   align-items: center;
   gap: 2em;
+  margin-top: 1em;
 }
 
 .text-nextdle {
@@ -602,11 +630,6 @@ input {
   justify-content: center;
   align-items: center;
   width: 100%;
-}
-
-.text-osudle {
-  flex-grow: 1;
-  text-align: center;
 }
 
 .close-button {
@@ -636,6 +659,7 @@ input {
 }
 
 .progress-container {
+  width: 90%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -681,7 +705,7 @@ progress::-webkit-progress-value {
 
 .question-image-cover {
   position: absolute;
-  background-color: rgba(49, 49, 49, 1);
+  background-color: var(--color-disabled);
   width: 72vh;
   height: 41vh;
   z-index: 1;
@@ -689,6 +713,7 @@ progress::-webkit-progress-value {
   justify-content: center;
   align-items: center;
   text-align: center;
+  border: 3px solid var(--color-disabled);
 }
 
 .question-image-container {
@@ -696,5 +721,16 @@ progress::-webkit-progress-value {
   justify-content: center;
   align-items: center;
   position: relative;
+}
+
+#input-answer {
+  font-size: 1.2em;
+  text-align: center;
+  width: 71vh;
+  height: 3em;
+  margin-top: 8px;
+  font-family: 'Sen', serif;
+  background-color: var(--color-secondary);
+  color: var(--color-text);
 }
 </style>
