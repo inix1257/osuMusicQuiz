@@ -7,5 +7,8 @@ import lombok.Data;
 @Builder
 public class DailyGuessDTO {
     private int dailyNumber;
+    private int retryCount;
+    private boolean guessed;
     private String base64;
+    private DailyGuessLog dailyGuessLog;
 }

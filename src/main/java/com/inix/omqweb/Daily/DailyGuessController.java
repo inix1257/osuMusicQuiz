@@ -22,12 +22,19 @@ public class DailyGuessController {
     private final AESUtil aesUtil;
 
     @GetMapping("/daily")
-    public DailyGuessDTO getDailyGuessBase64() {
+    public DailyGuessDTO getDailyGuessBase64(HttpServletRequest request) {
+        Player userInfo = (Player) request.getAttribute("userInfo");
         DailyGuess dailyGuess = dailyGuessManager.getFirstDailyGuessAfterDate();
 
         if (dailyGuess == null) {
             // No daily guess found
             return null;
+        }
+
+        DailyGuessLog dailyGuessLog = null;
+
+        if (userInfo != null) {
+            dailyGuessLog = dailyGuessManager.getDailyGuessLog(userInfo);
         }
 
         int beatmapId = dailyGuess.getBeatmap().getBeatmapset_id();
@@ -38,6 +45,9 @@ public class DailyGuessController {
         return DailyGuessDTO.builder()
                 .base64(aesUtil.encrypt(String.valueOf(beatmapId)))
                 .dailyNumber(dailyGuess.getId())
+                .retryCount(dailyGuessLog == null ? 0 : dailyGuessLog.getRetryCount())
+                .guessed(dailyGuessLog != null && dailyGuessLog.isGuessed())
+                .dailyGuessLog(dailyGuessLog != null && dailyGuessLog.isGuessed() ? dailyGuessLog : null)
                 .build();
     }
 

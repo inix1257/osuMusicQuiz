@@ -31,9 +31,12 @@ public class DailyGuessManager {
 //    @PostConstruct
     public void init() {
         List<DailyGuess> dailyGuesses = new ArrayList<>();
-        for (int i = 0; i < 30; i++) {
-            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-            calendar.add(Calendar.DAY_OF_YEAR, dayCount++);
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        calendar.set(Calendar.YEAR, 2024);
+        calendar.set(Calendar.MONTH, Calendar.DECEMBER);
+        calendar.set(Calendar.DAY_OF_MONTH, 5);
+
+        for (int i = 0; i < 50; i++) {
             calendar.set(Calendar.HOUR_OF_DAY, 0);
             calendar.set(Calendar.MINUTE, 0);
             calendar.set(Calendar.SECOND, 0);
@@ -46,9 +49,12 @@ public class DailyGuessManager {
                     .build();
 
             dailyGuesses.add(dailyGuess);
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
         }
 
         dailyGuessRepository.saveAll(dailyGuesses);
+
+        System.out.println("Daily Guesses initialized");
     }
 
     /*
@@ -114,5 +120,20 @@ public class DailyGuessManager {
         template.convertAndSend("/daily/" + player.getId(), dailyGuessLog.getRetryCount());
 
         dailyGuessLogRepository.save(dailyGuessLog);
+    }
+
+    public DailyGuessLog getDailyGuessLog(Player player) {
+        DailyGuess dailyGuess = getFirstDailyGuessAfterDate();
+        if (dailyGuess == null) {
+            return null;
+        }
+
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        Date date = calendar.getTime();
+
+        return dailyGuessLogRepository.findByPlayerIdAndDate(player, date);
     }
 }
