@@ -68,7 +68,7 @@ import UserPage from "@/components/UserPage.vue";
 import AboutPage from "@/components/AboutPage.vue";
 import GameLog from "@/components/GameLog.vue";
 import DonationPage from "@/components/DonationPage.vue";
-import IntroPage from "@/components/IntroPage.vue";
+import IntroPage from "@/components/DailyPage.vue";
 
 export default {
   name: 'App',
@@ -397,5 +397,9 @@ a {
 
 .difficulty-insane {
   color: #e53f3f;
+}
+
+.difficulty-extra {
+  color: #000000;
 }
 </style>
