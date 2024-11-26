@@ -37,11 +37,13 @@ public class Player {
     private int maps_guessed_normal;
     private int maps_guessed_hard;
     private int maps_guessed_insane;
+    private int maps_guessed_extra;
 
     private int maps_played_easy;
     private int maps_played_normal;
     private int maps_played_hard;
     private int maps_played_insane;
+    private int maps_played_extra;
 
     private boolean ban;
 
