@@ -1,9 +1,11 @@
 package com.inix.omqweb.Game;
 
 import com.inix.omqweb.Announcement.AnnouncementSendDTO;
+import com.inix.omqweb.Beatmap.Alias.AliasAddDTO;
 import com.inix.omqweb.DTO.*;
 import com.inix.omqweb.Beatmap.Beatmap;
 import com.inix.omqweb.Beatmap.BeatmapService;
+import com.inix.omqweb.Util.ProfileUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
 import com.inix.omqweb.osuAPI.osuAPIService;
@@ -29,6 +31,8 @@ public class omqController {
     private final GameManager gameManager;
     private final BeatmapService beatmapService;
     private final PlayerRepository playerRepository;
+
+    private final ProfileUtil profileUtil;
 
     @Value("${osu.adminUserId}")
     private String adminUserId;
@@ -77,6 +81,8 @@ public class omqController {
     @Profile("dev")
     @PostMapping("/joinGameLegacy")
     public void joinGameLegacy(@RequestBody JoinGameLegacyDTO joinGameLegacyDTO, HttpServletRequest request) {
+        if (!profileUtil.isDevEnv()) return;
+
         Player player = (Player) request.getAttribute("userInfo");
 
         if (!player.getId().equals(adminUserId)) {
@@ -256,5 +262,26 @@ public class omqController {
         }
 
         gameManager.sendAnnouncement(announcementSendDTO.getContent());
+    }
+
+    @PostMapping("/addAlias")
+    public ResponseEntity<?> addAlias(@RequestBody AliasAddDTO aliasAddDTO, HttpServletRequest request) {
+        Player player = (Player) request.getAttribute("userInfo");
+
+        if (!player.getId().equals(adminUserId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+        }
+
+        beatmapService.addAlias(aliasAddDTO);
+
+        AliasAddDTO repeatAlias = AliasAddDTO.builder()
+                .source(aliasAddDTO.getTarget())
+                .target(aliasAddDTO.getSource())
+                .type(aliasAddDTO.getType())
+                .build();
+
+        beatmapService.addAlias(repeatAlias);
+
+        return ResponseEntity.ok(null);
     }
 }
