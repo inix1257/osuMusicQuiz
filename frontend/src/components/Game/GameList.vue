@@ -19,17 +19,30 @@
       </div>
       <div class="gameroom-header">
         <h2 class="gameroom-name">{{ gameroom.name }}</h2>
+        <div class="gameroom-difficulty-container">
+          <div :class="gameroom.playing ? 'playing' : 'idle'">{{ gameroom.playing ? 'Playing' : 'Idle' }}</div>
+        </div>
       </div>
       <div class="gameroom-details">
-        <font-awesome-icon :icon="['fas', modeIcon]" class="info-icon"/>
+<!--        <font-awesome-icon :icon="['fas', modeIcon]" class="info-icon"/>-->
+        <div class="gameroom-difficulty-container">
+          {{ gameroom.gameMode }}
+        </div>
         <div class="gameroom-difficulty-container">
           <div v-for="diff in gameroom.difficulty" :key="diff" :class="difficultyClass(diff)" class="gameroom-difficulty">
             {{ difficultyName(diff) }}
           </div>
         </div>
-        <div :class="gameroom.playing ? 'playing' : 'idle'">{{ gameroom.playing ? 'Playing' : 'Idle' }}</div>
-        <div>Maps: {{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }} ({{ gameroom.startYear }} ~ {{ gameroom.endYear }})</div>
-        <div v-if="gameroom.poolMode && gameroom.poolMode !== 'DEFAULT'">{{ poolModeFormat(gameroom.poolMode) }}</div>
+        <div class="gameroom-difficulty-container">
+          {{ gameroom.guessingTime }}s / {{ gameroom.cooldownTime}}s
+        </div>
+        <div class="gameroom-difficulty-container">
+          <div>Maps: {{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }} ({{ gameroom.startYear }} - {{ gameroom.endYear }})</div>
+        </div>
+        <div class="gameroom-difficulty-container">
+          <div v-if="gameroom.poolMode && gameroom.poolMode !== 'DEFAULT'">{{ poolModeFormat(gameroom.poolMode) }}</div>
+
+        </div>
       </div>
       <div class="player-info-row">
         <div v-for="(player) in filteredPlayers(this.gameroom.players)" :key="player.id" class="player-info">
@@ -90,6 +103,8 @@ export default {
           return 'difficulty-hard';
         case 'INSANE':
           return 'difficulty-insane';
+        case 'EXTRA':
+          return 'difficulty-extra';
         default:
           return '';
       }
@@ -105,6 +120,8 @@ export default {
           return 'H';
         case 'INSANE':
           return 'I';
+        case 'EXTRA':
+          return 'X';
         default:
           return '';
       }
@@ -190,7 +207,7 @@ export default {
 }
 
 .gameroom-difficulty-container {
-  background-color: var(--color-disabled);
+  background-color: var(--color-body);
   border-radius: 8px;
   padding-left: 8px;
   padding-right: 8px;
@@ -226,7 +243,7 @@ export default {
 
 .gameroom-details {
   display: flex;
-  gap: 1.2em;
+  gap: 1em;
   margin-bottom: 10px;
 }
 
