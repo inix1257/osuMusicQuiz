@@ -32,13 +32,13 @@ export default {
       cooldownTime: 7,
       autoskip: true,
       difficulty: ["EASY", "NORMAL"],
-      gameMode: 'DEFAULT',
+      guessMode: 'TITLE',
       isLoading: false,
       isRoomSettingLoading: false,
       startYear: 2007,
       endYear: new Date().getFullYear(),
       isExpanded: false,
-      poolMode: 'DEFAULT',
+      poolMode: 'TITLE',
       displayMode: ["BACKGROUND", "AUDIO"],
       genreType: {
         ANY: 0,
@@ -135,7 +135,7 @@ export default {
       this.difficulty = this.game.difficulty;
       this.startYear = this.game.startYear;
       this.endYear = this.game.endYear;
-      this.gameMode = this.game.gameMode;
+      this.guessMode = this.game.guessMode;
       this.poolMode = this.game.poolMode;
       this.displayMode = this.game.displayMode;
 
@@ -163,7 +163,7 @@ export default {
         difficulty: this.difficulty,
         startYear: this.startYear,
         endYear: this.endYear,
-        gameMode: this.gameMode,
+        guessMode: this.guessMode,
         poolMode: this.poolMode,
         displayMode: this.displayMode,
         genreType: this.selectedGenres,
@@ -192,7 +192,7 @@ export default {
       this.difficulty = ["EASY", "NORMAL"];
       this.startYear = 2007;
       this.endYear = new Date().getFullYear();
-      this.gameMode = 'DEFAULT';
+      this.guessMode = 'TITLE';
       this.poolMode = 'DEFAULT';
       this.displayMode = ["BACKGROUND", "AUDIO"];
       this.selectedGenres = [...Object.values(this.genreType)];
@@ -231,6 +231,10 @@ export default {
         this.gameName = `${this.me.username}'s game`;
       }
 
+      if (this.guessMode === 'DEFAULT') {
+        this.guessMode = 'TITLE';
+      }
+
       const createGameDTO = {
         name: this.gameName,
         password: this.password,
@@ -239,7 +243,7 @@ export default {
         guessingTime: this.guessingTime,
         cooldownTime: this.cooldownTime,
         autoskip: this.autoskip,
-        gameMode: this.gameMode,
+        guessMode: this.guessMode,
         startYear: this.startYear,
         endYear: this.endYear,
         poolMode: this.poolMode,
@@ -255,7 +259,7 @@ export default {
       }
 
       // Check if any field is empty
-      if (!createGameDTO.name || !createGameDTO.totalQuestions || !createGameDTO.difficulty || !createGameDTO.gameMode) {
+      if (!createGameDTO.name || !createGameDTO.totalQuestions || !createGameDTO.difficulty || !createGameDTO.guessMode) {
         alert("An error occurred. Please try again.")
         this.isLoading = false;
         return;
@@ -297,7 +301,7 @@ export default {
         difficulty: this.difficulty,
         startYear: this.startYear,
         endYear: this.endYear,
-        gameMode: this.gameMode,
+        guessMode: this.guessMode,
         poolMode: this.poolMode,
         displayMode: this.displayMode,
         selectedGenres: this.selectedGenres,
@@ -316,7 +320,7 @@ export default {
         this.difficulty = settings.difficulty ?? this.difficulty;
         this.startYear = settings.startYear ?? this.startYear;
         this.endYear = settings.endYear ?? this.endYear;
-        this.gameMode = settings.gameMode ?? this.gameMode;
+        this.guessMode = settings.guessMode ?? this.guessMode;
         this.poolMode = settings.poolMode ?? this.poolMode;
         this.displayMode = settings.displayMode ?? this.displayMode;
         this.selectedGenres = settings.selectedGenres ?? this.selectedGenres;
@@ -476,8 +480,8 @@ export default {
                 <label class="tooltip-container">Guess Type
                   <span class="tooltip">Select the type of guess for the game. Title is the default option.</span>
                 </label>
-                <select v-model="gameMode" class="dropdown">
-                  <option value="DEFAULT">Title</option>
+                <select v-model="guessMode" class="dropdown">
+                  <option value="TITLE">Title</option>
                   <option value="ARTIST">Artist</option>
                   <option value="CREATOR">Mapper</option>
                 </select>
