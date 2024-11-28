@@ -40,7 +40,7 @@ export default {
   },
   data() {
     return {
-      gameId: this.game.id,
+      gameId: this.game.uuid,
       showDropdown: false,
       dropdownUser: {},
       userpageId: null
@@ -59,7 +59,7 @@ export default {
       }
 
       apiService.post('/api/kickPlayer', {
-        gameId: this.gameId,
+        gameId: this.game.uuid,
         targetUserId: player.id
       })
     },
@@ -72,7 +72,7 @@ export default {
       }
 
       apiService.post('/api/banPlayer', {
-        gameId: this.gameId,
+        gameId: this.game.uuid,
         targetUserId: player.id
       })
     },
@@ -87,7 +87,7 @@ export default {
       }
 
       apiService.post(`${process.env.VUE_APP_API_URL}/api/transferHost`, {
-        gameId: this.gameId,
+        gameId: this.game.uuid,
         targetUserId: playerId
       })
           .catch(() => {
