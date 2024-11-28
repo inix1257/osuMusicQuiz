@@ -212,11 +212,16 @@ export default {
         return;
       }
 
-      if (index !== -1) {
+      if (index === -1) {
+        if (this.settings.submitAutoSelect) {
+          this.answerInput = this.autocompleteOptions[0];
+        }
+      } else {
         this.answerInput = this.autocompleteOptions[index];
-        this.autocompleteOptions = []; // Hides the dropdown
-        this.selectedOptionIndex = -1; // Reset the selected option index
       }
+
+      this.autocompleteOptions = []; // Hides the dropdown
+      this.selectedOptionIndex = -1; // Reset the selected option index
 
       this.submitAnswer()
     },
@@ -378,11 +383,11 @@ export default {
     },
 
     setInputPlaceholder() {
-      if (this.game.gameMode === 'DEFAULT') {
+      if (this.game.guessMode === 'TITLE') {
         this.answerInputPlaceHolder = "Guess the title of the beatmap!";
-      } else if (this.game.gameMode === 'ARTIST') {
+      } else if (this.game.guessMode === 'ARTIST') {
         this.answerInputPlaceHolder = "Guess the artist of the beatmap!";
-      } else if (this.game.gameMode === 'CREATOR') {
+      } else if (this.game.guessMode === 'CREATOR') {
         this.answerInputPlaceHolder = "Guess the mapper of the beatmap!";
       }
     },
@@ -416,9 +421,9 @@ export default {
     var possibleAnswerURL = 'possibleAnswers';
 
     if (this.game) {
-      if (this.game.gameMode === 'ARTIST') {
+      if (this.game.guessMode === 'ARTIST') {
         possibleAnswerURL = 'possibleAnswers_artist';
-      } else if (this.game.gameMode === 'CREATOR') {
+      } else if (this.game.guessMode === 'CREATOR') {
         possibleAnswerURL = 'possibleAnswers_creator';
       }
     }
@@ -489,9 +494,9 @@ export default {
 
           var possibleAnswerURL = 'possibleAnswers';
 
-          if (this.game.gameMode === 'ARTIST') {
+          if (this.game.guessMode === 'ARTIST') {
             possibleAnswerURL = 'possibleAnswers_artist';
-          } else if (this.game.gameMode === 'CREATOR') {
+          } else if (this.game.guessMode === 'CREATOR') {
             possibleAnswerURL = 'possibleAnswers_creator';
           }
 
@@ -609,11 +614,11 @@ export default {
         // Handle answer updates
         this.currentBeatmap = JSON.parse(message.body);
 
-        if (this.game.gameMode === 'DEFAULT') {
+        if (this.game.guessMode === 'TITLE') {
           this.answerInput = this.currentBeatmap.title;
-        } else if (this.game.gameMode === 'ARTIST') {
+        } else if (this.game.guessMode === 'ARTIST') {
           this.answerInput = this.currentBeatmap.artist;
-        } else if (this.game.gameMode === 'CREATOR') {
+        } else if (this.game.guessMode === 'CREATOR') {
           this.answerInput = this.currentBeatmap.creator;
         }
 
@@ -896,8 +901,8 @@ export default {
                   <font-awesome-icon :icon="['fas', 'volume-xmark']" v-else v-on:click="toggleAudioVolume"/>
                 </div>
               </div>
-              <div v-if="showReportDropdown" class="dropdown-menu">
-                <p v-on:click="reportBeatmap('RESOURCE_MISSING')">missing mp3/bg</p>
+              <div v-if="showReportDropdown" class="report-dropdown">
+                <p v-on:click="reportBeatmap('MISSING_RESOURCE')">missing mp3/bg</p>
                 <p v-on:click="reportBeatmap('BG_SPOILER')">bg spoils title</p>
               </div>
             </div>
@@ -1302,6 +1307,29 @@ UserPage {
   border: 2px solid #ef3838;
   box-sizing: border-box;
   border-radius: 5px;
+}
+
+.report-dropdown {
+  background-color: rgba(0, 0, 0, 0.8);
+  position: absolute;
+  right: 8px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 4;
+}
+
+.report-dropdown p {
+  color: #ffffff;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.report-dropdown p:hover {
+  background-color: #f1f1f1;
+}
+
+.report-dropdown {
+  display: block;
 }
 
 .gameroom-difficulty {
