@@ -9,13 +9,15 @@
     <div class="gameroom-info">
       <div class="gameroom-header-extrainfo">
         <font-awesome-icon :icon="['fas', 'lock']" v-if="gameroom.private"/>
-        <div v-if="!gameroom.displayMode.includes('AUDIO')">
-          <font-awesome-icon :icon="['fas', 'volume-xmark']"/>
-        </div>
-        <div v-if="!gameroom.displayMode.includes('BACKGROUND')">
-          <font-awesome-icon :icon="['fas', 'eye-slash']"/>
-        </div>
         <h2 class="gameroom-unranked" v-if="!gameroom.ranked">Unranked</h2>
+        <div v-if="!gameroom.displayMode.includes('AUDIO')" class="gameroom-difficulty-container">
+          <font-awesome-icon :icon="['fas', 'volume-xmark']"/>
+          NO AUDIO
+        </div>
+        <div v-if="!gameroom.displayMode.includes('BACKGROUND')" class="gameroom-difficulty-container">
+          <font-awesome-icon :icon="['fas', 'eye-slash']"/>
+          NO BG
+        </div>
       </div>
       <div class="gameroom-header">
         <h2 class="gameroom-name">{{ gameroom.name }}</h2>
@@ -26,7 +28,7 @@
       <div class="gameroom-details">
 <!--        <font-awesome-icon :icon="['fas', modeIcon]" class="info-icon"/>-->
         <div class="gameroom-difficulty-container">
-          {{ gameroom.gameMode }}
+          {{ gameroom.guessMode }}
         </div>
         <div class="gameroom-difficulty-container">
           <div v-for="diff in gameroom.difficulty" :key="diff" :class="difficultyClass(diff)" class="gameroom-difficulty">
@@ -39,14 +41,13 @@
         <div class="gameroom-difficulty-container">
           <div>Maps: {{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }} ({{ gameroom.startYear }} - {{ gameroom.endYear }})</div>
         </div>
-        <div class="gameroom-difficulty-container">
-          <div v-if="gameroom.poolMode && gameroom.poolMode !== 'DEFAULT'">{{ poolModeFormat(gameroom.poolMode) }}</div>
-
+        <div class="gameroom-difficulty-container" v-if="gameroom.guessMode && gameroom.guessMode !== 'TITLE'">
+          <div>{{ poolModeFormat(gameroom.guessMode) }}</div>
         </div>
       </div>
       <div class="player-info-row">
         <div v-for="(player) in filteredPlayers(this.gameroom.players)" :key="player.id" class="player-info">
-          <img :src="player.avatar_url" :alt="player.username" class="avatar" :title="player.username">
+          <img :src="player.avatar_url" :alt="player.username" class="player-avatar" :title="player.username">
           <div class="player-username">
             {{ player.username }}
           </div>
@@ -144,7 +145,7 @@ export default {
   computed: {
     modeIcon() {
       switch (this.gameroom.mode) {
-        case 'DEFAULT':
+        case 'TITLE':
           return 'music';
         case 'PATTERN':
           return 'circle';
@@ -254,16 +255,6 @@ export default {
   gap: 10px;
 }
 
-.avatar {
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;
-  margin-right: 10px;
-  transition: 0.3s;
-  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.1);
-  border: 3px solid #849ee5;
-}
-
 .owner-avatar {
   width: 100px;
   height: 100px;
@@ -271,9 +262,23 @@ export default {
   margin-bottom: 4px;
 }
 
+.player-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-right: 10px;
+  transition: 0.3s;
+  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.1);
+  border: 0px solid #849ee5;
+}
+
 .player-info {
   display: flex;
   align-items: center;
+  border-radius: 8px;
+  border: 2px solid #849ee5;
+  padding: 2px 8px;
+  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.2);
 }
 
 .player-username {
