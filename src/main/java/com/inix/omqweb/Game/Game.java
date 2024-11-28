@@ -6,7 +6,6 @@ import com.inix.omqweb.Beatmap.Beatmap;
 import com.inix.omqweb.Beatmap.GenreType;
 import com.inix.omqweb.Beatmap.LanguageType;
 import com.inix.omqweb.DTO.TotalGuessDTO;
-import com.inix.omqweb.Message.Message;
 import com.inix.omqweb.osuAPI.Player;
 import lombok.*;
 
@@ -45,7 +44,7 @@ public class Game {
     private boolean autoskip;
 
     private List<GameDifficulty> difficulty = new ArrayList<>();
-    private GameMode gameMode;
+    private GuessMode guessMode;
     private List<DisplayMode> displayMode;
     private boolean isPlaying;
     private boolean isGuessing;

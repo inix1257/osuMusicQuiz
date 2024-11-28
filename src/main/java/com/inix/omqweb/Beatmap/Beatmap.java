@@ -24,11 +24,12 @@ public class Beatmap {
     private String title;
     private String creator;
     private Timestamp approved_date;
-    private int playcount;
-    private int playcount_answer;
 
-    @Column(insertable = false, updatable = false)
-    private double answer_rate;
+    @OneToOne(mappedBy = "beatmap", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
+    private BeatmapStats beatmapStats;
+//
+//    @Column(insertable = false, updatable = false)
+//    private double answer_rate;
     private boolean blur;
 
     private String language;

@@ -4,7 +4,7 @@ import com.inix.omqweb.Beatmap.GenreType;
 import com.inix.omqweb.Beatmap.LanguageType;
 import com.inix.omqweb.Game.DisplayMode;
 import com.inix.omqweb.Game.GameDifficulty;
-import com.inix.omqweb.Game.GameMode;
+import com.inix.omqweb.Game.GuessMode;
 import com.inix.omqweb.Game.PoolMode;
 import lombok.Data;
 
@@ -33,7 +33,7 @@ public class UpdateRoomSettingsDTO implements GameSettingsDTO{
     private int startYear;
     private int endYear;
 
-    private GameMode gameMode;
+    private GuessMode guessMode;
     private PoolMode poolMode;
 
     private List<GenreType> genreType;

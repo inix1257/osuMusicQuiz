@@ -124,9 +124,9 @@ public class BeatmapService {
         List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByAnswerRate();
         int totalBeatmaps = beatmaps.size();
 
-        int diffIndex_easy = (int) (totalBeatmaps * 0.2);
-        int diffIndex_normal = (int) (totalBeatmaps * 0.4);
-        int diffIndex_hard = (int) (totalBeatmaps * 0.65);
+        int diffIndex_easy = (int) (totalBeatmaps * 0.1);
+        int diffIndex_normal = (int) (totalBeatmaps * 0.3);
+        int diffIndex_hard = (int) (totalBeatmaps * 0.6);
         int diffIndex_insane = (int) (totalBeatmaps * 0.9);
 
         double[] ranges = new double[4];

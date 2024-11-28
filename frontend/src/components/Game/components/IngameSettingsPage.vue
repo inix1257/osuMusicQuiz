@@ -8,6 +8,7 @@ export default {
         submitEnter: true,
         submitRightArrow: false,
         submitTab: false,
+        submitAutoSelect: false,
         chatHighlight: false
       }
     }
@@ -56,6 +57,10 @@ export default {
         <div class="settings-row">
           <label for="submit-tab">Use tab key to submit answer</label>
           <input type="checkbox" id="submit-tab" v-model="settings.submitTab" @change="updateSetting('submitTab', settings.submitTab)">
+        </div>
+        <div class="settings-row">
+          <label for="submit-autoselect">Auto select top result when submitting answer</label>
+          <input type="checkbox" id="submit-autoselect" v-model="settings.submitAutoSelect" @change="updateSetting('submitAutoSelect', settings.submitAutoSelect)">
         </div>
 <!--        <br>-->
 <!--        <label class="category-label">Chat</label>-->
