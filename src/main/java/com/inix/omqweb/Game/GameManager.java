@@ -20,8 +20,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
-import org.springframework.core.env.Environment;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -59,11 +57,9 @@ public class GameManager {
     private final int MIN_TOTAL_QUESTIONS = 10;
     private final int MAX_TOTAL_QUESTIONS = 100;
 
-    private boolean DEBUG_STATUS = false;
-
     private final ProfileUtil profileUtil;
 
-    @PostConstruct
+//    @PostConstruct
     private void createDebugLobbies() {
         if (!profileUtil.isDevEnv()) return;
         // Create lobbies for debug purpose
@@ -89,8 +85,6 @@ public class GameManager {
                 joinGame(JoinGameDTO.builder().gameId(games.keySet().toArray()[i].toString()).build(), player);
             }
         }
-
-        DEBUG_STATUS = true;
     }
 
     @PostConstruct
@@ -149,7 +143,7 @@ public class GameManager {
         game.setOwner(owner);
         game.setLastActivity(new Date());
 
-        game.setGameMode(createGameDTO.getGameMode());
+        game.setGuessMode(createGameDTO.getGuessMode());
         game.setCreationDate(new Date());
 
         if(games.containsKey(game.getUuid())) {
@@ -367,7 +361,7 @@ public class GameManager {
             List<Alias> aliases = beatmap.getAliases();
             String answerToCheck;
 
-            switch (game.getGameMode()) {
+            switch (game.getGuessMode()) {
                 case ARTIST -> {
                     answerToCheck = beatmap.getArtist();
                     aliases = aliases.stream()
@@ -597,9 +591,9 @@ public class GameManager {
                     .lobbyHistory(LobbyHistory.builder().session_id(game.getSessionId().toString()).build())
                     .player(player)
                     .beatmap(beatmap)
-                    .gametype(game.getGameMode().name())
+                    .gametype(game.getGuessMode().name())
                     .answer(playerAnswer.isCorrect())
-                    .timetaken(playerAnswer.getTimeTaken())
+                    .timetaken(playerAnswer.getTimeTaken() == null ? game.getGuessingTime() : playerAnswer.getTimeTaken())
                     .difficulty_bonus(difficultyBonus)
                     .speed_bonus(speedBonus)
                     .difficulty(beatmap.getBeatmapDifficulty().name())
@@ -665,7 +659,7 @@ public class GameManager {
                 .totalQuestions(game.getTotalQuestions())
                 .guessingTime(game.getGuessingTime())
                 .cooldownTime(game.getCooldownTime())
-                .gameMode(game.getGameMode())
+                .guessMode(game.getGuessMode())
                 .poolMode(game.getPoolMode())
                 .genreType(new ArrayList<>(game.getGenreType()))
                 .languageType(new ArrayList<>(game.getLanguageType()))
@@ -710,8 +704,8 @@ public class GameManager {
             messageService.sendSystemMessage(game.getUuid(), "Year range has been changed to **" + game.getStartYear() + " - " + game.getEndYear() + "**");
         }
 
-        if (!prevGame.getGameMode().equals(game.getGameMode())) {
-            messageService.sendSystemMessage(game.getUuid(), "Game mode has been changed to **" + game.getGameMode() + "**");
+        if (!prevGame.getGuessMode().equals(game.getGuessMode())) {
+            messageService.sendSystemMessage(game.getUuid(), "Game mode has been changed to **" + game.getGuessMode() + "**");
         }
 
         if (!prevGame.getPoolMode().equals(game.getPoolMode())) {
@@ -789,7 +783,7 @@ public class GameManager {
         game.setStartYear(Math.max(2007, gameSettingsDTO.getStartYear()));
         game.setEndYear(Math.min(Year.now().getValue(), gameSettingsDTO.getEndYear()));
         game.setPoolMode(gameSettingsDTO.getPoolMode());
-        game.setGameMode(gameSettingsDTO.getGameMode());
+        game.setGuessMode(gameSettingsDTO.getGuessMode());
         game.setDisplayMode(gameSettingsDTO.getDisplayMode());
         game.setGenreType(gameSettingsDTO.getGenreType());
         game.setLanguageType(gameSettingsDTO.getLanguageType());
@@ -803,7 +797,7 @@ public class GameManager {
         // Ranked game should have both audio and background display modes, otherwise unranked
         // Artist and Creator (Mapper) gameModes are unranked
         if ((!game.getDisplayMode().contains(DisplayMode.AUDIO) || !game.getDisplayMode().contains(DisplayMode.BACKGROUND))
-        || (game.getGameMode() == GameMode.ARTIST || game.getGameMode() == GameMode.CREATOR)) {
+        || (game.getGuessMode() == GuessMode.ARTIST || game.getGuessMode() == GuessMode.CREATOR)) {
             game.setRanked(false);
         }
 
@@ -1051,6 +1045,7 @@ public class GameManager {
 
     public void leaveAllGames(Game targetGame, Player player) {
         // Leave all games
+        logger.info("User: " + player.getUsername() + " is leaving all games.");
         for (Game game : games.values()) {
             if (game.getPlayers().stream().anyMatch(p -> p.getId().equals(player.getId()))) {
                 leaveGame(game, player);
