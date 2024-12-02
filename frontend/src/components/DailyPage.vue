@@ -367,8 +367,8 @@ export default {
           <p>Artist: <strong>{{ currentBeatmap.artist }}</strong></p>
           <p>Title: <strong>{{ currentBeatmap.title }}</strong></p>
           <p>Mapper: <strong>{{ currentBeatmap.creator }}</strong></p>
-          <p>Answer Rate: <strong>{{ getAnswerRate() }}</strong> <span class="beatmap-info-playcount">({{ currentBeatmap.playcount_answer }}/{{ currentBeatmap.playcount }})</span></p>
-          <p><strong><span class="beatmap-info-difficulty" :class="difficultyClass(currentBeatmap.beatmapDifficulty)">[{{ currentBeatmap.beatmapDifficulty }}]</span></strong></p>
+<!--          <p>Answer Rate: <strong>{{ getAnswerRate() }}</strong> <span class="beatmap-info-playcount">({{ currentBeatmap.playcount_answer }}/{{ currentBeatmap.playcount }})</span></p>-->
+<!--          <p><strong><span class="beatmap-info-difficulty" :class="difficultyClass(currentBeatmap.beatmapDifficulty)">[{{ currentBeatmap.beatmapDifficulty }}]</span></strong></p>-->
           <p>Ranked on <strong>{{ formatDate(currentBeatmap.approved_date) }}</strong></p>
           <br>
           <!--            <p>Total Points: {{ answers[me.id].totalPoints.toFixed(2) }}</p>-->
