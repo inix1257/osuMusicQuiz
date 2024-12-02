@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -23,6 +25,8 @@ public class RequestInterceptor implements HandlerInterceptor {
     private final ConcurrentMap<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
+    private Logger logger = LoggerFactory.getLogger(RequestInterceptor.class);
+
     @PostConstruct
     public void init() {
         scheduler = Executors.newScheduledThreadPool(1);
@@ -32,14 +36,14 @@ public class RequestInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         try{
-            String clientIP = request.getRemoteAddr();
-            AtomicInteger count = requestCounts.computeIfAbsent(clientIP, k -> new AtomicInteger(0));
-
-            int MAX_REQUESTS_PER_MINUTE = 100;
-            if (count.incrementAndGet() > MAX_REQUESTS_PER_MINUTE) {
-                response.setStatus(HttpStatus.SC_TOO_MANY_REQUESTS);
-                return false;
-            }
+//            String clientIP = request.getRemoteAddr();
+//            AtomicInteger count = requestCounts.computeIfAbsent(clientIP, k -> new AtomicInteger(0));
+//
+//            int MAX_REQUESTS_PER_MINUTE = 10000;
+//            if (count.incrementAndGet() > MAX_REQUESTS_PER_MINUTE) {
+//                response.setStatus(HttpStatus.SC_TOO_MANY_REQUESTS);
+//                return false;
+//            }
 
             String requestURL = request.getRequestURI();
 
@@ -88,6 +92,7 @@ public class RequestInterceptor implements HandlerInterceptor {
 
             request.setAttribute("userInfo", userInfo.getBody());
         }catch (Exception e){
+            logger.error("RequestInterceptor Error: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             return false;
         }
