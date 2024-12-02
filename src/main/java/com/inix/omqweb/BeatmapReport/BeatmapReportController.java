@@ -20,8 +20,6 @@ public class BeatmapReportController {
 
     @GetMapping("/beatmapReports")
     public ResponseEntity<List<BeatmapReportResponseDTO>> getBeatmapReports() {
-        List<BeatmapReportResponseDTO> beatmapReportResponses = beatmapService.getMostReportedBeatmaps();
-        System.out.println(beatmapReportResponses);
         return ResponseEntity.ok(beatmapService.getMostReportedBeatmaps());
     }
 
