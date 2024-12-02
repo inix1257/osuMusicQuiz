@@ -4,6 +4,7 @@ import com.inix.omqweb.Beatmap.Beatmap;
 import com.inix.omqweb.Beatmap.BeatmapSearchDTO;
 import com.inix.omqweb.Beatmap.BeatmapService;
 import com.inix.omqweb.DTO.AccessTokenDTO;
+import com.inix.omqweb.DTO.PlayerDTO;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -64,8 +66,7 @@ public class osuAPIService {
 
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<AccessTokenDTO> response = restTemplate.exchange("https://osu.ppy.sh/oauth/token", HttpMethod.POST, entity, AccessTokenDTO.class);
-        return response;
+        return restTemplate.exchange("https://osu.ppy.sh/oauth/token", HttpMethod.POST, entity, AccessTokenDTO.class);
     }
 
     public AccessTokenDTO getRefreshToken(String refreshToken) {
@@ -116,28 +117,31 @@ public class osuAPIService {
 
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<Player> response;
+        ResponseEntity<PlayerDTO> response;
 
         try {
-            response = restTemplate.exchange("https://osu.ppy.sh/api/v2/me", HttpMethod.GET, entity, Player.class);
+            response = restTemplate.exchange("https://osu.ppy.sh/api/v2/me", HttpMethod.GET, entity, PlayerDTO.class);
         } catch (HttpClientErrorException e) {
             if (e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
                 // Handle 401 error here
+                logger.error("Too many requests to osu API");
                 return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(null);
             } else {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
             }
         }
 
-        Player player = response.getBody();
+        PlayerDTO player = response.getBody();
 
         // Get player if exists, else create new player by builder
         Player dbPlayer = playerRepository.findById(player.getId()).orElse(
                 Player.builder()
+                        .playerStats(new HashMap<>())
                         .ban(false)
                         .points(BigDecimal.valueOf(0))
                         .build()
         );
+
         dbPlayer.setId(player.getId());
         dbPlayer.setUsername(player.getUsername());
         dbPlayer.setAvatar_url(player.getAvatar_url());
