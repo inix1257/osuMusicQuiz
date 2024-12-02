@@ -22,7 +22,7 @@ apiClient.interceptors.response.use(undefined, async error => {
                 try {
                     const response = await axios.get('/api/getRefreshToken', {
                         params: { refreshToken },
-                        headers: { 'X-Refresh-Token-Request': true } // Add custom header
+                        headers: { 'X-Refresh-Token-Request': true }
                     }).catch(error => {
                         if (error.response && error.response.status === 401) {
                             localStorage.removeItem('accessToken');
