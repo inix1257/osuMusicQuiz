@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class CacheService<K, V> {
     private final Map<K, CacheObject<V>> cache = new ConcurrentHashMap<>();
-    private final long ttl = 1000 * 60 * 30; // 30 minutes
+    private final long ttl = 1000 * 60 * 60; // 1 hour
 
     public V get(K key) {
         CacheObject<V> cacheObject = cache.get(key);
