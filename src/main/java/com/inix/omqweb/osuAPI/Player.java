@@ -2,13 +2,15 @@ package com.inix.omqweb.osuAPI;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.inix.omqweb.Achievement.Achievement;
+import com.inix.omqweb.DTO.PlayerStatsDTO;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -33,17 +35,28 @@ public class Player {
     @Transient
     private Date join_date;
 
-    private int maps_guessed_easy;
-    private int maps_guessed_normal;
-    private int maps_guessed_hard;
-    private int maps_guessed_insane;
-    private int maps_guessed_extra;
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @MapKey(name = "id")
+    @JsonManagedReference
+    @JsonIgnore
+    private Map<PlayerStatsId, PlayerStats> playerStats;
 
-    private int maps_played_easy;
-    private int maps_played_normal;
-    private int maps_played_hard;
-    private int maps_played_insane;
-    private int maps_played_extra;
+    @Transient
+    @JsonGetter("playerStats")
+    public List<PlayerStatsDTO> getPlayerStatsDTO() {
+        return playerStats.values().stream()
+                .sorted(Comparator.comparing((PlayerStats stats) -> stats.getGameMode().getValue())
+                        .thenComparing(stats -> stats.getGuessMode().getValue())
+                        .thenComparing(stats -> stats.getDifficulty().getValue()))
+                .map(stats -> PlayerStatsDTO.builder()
+                        .gameMode(stats.getGameMode().toString())
+                        .guessMode(stats.getGuessMode().toString())
+                        .difficulty(stats.getDifficulty().toString())
+                        .guessed(stats.getGuessed())
+                        .played(stats.getPlayed())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     private boolean ban;
 
