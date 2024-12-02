@@ -44,6 +44,7 @@ public class Game {
     private boolean autoskip;
 
     private List<GameDifficulty> difficulty = new ArrayList<>();
+    private GameMode gameMode = GameMode.STD;
     private GuessMode guessMode;
     private List<DisplayMode> displayMode;
     private boolean isPlaying;
