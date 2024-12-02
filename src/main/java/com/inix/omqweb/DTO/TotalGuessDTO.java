@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Data
 public class TotalGuessDTO {
     private int totalGuess;
+    private int totalMapPlayed;
     private double totalPoints;
     private boolean isCorrect;
     private boolean isAliasCorrect;
