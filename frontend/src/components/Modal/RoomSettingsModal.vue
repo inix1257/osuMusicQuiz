@@ -39,6 +39,8 @@ export default {
       endYear: new Date().getFullYear(),
       isExpanded: false,
       poolMode: 'TITLE',
+      selectedGameMode: 'STD',
+      gameModes: ['STD', 'MANIA', 'CTB', 'TAIKO'],
       displayMode: ["BACKGROUND", "AUDIO"],
       genreType: {
         ANY: 0,
@@ -135,6 +137,7 @@ export default {
       this.difficulty = this.game.difficulty;
       this.startYear = this.game.startYear;
       this.endYear = this.game.endYear;
+      this.selectedGameMode = this.game.gameMode;
       this.guessMode = this.game.guessMode;
       this.poolMode = this.game.poolMode;
       this.displayMode = this.game.displayMode;
@@ -147,6 +150,11 @@ export default {
 
     async updateRoomSettings() {
       if (this.isRequestPending) {
+        return;
+      }
+
+      if (this.displayMode.length === 0) {
+        alert("You must select at least one display mode.");
         return;
       }
 
@@ -163,6 +171,7 @@ export default {
         difficulty: this.difficulty,
         startYear: this.startYear,
         endYear: this.endYear,
+        gameMode: this.selectedGameMode,
         guessMode: this.guessMode,
         poolMode: this.poolMode,
         displayMode: this.displayMode,
@@ -192,6 +201,7 @@ export default {
       this.difficulty = ["EASY", "NORMAL"];
       this.startYear = 2007;
       this.endYear = new Date().getFullYear();
+      this.selectedGameMode = 'STD';
       this.guessMode = 'TITLE';
       this.poolMode = 'DEFAULT';
       this.displayMode = ["BACKGROUND", "AUDIO"];
@@ -223,16 +233,16 @@ export default {
         this.startYear = this.endYear;
       }
 
-      if (this.difficulty.length === 0) {
-        this.difficulty = ["EASY", "NORMAL"];
-      }
-
       if (!this.gameName) {
         this.gameName = `${this.me.username}'s game`;
       }
 
       if (this.guessMode === 'DEFAULT') {
         this.guessMode = 'TITLE';
+      }
+
+      if (!this.selectedGameMode || this.selectedGameMode === 'TITLE' || this.selectedGameMode === 'DEFAULT') {
+        this.selectedGameMode = 'STD';
       }
 
       const createGameDTO = {
@@ -246,13 +256,14 @@ export default {
         guessMode: this.guessMode,
         startYear: this.startYear,
         endYear: this.endYear,
+        gameMode: this.selectedGameMode,
         poolMode: this.poolMode,
         displayMode: this.displayMode,
         genreType: this.selectedGenres,
         languageType: this.selectedLanguages
       };
 
-      if (createGameDTO.displayMode.length === 0) {
+      if (this.displayMode.length === 0) {
         alert("You must select at least one display mode.");
         this.isLoading = false;
         return;
@@ -301,6 +312,7 @@ export default {
         difficulty: this.difficulty,
         startYear: this.startYear,
         endYear: this.endYear,
+        gameMode: this.selectedGameMode,
         guessMode: this.guessMode,
         poolMode: this.poolMode,
         displayMode: this.displayMode,
@@ -320,8 +332,15 @@ export default {
         this.difficulty = settings.difficulty ?? this.difficulty;
         this.startYear = settings.startYear ?? this.startYear;
         this.endYear = settings.endYear ?? this.endYear;
+        this.selectedGameMode = settings.gameMode ?? this.selectedGameMode;
+        if (this.selectedGameMode === 'TITLE') {
+          this.selectedGameMode = 'STD';
+        }
         this.guessMode = settings.guessMode ?? this.guessMode;
         this.poolMode = settings.poolMode ?? this.poolMode;
+        if (this.poolMode === 'TITLE') {
+          this.poolMode = 'DEFAULT';
+        }
         this.displayMode = settings.displayMode ?? this.displayMode;
         this.selectedGenres = settings.selectedGenres ?? this.selectedGenres;
         this.selectedLanguages = settings.selectedLanguages ?? this.selectedLanguages;
@@ -466,7 +485,15 @@ export default {
                   <strong>~</strong>
                   <input type="number" v-model="endYear" class="input-gameinfo input-yearrange">
                 </div>
-
+              </div>
+              <div class="form-row">
+                <label>Game Mode</label>
+                <div class="radio-group inner-rightalign">
+                  <div v-for="mode in gameModes" :key="mode">
+                    <input type="radio" :id="mode" :value="mode" v-model="selectedGameMode" :disabled="mode !== 'STD'">
+                    <label :for="mode">{{ mode }}</label>
+                  </div>
+                </div>
               </div>
             </div>
             <div v-if="selectedTab === 'Advanced'">
