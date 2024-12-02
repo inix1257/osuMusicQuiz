@@ -2,10 +2,7 @@ package com.inix.omqweb.DTO;
 
 import com.inix.omqweb.Beatmap.GenreType;
 import com.inix.omqweb.Beatmap.LanguageType;
-import com.inix.omqweb.Game.DisplayMode;
-import com.inix.omqweb.Game.GameDifficulty;
-import com.inix.omqweb.Game.GuessMode;
-import com.inix.omqweb.Game.PoolMode;
+import com.inix.omqweb.Game.*;
 
 import java.util.List;
 
@@ -18,6 +15,7 @@ public interface GameSettingsDTO {
     List<GameDifficulty> getDifficulty();
     int getStartYear();
     int getEndYear();
+    GameMode getGameMode();
     GuessMode getGuessMode();
     PoolMode getPoolMode();
     List<DisplayMode> getDisplayMode();

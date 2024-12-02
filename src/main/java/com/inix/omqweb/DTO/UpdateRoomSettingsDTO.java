@@ -2,10 +2,7 @@ package com.inix.omqweb.DTO;
 
 import com.inix.omqweb.Beatmap.GenreType;
 import com.inix.omqweb.Beatmap.LanguageType;
-import com.inix.omqweb.Game.DisplayMode;
-import com.inix.omqweb.Game.GameDifficulty;
-import com.inix.omqweb.Game.GuessMode;
-import com.inix.omqweb.Game.PoolMode;
+import com.inix.omqweb.Game.*;
 import lombok.Data;
 
 import java.util.List;
@@ -27,7 +24,7 @@ public class UpdateRoomSettingsDTO implements GameSettingsDTO{
     private boolean autoskip;
 
     private List<DisplayMode> displayMode;
-
+    private GameMode gameMode;
     List<GameDifficulty> difficulty;
 
     private int startYear;

@@ -3,10 +3,7 @@ package com.inix.omqweb.DTO;
 
 import com.inix.omqweb.Beatmap.GenreType;
 import com.inix.omqweb.Beatmap.LanguageType;
-import com.inix.omqweb.Game.DisplayMode;
-import com.inix.omqweb.Game.GameDifficulty;
-import com.inix.omqweb.Game.GuessMode;
-import com.inix.omqweb.Game.PoolMode;
+import com.inix.omqweb.Game.*;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +28,7 @@ public class CreateGameDTO implements GameSettingsDTO{
     private boolean autoskip;
 
     private List<GameDifficulty> difficulty;
-
+    private GameMode gameMode;
     private GuessMode guessMode;
 
     private int startYear;
