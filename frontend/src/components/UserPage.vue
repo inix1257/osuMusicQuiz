@@ -19,7 +19,11 @@ export default {
       selectedAchievement: null,
       notificationMessage: "",
       showNotification: false,
-    }
+      selectedGameMode: "STD",
+      selectedGuessMode: "TITLE",
+      gameModes: ["STD", "TAIKO", "CTB", "MANIA"],
+      guessModes: ["TITLE", "ARTIST", "CREATOR"],
+    };
   },
   props: {
     playerId: {
@@ -75,7 +79,14 @@ export default {
                   }, 3000);
                 })
           })
-    }
+    },
+
+    selectGameMode(gameMode) {
+      this.selectedGameMode = gameMode;
+    },
+    selectGuessMode(guessMode) {
+      this.selectedGuessMode = guessMode;
+    },
   },
 
   mounted() {
@@ -83,13 +94,32 @@ export default {
   },
 
   computed: {
+    filteredStats() {
+      return this.player.playerStats.filter(
+          (stat) =>
+              stat.gameMode === this.selectedGameMode &&
+              stat.guessMode === this.selectedGuessMode
+      );
+    },
     totalGuesses() {
-      return this.player.maps_guessed_easy + this.player.maps_guessed_normal + this.player.maps_guessed_hard + this.player.maps_guessed_insane + this.player.maps_guessed_extra;
+      return (
+          this.player.maps_guessed_easy +
+          this.player.maps_guessed_normal +
+          this.player.maps_guessed_hard +
+          this.player.maps_guessed_insane +
+          this.player.maps_guessed_extra
+      );
     },
     totalPlays() {
-      return this.player.maps_played_easy + this.player.maps_played_normal + this.player.maps_played_hard + this.player.maps_played_insane + this.player.maps_played_extra;
-    }
-  }
+      return (
+          this.player.maps_played_easy +
+          this.player.maps_played_normal +
+          this.player.maps_played_hard +
+          this.player.maps_played_insane +
+          this.player.maps_played_extra
+      );
+    },
+  },
 }
 </script>
 
@@ -122,30 +152,27 @@ export default {
           </select>
         </div>
 
-        <div class="user-stats-container">
-          <p class="user-stats"><span class="difficulty-easy">EASY</span>: {{
-              player.maps_guessed_easy
-            }}/{{ player.maps_played_easy }}
-            ({{ (player.maps_guessed_easy / player.maps_played_easy * 100 || 0).toFixed(2) }}%)</p>
-          <p class="user-stats"><span class="difficulty-normal">NORMAL</span>: {{
-              player.maps_guessed_normal
-            }}/{{ player.maps_played_normal }}
-            ({{ (player.maps_guessed_normal / player.maps_played_normal * 100 || 0).toFixed(2) }}%)</p>
-          <p class="user-stats"><span class="difficulty-hard">HARD</span>: {{
-              player.maps_guessed_hard
-            }}/{{ player.maps_played_hard }}
-            ({{ (player.maps_guessed_hard / player.maps_played_hard * 100 || 0).toFixed(2) }}%)</p>
-          <p class="user-stats"><span class="difficulty-insane">INSANE</span>: {{
-              player.maps_guessed_insane
-            }}/{{ player.maps_played_insane }}
-            ({{ (player.maps_guessed_insane / player.maps_played_insane * 100 || 0).toFixed(2) }}%)</p>
-          <p class="user-stats"><span class="difficulty-extra">EXTRA</span>: {{
-              player.maps_guessed_extra
-            }}/{{ player.maps_played_extra }}
-            ({{ (player.maps_guessed_extra / player.maps_played_extra * 100 || 0).toFixed(2) }}%)</p>
+        <div class="tabs">
+          <div class="game-modes">
+            <button v-for="mode in gameModes" :key="mode" @click.stop="selectGameMode(mode)" :class="{ active: selectedGameMode === mode }">
+              {{ mode }}
+            </button>
+          </div>
+          <div class="guess-modes">
+            <button v-for="mode in guessModes" :key="mode" @click.stop="selectGuessMode(mode)" :class="{ active: selectedGuessMode === mode }">
+              {{ mode }}
+            </button>
+          </div>
         </div>
 
-        <p class="user-stats"><strong>Total</strong>: {{ totalGuesses }}/{{ totalPlays }} ({{ (totalGuesses / totalPlays * 100 || 0).toFixed(2) }}%)</p>
+        <div class="user-stats-container">
+          <p class="user-stats" v-for="stat in filteredStats" :key="stat.difficulty">
+            <span :class="'difficulty-' + stat.difficulty.toLowerCase()">{{ stat.difficulty.toUpperCase() }}</span>:
+            {{ stat.guessed }}/{{ stat.played }}
+            ({{ (stat.guessed / stat.played * 100 || 0).toFixed(2) }}%)
+          </p>
+          <p v-if="filteredStats.length === 0">No stats found for this mode</p>
+        </div>
 
         <p class="user-register-date">OMQ Registration: {{ formatDate(player.register_date) }}</p>
       </div>
@@ -296,5 +323,34 @@ export default {
   padding: 10px;
   border-radius: 5px;
   z-index: 1000;
+}
+
+.tabs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1em;
+}
+
+.game-modes,
+.guess-modes {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.tabs > * button {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.tabs > * button.active {
+  border-color: #007bff;
+  background-color: #007bff;
+  color: white;
 }
 </style>
