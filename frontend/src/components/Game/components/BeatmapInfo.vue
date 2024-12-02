@@ -6,8 +6,8 @@
         <p>Artist <span class="beatmap-info-value">{{ currentBeatmap.artist }}</span></p>
         <p>Title <span class="beatmap-info-value">{{ currentBeatmap.title }}</span></p>
         <p>Mapper <span class="beatmap-info-value">{{ currentBeatmap.creator }}</span></p>
-        <p>Answer Rate <span class="beatmap-info-value">{{ getAnswerRate }}</span> <span class="beatmap-info-playcount">({{ currentBeatmap.playcount_answer }}/{{ currentBeatmap.playcount }})</span></p>
-        <p>Difficulty <strong><span class="beatmap-info-difficulty beatmap-info-value" :class="difficultyClass(currentBeatmap.beatmapDifficulty)">{{ currentBeatmap.beatmapDifficulty }}</span></strong></p>
+        <p>Answer Rate <span class="beatmap-info-value">{{ (getBeatmapStats().guess_rate * 100).toFixed(2) }}%</span> <span class="beatmap-info-playcount">({{ getBeatmapStats().guessed }}/{{ getBeatmapStats().played }})</span></p>
+        <p>Difficulty <strong><span class="beatmap-info-difficulty beatmap-info-value" :class="difficultyClass(getBeatmapStats().difficulty)">{{ getBeatmapStats().difficulty }}</span></strong></p>
         <p>Ranked on <span class="beatmap-info-value">{{ formatDate(currentBeatmap.approved_date) }}</span></p>
         <br>
         <p v-if="answers[me.id]">Difficulty Bonus <span
@@ -38,11 +38,22 @@ export default {
     currentBeatmap: Object,
     isGuessing: Boolean,
     getBeatmapUrl: String,
-    getAnswerRate: String,
     difficultyClass: Function,
+    gameMode: String,
+    guessMode: String,
     formatDate: Function,
     answers: Object,
     me: Object
+  },
+
+  methods: {
+    getBeatmapStats() {
+      for (let i = 0; i < this.currentBeatmap.beatmapStats.length; i++) {
+        if (this.currentBeatmap.beatmapStats[i].guess_mode === this.guessMode) {
+          return this.currentBeatmap.beatmapStats[i];
+        }
+      }
+    }
   }
 }
 </script>
