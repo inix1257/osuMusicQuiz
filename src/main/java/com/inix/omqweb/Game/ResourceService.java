@@ -75,7 +75,7 @@ public class ResourceService {
 
     private void fetchAndSaveImage(String url, Path path, boolean blur) {
         try {
-            if (!Files.exists(path) || blur) {
+            if (!Files.exists(path)) {
                 webClient.get()
                         .uri(url)
                         .retrieve()
