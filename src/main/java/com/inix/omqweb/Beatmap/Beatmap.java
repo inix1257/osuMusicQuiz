@@ -1,14 +1,21 @@
 package com.inix.omqweb.Beatmap;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.inix.omqweb.Beatmap.Alias.Alias;
-import com.inix.omqweb.Game.GameDifficulty;
+import com.inix.omqweb.DTO.BeatmapStatsDTO;
+import com.inix.omqweb.Game.GuessMode;
 import com.inix.omqweb.Util.DifficultyCalc;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Timestamp;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Entity
 @Setter
@@ -25,11 +32,12 @@ public class Beatmap {
     private String creator;
     private Timestamp approved_date;
 
-    @OneToOne(mappedBy = "beatmap", cascade = CascadeType.ALL, fetch = FetchType.LAZY, optional = false)
-    private BeatmapStats beatmapStats;
-//
-//    @Column(insertable = false, updatable = false)
-//    private double answer_rate;
+    @OneToMany(mappedBy = "beatmap", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @MapKey(name = "id")
+    @JsonManagedReference
+    @JsonIgnore
+    private Map<BeatmapStatsId, BeatmapStats> beatmapStats;
+
     private boolean blur;
 
     private String language;
@@ -37,7 +45,34 @@ public class Beatmap {
     private String tags;
 
     @Transient
-    private GameDifficulty beatmapDifficulty;
+    private double total_guess_rate;
+
+    @Transient
+    @JsonGetter("beatmapStats")
+    public List<BeatmapStatsDTO> getBeatmapStatsDTO() {
+        return Arrays.stream(GuessMode.values())
+                .map(guessMode -> {
+                    int totalGuessed = beatmapStats.values().stream()
+                            .filter(stats -> stats.getId().getGuess_mode() == guessMode)
+                            .mapToInt(BeatmapStats::getGuessed)
+                            .sum();
+                    int totalPlayed = beatmapStats.values().stream()
+                            .filter(stats -> stats.getId().getGuess_mode() == guessMode)
+                            .mapToInt(BeatmapStats::getPlayed)
+                            .sum();
+                    double totalGuessRate = totalPlayed == 0 ? 0 : totalGuessed / (double) totalPlayed;
+
+                    return BeatmapStatsDTO.builder()
+                            .guess_mode(guessMode)
+                            .difficulty(DifficultyCalc.getDifficulty(guessMode, totalGuessRate))
+                            .guessed(totalGuessed)
+                            .played(totalPlayed)
+                            .guess_rate(totalGuessRate)
+                            .build();
+                })
+                .sorted(Comparator.comparing(BeatmapStatsDTO::getGuess_mode))
+                .collect(Collectors.toList());
+    }
 
     @Transient
     @JsonIgnore
@@ -67,10 +102,4 @@ public class Beatmap {
     @Transient
     @JsonIgnore
     List<Alias> aliases;
-
-    @PostLoad
-    @PostPersist
-    public void setBeatmapDifficulty() {
-        beatmapDifficulty = DifficultyCalc.getDifficulty(answer_rate);
-    }
 }

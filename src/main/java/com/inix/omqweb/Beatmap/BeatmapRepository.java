@@ -1,5 +1,9 @@
 package com.inix.omqweb.Beatmap;
 
+import com.inix.omqweb.DTO.BeatmapRangeUpdateDTO;
+import com.inix.omqweb.DTO.BeatmapStatsDTO;
+import com.inix.omqweb.Game.GameMode;
+import com.inix.omqweb.Game.GuessMode;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -39,36 +43,50 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
     @Query("SELECT DISTINCT b.creator FROM Beatmap b")
     List<String> findDistinctCreators();
 
-    @Query(value = "SELECT * FROM beatmap ORDER BY answer_rate DESC", nativeQuery = true)
-    List<Beatmap> findBeatmapsByAnswerRate();
+    @Query(value = "SELECT b.*, (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) AS total_guess_rate FROM beatmap b " +
+            "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
+            "WHERE bs.guess_mode = :guessMode " +
+            "GROUP BY b.beatmapset_id, bs.guess_mode " +
+            "ORDER BY (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) DESC", nativeQuery = true)
+    List<Beatmap> findBeatmapsByAnswerRate(@Param("guessMode") String guessMode);
 
     @Query("SELECT b FROM Beatmap b WHERE b.approved_date BETWEEN :startDate AND :endDate")
     List<Beatmap> findBeatmapsByApprovedDateRange(Timestamp startDate, Timestamp endDate);
 
-    @Query(value = "SELECT * FROM beatmap HAVING (approved_date BETWEEN :startDate AND :endDate) AND (" +
-            "(answer_rate BETWEEN :diffL0 AND :diffU0) OR" +
-            "(answer_rate BETWEEN :diffL1 AND :diffU1) OR" +
-            "(answer_rate BETWEEN :diffL2 AND :diffU2) OR" +
-            "(answer_rate BETWEEN :diffL3 AND :diffU3) OR" +
-            "(answer_rate BETWEEN :diffL4 AND :diffU4)" +
-            ") AND tags LIKE :tags AND genre IN :genres AND language IN :languages " +
+    @Query(value = "SELECT b.*, (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) as total_guess_rate FROM beatmap b " +
+            "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
+            "WHERE b.approved_date BETWEEN :startDate AND :endDate " +
+            "AND bs.guess_mode = :guessMode " +
+            "AND bs.game_mode = :gameMode " +
+            "AND b.tags LIKE :tags " +
+            "AND b.genre IN :genres " +
+            "AND b.language IN :languages " +
+            "GROUP BY b.beatmapset_id, bs.guess_mode " +
+            "HAVING ((SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) BETWEEN :diffL1 AND :diffU1 " +
+            "OR (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) BETWEEN :diffL2 AND :diffU2 " +
+            "OR (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) BETWEEN :diffL3 AND :diffU3 " +
+            "OR (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) BETWEEN :diffL4 AND :diffU4 " +
+            "OR (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) BETWEEN :diffL5 AND :diffU5) " +
             "ORDER BY RAND() LIMIT :limit", nativeQuery = true)
-    List<Beatmap> findBeatmapsByApprovedDateRangeAndDifficulty(Timestamp startDate, Timestamp endDate,
-                                                               double diffL0, double diffU0, double diffL1, double diffU1, double diffL2, double diffU2, double diffL3, double diffU3, double diffL4, double diffU4,
-                                                               int limit, String tags,
-                                                               @Param("genres") List<Integer> genres, @Param("languages") List<Integer> languages);
-
-    @Query(value = "SELECT COUNT(*) FROM beatmap WHERE (approved_date BETWEEN :startDate AND :endDate) AND (" +
-            "((playcount_answer/playcount) BETWEEN :diffL0 AND :diffU0) OR " +
-            "((playcount_answer/playcount) BETWEEN :diffL1 AND :diffU1) OR " +
-            "((playcount_answer/playcount) BETWEEN :diffL2 AND :diffU2) OR " +
-            "((playcount_answer/playcount) BETWEEN :diffL3 AND :diffU3) OR " +
-            "((playcount_answer/playcount) BETWEEN :diffL4 AND :diffU4)) " +
-            "AND tags LIKE :tags AND genre IN :genres AND language IN :languages", nativeQuery = true)
-    int countBeatmapsByApprovedDateRangeAndDifficulty(Timestamp startDate, Timestamp endDate,
-                                                      double diffL0, double diffU0, double diffL1, double diffU1, double diffL2, double diffU2, double diffL3, double diffU3, double diffL4, double diffU4,
-                                                      String tags,
-                                                      List<Integer> genres, List<Integer> languages);
+    List<Beatmap> findBeatmapsByApprovedDateRangeAndDifficultyAndGuessMode(
+            @Param("startDate") Timestamp startDate,
+            @Param("endDate") Timestamp endDate,
+            @Param("diffL1") double diffL1,
+            @Param("diffU1") double diffU1,
+            @Param("diffL2") double diffL2,
+            @Param("diffU2") double diffU2,
+            @Param("diffL3") double diffL3,
+            @Param("diffU3") double diffU3,
+            @Param("diffL4") double diffL4,
+            @Param("diffU4") double diffU4,
+            @Param("diffL5") double diffL5,
+            @Param("diffU5") double diffU5,
+            @Param("limit") int limit,
+            @Param("tags") String tags,
+            @Param("genres") List<Integer> genres,
+            @Param("languages") List<Integer> languages,
+            @Param("gameMode") String gameMode,
+            @Param("guessMode") String guessMode);
 
     @Query(value = "SELECT * FROM beatmap WHERE genre IS NULL ORDER BY RAND() LIMIT 100", nativeQuery = true)
     List<Beatmap> findRandomBeatmapsWithNoTags();

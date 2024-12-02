@@ -1,5 +1,10 @@
 package com.inix.omqweb.Beatmap;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.inix.omqweb.Game.GameDifficulty;
+import com.inix.omqweb.Game.GuessMode;
+import com.inix.omqweb.Util.DifficultyCalc;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,15 +16,14 @@ import lombok.*;
 @AllArgsConstructor
 @Table(name = "beatmap_stats")
 public class BeatmapStats {
-    @Id
-    @OneToOne
-    @JoinColumn(name = "beatmapset_id", referencedColumnName = "beatmapset_id")
+    @EmbeddedId
+    private BeatmapStatsId id;
+
+    @ManyToOne
+    @JoinColumn(name = "beatmapset_id", referencedColumnName = "beatmapset_id", insertable = false, updatable = false)
+    @JsonBackReference
     private Beatmap beatmap;
 
-    private int playcount_title;
-    private int playcount_title_answer;
-    private int playcount_artist;
-    private int playcount_artist_answer;
-    private int playcount_creator;
-    private int playcount_creator_answer;
+    private int guessed;
+    private int played;
 }

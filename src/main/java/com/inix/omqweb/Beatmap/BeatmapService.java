@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inix.omqweb.Beatmap.Alias.*;
 import com.inix.omqweb.BeatmapReport.*;
 import com.inix.omqweb.Game.GameDifficulty;
+import com.inix.omqweb.Game.GameMode;
+import com.inix.omqweb.Game.GuessMode;
 import com.inix.omqweb.Game.ResourceService;
 import com.inix.omqweb.Util.AESUtil;
 import com.inix.omqweb.Util.DifficultyCalc;
@@ -16,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.Profile;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -120,33 +122,33 @@ public class BeatmapService {
 
     @PostConstruct
     @Scheduled(fixedDelay = 1000 * 60 * 60) // Refresh every hour
-    public double[] getDifficultyRanges() {
-        List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByAnswerRate();
-        int totalBeatmaps = beatmaps.size();
+    public void updateDifficultyRanges() {
+        for (GuessMode guessMode : GuessMode.values()) {
+            List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByAnswerRate(guessMode.toString());
 
-        int diffIndex_easy = (int) (totalBeatmaps * 0.1);
-        int diffIndex_normal = (int) (totalBeatmaps * 0.3);
-        int diffIndex_hard = (int) (totalBeatmaps * 0.6);
-        int diffIndex_insane = (int) (totalBeatmaps * 0.9);
+            int totalBeatmaps = beatmaps.size();
 
-        double[] ranges = new double[4];
+            int diffIndex_easy = (int) (totalBeatmaps * 0.1);
+            int diffIndex_normal = (int) (totalBeatmaps * 0.3);
+            int diffIndex_hard = (int) (totalBeatmaps * 0.6);
+            int diffIndex_insane = (int) (totalBeatmaps * 0.9);
 
-        ranges[0] = beatmaps.get(diffIndex_easy).getAnswer_rate();
-        ranges[1] = beatmaps.get(diffIndex_normal).getAnswer_rate();
-        ranges[2] = beatmaps.get(diffIndex_hard).getAnswer_rate();
-        ranges[3] = beatmaps.get(diffIndex_insane).getAnswer_rate();
+            double[] ranges = new double[GameDifficulty.values().length + 1];
 
-        DifficultyCalc.DIFF_EASY_BAR = ranges[0];
-        DifficultyCalc.DIFF_NORMAL_BAR = ranges[1];
-        DifficultyCalc.DIFF_HARD_BAR = ranges[2];
-        DifficultyCalc.DIFF_INSANE_BAR = ranges[3];
+            ranges[0] = 1.0;
+            ranges[1] = beatmaps.get(diffIndex_easy).getBeatmapStatsDTO().get(guessMode.getValue()).getGuess_rate();
+            ranges[2] = beatmaps.get(diffIndex_normal).getBeatmapStatsDTO().get(guessMode.getValue()).getGuess_rate();
+            ranges[3] = beatmaps.get(diffIndex_hard).getBeatmapStatsDTO().get(guessMode.getValue()).getGuess_rate();
+            ranges[4] = beatmaps.get(diffIndex_insane).getBeatmapStatsDTO().get(guessMode.getValue()).getGuess_rate();
+            ranges[5] = 0.0;
 
-        logger.info("Difficulty ranges updated: " + Arrays.toString(ranges));
+            DifficultyCalc.DIFF_BARS[guessMode.getValue()] = ranges;
 
-        return ranges;
+            logger.info("Difficulty ranges for " + guessMode + ": " + Arrays.toString(ranges));
+        }
     }
 
-    public BeatmapPool getBeatmapsByYearRangeAndDifficulty(int startYear, int endYear, List<GameDifficulty> difficulties, int limit, String tag, List<GenreType> genres, List<LanguageType> languages) {
+    public BeatmapPool getBeatmapsWithSettings(int startYear, int endYear, List<GameDifficulty> difficulties, int limit, String tag, List<GenreType> genres, List<LanguageType> languages, GameMode gameMode, GuessMode guessMode) {
         if (startYear > endYear) endYear = startYear;
 
         Calendar calendar = Calendar.getInstance();
@@ -161,21 +163,21 @@ public class BeatmapService {
         Timestamp endDate = new Timestamp(calendar.getTimeInMillis());
 
         // Determine difficulty range
-        double[][] difficultyRange = getDifficultyRanges(difficulties);
+        double[][] difficultyRange = getDifficultyRanges(guessMode, difficulties);
 
-        List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByApprovedDateRangeAndDifficulty(startDate, endDate,
-                difficultyRange[0][0], difficultyRange[0][1],
-                difficultyRange[1][0], difficultyRange[1][1],
-                difficultyRange[2][0], difficultyRange[2][1],
-                difficultyRange[3][0], difficultyRange[3][1],
-                difficultyRange[4][0], difficultyRange[4][1],
+        List<Beatmap> beatmaps = beatmapRepository.findBeatmapsByApprovedDateRangeAndDifficultyAndGuessMode(startDate, endDate,
+                difficultyRange[0][1], difficultyRange[0][0],
+                difficultyRange[1][1], difficultyRange[1][0],
+                difficultyRange[2][1], difficultyRange[2][0],
+                difficultyRange[3][1], difficultyRange[3][0],
+                difficultyRange[4][1], difficultyRange[4][0],
                 limit, "%" + tag + "%",
                 genres.stream().map(GenreType::getValue).toList(),
-                languages.stream().map(LanguageType::getValue).toList());
+                languages.stream().map(LanguageType::getValue).toList(), gameMode.toString(),
+                guessMode.toString());
 
         // Fetch aliases for all beatmaps in a single query
         List<Integer> beatmapIds = beatmaps.stream().map(Beatmap::getBeatmapset_id).toList();
-        System.out.println("Beatmap ids: " + beatmapIds);
         List<Alias> aliases = aliasRepository.findAllByBeatmapIds(beatmapIds);
 
         // Map aliases to their respective beatmaps
@@ -184,37 +186,24 @@ public class BeatmapService {
 
         BeatmapPool beatmapPool = new BeatmapPool();
         beatmapPool.setBeatmaps(beatmaps);
-        beatmapPool.setTotalBeatmapPoolSize(beatmapRepository.countBeatmapsByApprovedDateRangeAndDifficulty(startDate, endDate,
-                difficultyRange[0][0], difficultyRange[0][1],
-                difficultyRange[1][0], difficultyRange[1][1],
-                difficultyRange[2][0], difficultyRange[2][1],
-                difficultyRange[3][0], difficultyRange[3][1],
-                difficultyRange[4][0], difficultyRange[4][1],
-                "%" + tag + "%",
-                genres.stream().map(GenreType::getValue).toList(),
-                languages.stream().map(LanguageType::getValue).toList()));
+        beatmapPool.setTotalBeatmapPoolSize(beatmaps.size());
 
         return beatmapPool;
     }
 
-    public double[][] getDifficultyRanges(List<GameDifficulty> difficulties) {
-        double[][] ranges = new double[5][2];
+    public double[][] getDifficultyRanges(GuessMode guessMode, List<GameDifficulty> difficulties) {
+        double[][] ranges = new double[6][2];
 
-        // Define the difficulty ranges
-        Map<GameDifficulty, double[]> difficultyRanges = new HashMap<>();
-        difficultyRanges.put(GameDifficulty.EASY, new double[]{DifficultyCalc.DIFF_EASY_BAR, 1.0d});
-        difficultyRanges.put(GameDifficulty.NORMAL, new double[]{DifficultyCalc.DIFF_NORMAL_BAR, DifficultyCalc.DIFF_EASY_BAR});
-        difficultyRanges.put(GameDifficulty.HARD, new double[]{DifficultyCalc.DIFF_HARD_BAR, DifficultyCalc.DIFF_NORMAL_BAR});
-        difficultyRanges.put(GameDifficulty.INSANE, new double[]{DifficultyCalc.DIFF_INSANE_BAR, DifficultyCalc.DIFF_HARD_BAR});
-        difficultyRanges.put(GameDifficulty.EXTRA, new double[]{DifficultyCalc.DIFF_EXTRA_BAR, DifficultyCalc.DIFF_INSANE_BAR});
+        // Get the difficulty ranges for the specified guess mode
+        double[] diffRanges = DifficultyCalc.DIFF_BARS[guessMode.getValue()];
 
-        // Fill the ranges array with the ranges for the specified difficulties
+        // Fill the first 4 elements with the difficulty ranges
         for (int i = 0; i < difficulties.size(); i++) {
-            ranges[i] = difficultyRanges.get(difficulties.get(i));
+            ranges[i] = new double[]{diffRanges[difficulties.get(i).getValue()], diffRanges[difficulties.get(i).getValue() + 1]};
         }
 
         // Fill the remaining elements with [-1.0, -1.0] to indicate that they are not used
-        for (int i = difficulties.size(); i < 5; i++) {
+        for (int i = difficulties.size(); i < 6; i++) {
             ranges[i] = new double[]{-1.0, -1.0};
         }
 
@@ -236,17 +225,29 @@ public class BeatmapService {
         return beatmapRepository.findDistinctCreators();
     }
 
-    public boolean addPlaycount(int beatmapsetId, int answer_playcount, int total_playcount) {
+    @Async
+    public void addPlaycount(GameMode gameMode, GuessMode guessMode, int beatmapsetId, int answer_playcount, int total_playcount) {
         Beatmap beatmap = beatmapRepository.findById(beatmapsetId).orElse(null);
+
         if (beatmap == null) {
-            return false;
+            return;
         }
 
-        beatmap.setPlaycount_answer(beatmap.getPlaycount_answer() + answer_playcount);
-        beatmap.setPlaycount(beatmap.getPlaycount() + total_playcount);
+        BeatmapStats beatmapStats = beatmap.getBeatmapStats().get(new BeatmapStatsId(beatmapsetId, gameMode, guessMode));
+
+        if (beatmapStats == null) {
+            beatmapStats = BeatmapStats.builder()
+                    .id(new BeatmapStatsId(beatmapsetId, gameMode, guessMode))
+                    .guessed(0)
+                    .played(0)
+                    .beatmap(beatmap)
+                    .build();
+        }
+
+        beatmapStats.setGuessed(beatmapStats.getGuessed() + answer_playcount);
+        beatmapStats.setPlayed(beatmapStats.getPlayed() + total_playcount);
 
         beatmapRepository.save(beatmap);
-        return true;
     }
 
     @Cacheable(value = "beatmapCount")
@@ -277,8 +278,15 @@ public class BeatmapService {
         }
 
         ObjectMapper mapper = new ObjectMapper();
-        Map<String, String> jsonMap = mapper.readValue(result.substring(1, result.length() - 1), new TypeReference<Map<String, String>>() {
-        });
+        List<Map<String, String>> jsonList = mapper.readValue(result, new TypeReference<List<Map<String, String>>>() {});
+
+        Map<String, String> jsonMap = jsonList.get(0);
+
+        Set<GameMode> gameModes = new HashSet<>();
+
+        for (Map<String, String> jm : jsonList) {
+            gameModes.add(GameMode.fromValue(Integer.parseInt(jm.get("mode"))));
+        }
 
         // Check if the beatmap already exists
         if (beatmapRepository.existsById(Integer.parseInt(jsonMap.get("beatmapset_id")))) {
@@ -292,7 +300,23 @@ public class BeatmapService {
         // Convert the list of tags to a single string
         String tagString = String.join(" ", tagList);
 
+        Map<BeatmapStatsId, BeatmapStats> beatmapStatsMap = new HashMap<>();
+
+        for (GameMode gameMode : gameModes) {
+            for (GuessMode guessMode : GuessMode.values()) {
+                BeatmapStatsId beatmapStatsId = new BeatmapStatsId(Integer.parseInt(jsonMap.get("beatmapset_id")), gameMode, guessMode);
+                BeatmapStats beatmapStats = BeatmapStats.builder()
+                        .id(beatmapStatsId)
+                        .guessed(0)
+                        .played(0)
+                        .build();
+
+                beatmapStatsMap.put(beatmapStatsId, beatmapStats);
+            }
+        }
+
         Beatmap beatmap = Beatmap.builder()
+                .beatmapStats(beatmapStatsMap)
                 .beatmapset_id(Integer.parseInt(jsonMap.get("beatmapset_id")))
                 .artist(jsonMap.get("artist"))
                 .title(jsonMap.get("title"))
@@ -301,12 +325,10 @@ public class BeatmapService {
                 .genre(jsonMap.get("genre_id"))
                 .tags(tagString)
                 .approved_date(new Timestamp(dateFormat.parse(jsonMap.get("approved_date")).getTime()))
-                .playcount(1)
-                .playcount_answer(0)
                 .blur(false)
                 .build();
 
-        System.out.println("Adding beatmap: " + beatmap.getArtistAndTitle());
+        System.out.println("Adding beatmap: " + beatmap);
 
         return beatmapRepository.save(beatmap);
     }
@@ -325,8 +347,6 @@ public class BeatmapService {
         if (beatmap.isBlur()) return null;
 
         beatmap.setBlur(true);
-        beatmap.setPlaycount(10);
-        beatmap.setPlaycount_answer(5);
 
         logger.info("Adding blur to beatmap: " + beatmap.getArtistAndTitle());
 
