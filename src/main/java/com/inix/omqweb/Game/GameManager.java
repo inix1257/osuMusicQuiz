@@ -13,9 +13,9 @@ import com.inix.omqweb.Message.SystemMessageHandler;
 import com.inix.omqweb.Util.AESUtil;
 import com.inix.omqweb.Util.AnswerUtil;
 import com.inix.omqweb.DTO.*;
+import com.inix.omqweb.Util.DifficultyCalc;
 import com.inix.omqweb.Util.ProfileUtil;
-import com.inix.omqweb.osuAPI.Player;
-import com.inix.omqweb.osuAPI.PlayerRepository;
+import com.inix.omqweb.osuAPI.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public class GameManager {
 
     private final ProfileUtil profileUtil;
 
-//    @PostConstruct
+    @PostConstruct
     private void createDebugLobbies() {
         if (!profileUtil.isDevEnv()) return;
         // Create lobbies for debug purpose
@@ -68,6 +68,10 @@ public class GameManager {
 
             CreateGameDTO createGameDTO = CreateGameDTO.builder()
                     .name("Lobby " + (i + 1))
+                    .gameMode(GameMode.STD)
+                    .guessMode(GuessMode.TITLE)
+                    .genreType(List.of(GenreType.values()))
+                    .languageType(List.of(LanguageType.values()))
                     .totalQuestions(10)
                     .guessingTime(10)
                     .cooldownTime(5)
@@ -105,7 +109,7 @@ public class GameManager {
 
                 long diff = new Date().getTime() - game.getLastActivity().getTime();
 
-                if (diff > 300000) {
+                if (diff > 1000 * 60 * 5) {
                     logger.info("Game: " + game + " has been inactive for 5 minutes. Deleting game.");
                     deleteGame(game);
                     continue;
@@ -142,7 +146,7 @@ public class GameManager {
 
         game.setOwner(owner);
         game.setLastActivity(new Date());
-
+        game.setGameMode(createGameDTO.getGameMode());
         game.setGuessMode(createGameDTO.getGuessMode());
         game.setCreationDate(new Date());
 
@@ -437,7 +441,12 @@ public class GameManager {
 
                 int correctAnswers = checkAnswer(game);
 
-                double guessRate = (double) beatmap.getPlaycount_answer() / (double) beatmap.getPlaycount();
+                List<BeatmapStatsDTO> beatmapStats = beatmap.getBeatmapStatsDTO();
+
+                BeatmapStatsDTO beatmapStatsDTO = beatmapStats.get(game.getGuessMode().getValue());
+
+                double guessRate = beatmapStatsDTO.getGuess_rate();
+
                 double difficultyBonus = AnswerUtil.getDifficultyBonus(guessRate);
 
                 double poolSizeBonus = AnswerUtil.getPoolSizeBonus(game.getBeatmapsPoolSize());
@@ -445,6 +454,8 @@ public class GameManager {
                 // Get leaderboard and update scores
                 for (Map.Entry<Player, TotalGuessDTO> entry : game.getLeaderboard().entrySet()) {
                     TotalGuessDTO totalGuessDTO = entry.getValue();
+                    totalGuessDTO.setTotalMapPlayed(totalGuessDTO.getTotalMapPlayed() + 1);
+
                     if (game.getPlayerAnswers().containsKey(entry.getKey())) { // If the player has answered
                         PlayerAnswer playerAnswer = game.getPlayerAnswers().get(entry.getKey());
 
@@ -465,6 +476,7 @@ public class GameManager {
                             totalGuessDTO.setTotalPoints(totalGuessDTO.getTotalPoints() + point);
                             totalGuessDTO.setCorrect(true);
                             totalGuessDTO.setAliasCorrect(playerAnswer.isAliasCorrect());
+                            totalGuessDTO.getSpeedPoints().add(speedBonus);
 
                             playerAnswer.setTotalPoints(point);
 //                            entry.getKey().setPoints(entry.getKey().getPoints().add(BigDecimal.valueOf(point)));
@@ -503,14 +515,30 @@ public class GameManager {
                     for (Player player : game.getPlayers()) {
                         PlayerAnswer playerAnswer = game.getPlayerAnswers().get(player);
 
+                        PlayerStatsId playerStatsId = PlayerStatsId.builder()
+                                .player_id(player.getId())
+                                .gameMode(game.getGameMode().toString())
+                                .guessMode(game.getGuessMode().toString())
+                                .difficulty(DifficultyCalc.getDifficulty(game.getGuessMode(), guessRate).name())
+                                .build();
+
+                        PlayerStats playerStats = player.getPlayerStats().get(playerStatsId);
+
+                        if (playerStats == null) {
+                            playerStats = PlayerStats.builder()
+                                    .id(playerStatsId)
+                                    .player(player)
+                                    .gameMode(game.getGameMode())
+                                    .guessMode(game.getGuessMode())
+                                    .difficulty(DifficultyCalc.getDifficulty(game.getGuessMode(), guessRate))
+                                    .guessed(0)
+                                    .played(0)
+                                    .build();
+                        }
+
                         if (playersToUpdate.contains(player)) {
-                            switch (beatmap.getBeatmapDifficulty()) {
-                                case EASY -> player.setMaps_guessed_easy(player.getMaps_guessed_easy() + 1);
-                                case NORMAL -> player.setMaps_guessed_normal(player.getMaps_guessed_normal() + 1);
-                                case HARD -> player.setMaps_guessed_hard(player.getMaps_guessed_hard() + 1);
-                                case INSANE -> player.setMaps_guessed_insane(player.getMaps_guessed_insane() + 1);
-                                case EXTRA -> player.setMaps_guessed_extra(player.getMaps_guessed_extra() + 1);
-                            }
+
+                            playerStats.setGuessed(playerStats.getGuessed() + 1);
 
                             if (playerAnswer.isCorrect()) {
                                 player.setPoints(player.getPoints().add(BigDecimal.valueOf(playerAnswer.getTotalPoints())));
@@ -519,23 +547,23 @@ public class GameManager {
 
                         saveHistoryDetail(game, player, beatmap, playerAnswer);
 
-                        switch (beatmap.getBeatmapDifficulty()) {
-                            case EASY -> player.setMaps_played_easy(player.getMaps_played_easy() + 1);
-                            case NORMAL -> player.setMaps_played_normal(player.getMaps_played_normal() + 1);
-                            case HARD -> player.setMaps_played_hard(player.getMaps_played_hard() + 1);
-                            case INSANE -> player.setMaps_played_insane(player.getMaps_played_insane() + 1);
-                            case EXTRA -> player.setMaps_played_extra(player.getMaps_played_extra() + 1);
-                        }
+                        playerStats.setPlayed(playerStats.getPlayed() + 1);
+
+                        player.getPlayerStats().put(playerStatsId, playerStats);
                     }
                 }
 
                 game.getPlayerAnswers().clear();
                 game.setQuestionIndex(game.getQuestionIndex() + 1);
 
-                if (game.isRanked()) {
-                    beatmapService.addPlaycount(beatmap.getBeatmapset_id(), correctAnswers, game.getPlayers().size());
+                if (true) {
+                    beatmapService.addPlaycount(game.getGameMode(), game.getGuessMode(), beatmap.getBeatmapset_id(), correctAnswers, game.getPlayers().size());
                     playerRepository.saveAll(game.getPlayers());
                 }
+
+                // If the line below (and its declaration) throws error just comment it out
+                // I haven't uploaded on github to not leak the achievement details
+                achievementService.checkAchievements(game);
 
                 // Check if the game is over
                 if (game.getQuestionIndex() >= game.getTotalQuestions()) {
@@ -583,7 +611,13 @@ public class GameManager {
                     .beatmapset_id(beatmap.getBeatmapset_id())
                     .build();
 
-            double difficultyBonus = AnswerUtil.getDifficultyBonus(beatmap.getAnswer_rate());
+            List<BeatmapStatsDTO> beatmapStats = beatmap.getBeatmapStatsDTO();
+
+            BeatmapStatsDTO beatmapStatsDTO = beatmapStats.get(game.getGuessMode().getValue());
+
+            double guessRate = beatmapStatsDTO.getGuess_rate();
+
+            double difficultyBonus = AnswerUtil.getDifficultyBonus(guessRate);
             double speedBonus = AnswerUtil.getSpeedBonus(playerAnswer.getTimeTaken());
 
             LobbyHistoryDetail lobbyHistoryDetail = LobbyHistoryDetail.builder()
@@ -596,7 +630,7 @@ public class GameManager {
                     .timetaken(playerAnswer.getTimeTaken() == null ? game.getGuessingTime() : playerAnswer.getTimeTaken())
                     .difficulty_bonus(difficultyBonus)
                     .speed_bonus(speedBonus)
-                    .difficulty(beatmap.getBeatmapDifficulty().name())
+                    .difficulty(DifficultyCalc.getDifficulty(game.getGuessMode(), guessRate).name())
                     .build();
 
             lobbyHistoryDetailRepository.save(lobbyHistoryDetail);
@@ -659,6 +693,7 @@ public class GameManager {
                 .totalQuestions(game.getTotalQuestions())
                 .guessingTime(game.getGuessingTime())
                 .cooldownTime(game.getCooldownTime())
+                .gameMode(game.getGameMode())
                 .guessMode(game.getGuessMode())
                 .poolMode(game.getPoolMode())
                 .genreType(new ArrayList<>(game.getGenreType()))
@@ -682,6 +717,10 @@ public class GameManager {
 
         if (prevGame.getTotalQuestions() != game.getTotalQuestions()) {
             messageService.sendSystemMessage(game.getUuid(), "Total questions have been changed to **" + game.getTotalQuestions() + "**");
+        }
+
+        if (prevGame.getGameMode() != game.getGameMode()) {
+            messageService.sendSystemMessage(game.getUuid(), "Game mode has been changed to **" + game.getGameMode() + "**");
         }
 
         if (prevGame.getGuessingTime() != game.getGuessingTime()) {
@@ -749,7 +788,7 @@ public class GameManager {
         }
 
         if (prevGame.isRanked() && !game.isRanked()) {
-            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby do not meet the requirements for ranked play. Games will be unranked and profile stats will not be updated.");
+//            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby do not meet the requirements for ranked play. Games will be unranked and profile stats will not be updated.");
         }
 
         if (!prevGame.isRanked() && game.isRanked()) {
@@ -764,9 +803,9 @@ public class GameManager {
             tags = "vocaloid";
         }
 
-        BeatmapPool beatmapPool = beatmapService.getBeatmapsByYearRangeAndDifficulty(game.getStartYear(), game.getEndYear(),
-                game.getDifficulty(), game.getTotalQuestions(), tags,
-                game.getGenreType(), game.getLanguageType());
+        BeatmapPool beatmapPool = beatmapService.getBeatmapsWithSettings(game.getStartYear(), game.getEndYear(),
+                game.getDifficulty(), Integer.MAX_VALUE, tags,
+                game.getGenreType(), game.getLanguageType(), game.getGameMode(), game.getGuessMode());
         int totalBeatmapPoolSize = beatmapPool.getTotalBeatmapPoolSize();
 
         messageService.sendSystemMessage(game.getUuid(), "Estimated beatmap pool size: " + totalBeatmapPoolSize);
@@ -775,13 +814,14 @@ public class GameManager {
     }
 
     private void setGameProperties(Game game, GameSettingsDTO gameSettingsDTO) {
-        game.setName(gameSettingsDTO.getName());
+        game.setName(gameSettingsDTO.getName() != null ? gameSettingsDTO.getName() : game.getOwner().getUsername() + "'s game");
         game.setTotalQuestions(Math.min(MAX_TOTAL_QUESTIONS, Math.max(MIN_TOTAL_QUESTIONS, gameSettingsDTO.getTotalQuestions())));
         game.setGuessingTime(Math.min(MAX_GUESSING_TIME, Math.max(MIN_GUESSING_TIME, gameSettingsDTO.getGuessingTime())));
         game.setCooldownTime(Math.min(MAX_COOLDOWN_TIME, Math.max(MIN_COOLDOWN_TIME, gameSettingsDTO.getCooldownTime())));
         game.setAutoskip(gameSettingsDTO.isAutoskip());
         game.setStartYear(Math.max(2007, gameSettingsDTO.getStartYear()));
         game.setEndYear(Math.min(Year.now().getValue(), gameSettingsDTO.getEndYear()));
+        game.setGameMode(gameSettingsDTO.getGameMode());
         game.setPoolMode(gameSettingsDTO.getPoolMode());
         game.setGuessMode(gameSettingsDTO.getGuessMode());
         game.setDisplayMode(gameSettingsDTO.getDisplayMode());
@@ -792,13 +832,18 @@ public class GameManager {
             game.setStartYear(game.getEndYear());
         }
 
+        if (gameSettingsDTO.getDifficulty().isEmpty()) {
+            game.getDifficulty().add(GameDifficulty.EASY);
+            game.getDifficulty().add(GameDifficulty.NORMAL);
+        }
+
         game.setRanked(true);
 
         // Ranked game should have both audio and background display modes, otherwise unranked
         // Artist and Creator (Mapper) gameModes are unranked
         if ((!game.getDisplayMode().contains(DisplayMode.AUDIO) || !game.getDisplayMode().contains(DisplayMode.BACKGROUND))
         || (game.getGuessMode() == GuessMode.ARTIST || game.getGuessMode() == GuessMode.CREATOR)) {
-            game.setRanked(false);
+//            game.setRanked(false);
         }
 
         game.getDifficulty().clear();
@@ -828,11 +873,16 @@ public class GameManager {
             tags = "vocaloid";
         }
 
-        BeatmapPool beatmapPool = beatmapService.getBeatmapsByYearRangeAndDifficulty(game.getStartYear(), game.getEndYear(),
+        BeatmapPool beatmapPool = beatmapService.getBeatmapsWithSettings(game.getStartYear(), game.getEndYear(),
                 game.getDifficulty(), game.getTotalQuestions(), tags,
-                game.getGenreType(), game.getLanguageType());
+                game.getGenreType(), game.getLanguageType(), game.getGameMode(), game.getGuessMode());
         List<Beatmap> beatmaps = beatmapPool.getBeatmaps();
-        int totalBeatmapPoolSize = beatmapPool.getTotalBeatmapPoolSize();
+
+        BeatmapPool totalBeatmapPool = beatmapService.getBeatmapsWithSettings(game.getStartYear(), game.getEndYear(),
+                game.getDifficulty(), Integer.MAX_VALUE, tags,
+                game.getGenreType(), game.getLanguageType(), game.getGameMode(), game.getGuessMode());
+
+        int totalBeatmapPoolSize = totalBeatmapPool.getTotalBeatmapPoolSize();
 
         if (totalBeatmapPoolSize < game.getTotalQuestions()) {
             // Beatmap pool sanity check
@@ -919,10 +969,6 @@ public class GameManager {
         if (game == null) {
             return false;
         }
-
-        // If the line below (and its declaration) throws error just comment it out
-        // I haven't uploaded on github to not leak the achievement details
-        achievementService.checkAchievements(game);
 
         game.setPlaying(false);
         game.setGuessing(false);
@@ -1057,7 +1103,12 @@ public class GameManager {
         if (!games.containsKey(gameId)) {
             return null;
         }
-        return games.get(gameId);
+
+        // Sort players based on the leaderboard points before returning the game
+        Game game = games.get(gameId);
+        game.getPlayers().sort(Comparator.comparing(p -> game.getLeaderboard().get(p).getTotalPoints(), Comparator.reverseOrder()));
+
+        return game;
     }
 
     private void cancelSchedulers(Game game) {
