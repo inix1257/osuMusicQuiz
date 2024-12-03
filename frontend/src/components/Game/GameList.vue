@@ -12,11 +12,11 @@
         <h2 class="gameroom-unranked" v-if="!gameroom.ranked">Unranked</h2>
         <div v-if="!gameroom.displayMode.includes('AUDIO')" class="gameroom-difficulty-container">
           <font-awesome-icon :icon="['fas', 'volume-xmark']"/>
-          NO AUDIO
+          <strong>NO AUDIO</strong>
         </div>
         <div v-if="!gameroom.displayMode.includes('BACKGROUND')" class="gameroom-difficulty-container">
           <font-awesome-icon :icon="['fas', 'eye-slash']"/>
-          NO BG
+          <strong>NO BG</strong>
         </div>
       </div>
       <div class="gameroom-header">
@@ -26,9 +26,9 @@
         </div>
       </div>
       <div class="gameroom-details">
-<!--        <font-awesome-icon :icon="['fas', modeIcon]" class="info-icon"/>-->
         <div class="gameroom-difficulty-container">
-          {{ gameroom.guessMode }}
+          <img :src="getModeIcon()" class="mode-icon" :title="gameroom.gameMode" :alt="gameroom.gameMode">
+          {{ gameroom.gameMode }} | {{ gameroom.guessMode }}
         </div>
         <div class="gameroom-difficulty-container">
           <div v-for="diff in gameroom.difficulty" :key="diff" :class="difficultyClass(diff)" class="gameroom-difficulty">
@@ -39,10 +39,10 @@
           {{ gameroom.guessingTime }}s / {{ gameroom.cooldownTime}}s
         </div>
         <div class="gameroom-difficulty-container">
-          <div>Maps: {{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }} ({{ gameroom.startYear }} - {{ gameroom.endYear }})</div>
+          <div>{{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }} Maps ({{ gameroom.startYear }} - {{ gameroom.endYear }})</div>
         </div>
-        <div class="gameroom-difficulty-container" v-if="gameroom.guessMode && gameroom.guessMode !== 'TITLE'">
-          <div>{{ poolModeFormat(gameroom.guessMode) }}</div>
+        <div class="gameroom-difficulty-container" v-if="gameroom.poolMode && gameroom.poolMode !== 'DEFAULT'">
+          <div>{{ poolModeFormat(gameroom.poolMode) }}</div>
         </div>
       </div>
       <div class="player-info-row">
@@ -61,9 +61,23 @@
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 import {useUserStore} from "@/stores/userStore";
 
+import icon_osu from '@/assets/osu/mode-osu.png';
+import icon_taiko from '@/assets/osu/mode-taiko.png';
+import icon_fruits from '@/assets/osu/mode-fruits.png';
+import icon_mania from '@/assets/osu/mode-mania.png';
+
 export default {
   name: 'GameroomPage',
   components: {FontAwesomeIcon},
+  data() {
+    return {
+      modeIcon: '',
+      icon_osu: icon_osu,
+      icon_taiko: icon_taiko,
+      icon_fruits: icon_fruits,
+      icon_mania: icon_mania
+    };
+  },
   props: {
     gameroom: {
       type: Object,
@@ -139,21 +153,22 @@ export default {
 
     filteredPlayers(players) {
       return players.filter(player => player.id !== this.gameroom.owner.id).slice(0, 16);
+    },
+
+    getModeIcon() {
+      switch (this.gameroom.gameMode) {
+        case 'STD':
+          return this.icon_osu;
+        case 'TAIKO':
+          return this.icon_taiko;
+        case 'CTB':
+          return this.icon_fruits;
+        case 'MANIA':
+          return this.icon_mania;
+      }
     }
   },
 
-  computed: {
-    modeIcon() {
-      switch (this.gameroom.mode) {
-        case 'TITLE':
-          return 'music';
-        case 'PATTERN':
-          return 'circle';
-        default:
-          return '';
-      }
-    },
-  }
 };
 </script>
 
@@ -193,7 +208,7 @@ export default {
 
 .gameroom-header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
 }
 
 .gameroom-hostname {
@@ -214,6 +229,7 @@ export default {
   padding-right: 8px;
   display: flex;
   gap: 6px;
+  align-items: center;
 }
 
 .owner-info {
@@ -293,5 +309,10 @@ export default {
 
 .idle {
   color: #8585d7;
+}
+
+.mode-icon {
+  width: 1em;
+  height: 1em;
 }
 </style>
