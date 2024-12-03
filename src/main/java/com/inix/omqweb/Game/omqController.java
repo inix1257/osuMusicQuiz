@@ -9,6 +9,7 @@ import com.inix.omqweb.Util.ProfileUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.websocket.server.PathParam;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,18 +221,8 @@ public class omqController {
     }
 
     @GetMapping("/possibleAnswers")
-    public ResponseEntity<?> getPossibleAnswers() {
-        return ResponseEntity.ok(beatmapService.getPossibleAnswers());
-    }
-
-    @GetMapping("/possibleAnswers_artist")
-    public ResponseEntity<?> getPossibleAnswers_artist() {
-        return ResponseEntity.ok(beatmapService.getPossibleArtists());
-    }
-
-    @GetMapping("/possibleAnswers_creator")
-    public ResponseEntity<?> getPossibleAnswers_creator() {
-        return ResponseEntity.ok(beatmapService.getPossibleCreators());
+    public ResponseEntity<?> getPossibleAnswers(@RequestParam GameMode gamemode, @RequestParam GuessMode guessmode) {
+        return ResponseEntity.ok(beatmapService.getPossibleAnswers(gamemode, guessmode));
     }
 
     @PostMapping("/addBeatmap")

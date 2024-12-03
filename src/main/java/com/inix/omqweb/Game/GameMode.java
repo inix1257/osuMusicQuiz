@@ -8,7 +8,8 @@ public enum GameMode {
     STD(0),
     TAIKO(1),
     CTB(2),
-    MANIA(3);
+    MANIA(3),
+    ANY(4);
 
     private final int value;
 
