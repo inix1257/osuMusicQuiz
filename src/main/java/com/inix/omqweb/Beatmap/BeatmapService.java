@@ -211,18 +211,20 @@ public class BeatmapService {
     }
 
     @Cacheable(value = "possibleAnswers")
-    public List<String> getPossibleAnswers() {
-        return beatmapRepository.findDistinctTitles();
-    }
+    public List<String> getPossibleAnswers(GameMode gameMode, GuessMode guessMode) {
+        if (gameMode == GameMode.ANY) {
+            return switch (guessMode) {
+                case ARTIST -> beatmapRepository.findDistinctArtists();
+                case CREATOR -> beatmapRepository.findDistinctCreators();
+                default -> beatmapRepository.findDistinctTitles();
+            };
+        }
 
-    @Cacheable(value = "possibleAnswers_artist")
-    public List<String> getPossibleArtists() {
-        return beatmapRepository.findDistinctArtists();
-    }
-
-    @Cacheable(value = "possibleAnswers_creator")
-    public List<String> getPossibleCreators() {
-        return beatmapRepository.findDistinctCreators();
+        return switch (guessMode) {
+            case ARTIST -> beatmapRepository.findDistinctArtists(gameMode.toString());
+            case CREATOR -> beatmapRepository.findDistinctCreators(gameMode.toString());
+            default -> beatmapRepository.findDistinctTitles(gameMode.toString());
+        };
     }
 
     @Async
@@ -267,7 +269,7 @@ public class BeatmapService {
         beatmapReportRepository.save(beatmapReport);
     }
 
-    @CacheEvict(value = {"beatmapCount", "possibleAnswers", "possibleAnswers_artist", "possibleAnswers_creator"}, allEntries = true)
+    @CacheEvict(value = {"beatmapCount", "possibleAnswers"}, allEntries = true)
     public Beatmap addBeatmap(String beatsetmap_id) throws IOException, ParseException {
         URL url = new URL("https://osu.ppy.sh/api/get_beatmaps?k=" + apiKey + "&s=" + beatsetmap_id);
         BufferedReader bf; String line; String result="";
@@ -288,9 +290,12 @@ public class BeatmapService {
             gameModes.add(GameMode.fromValue(Integer.parseInt(jm.get("mode"))));
         }
 
+        Beatmap existingBeatmap = beatmapRepository.findById(Integer.parseInt(jsonMap.get("beatmapset_id"))).orElse(null);
+        Map<BeatmapStatsId, BeatmapStats> beatmapStatsMap = new HashMap<>();
+
         // Check if the beatmap already exists
-        if (beatmapRepository.existsById(Integer.parseInt(jsonMap.get("beatmapset_id")))) {
-            return null;
+        if (existingBeatmap != null) {
+            beatmapStatsMap = existingBeatmap.getBeatmapStats();
         }
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -300,11 +305,14 @@ public class BeatmapService {
         // Convert the list of tags to a single string
         String tagString = String.join(" ", tagList);
 
-        Map<BeatmapStatsId, BeatmapStats> beatmapStatsMap = new HashMap<>();
-
         for (GameMode gameMode : gameModes) {
             for (GuessMode guessMode : GuessMode.values()) {
                 BeatmapStatsId beatmapStatsId = new BeatmapStatsId(Integer.parseInt(jsonMap.get("beatmapset_id")), gameMode, guessMode);
+
+                if (beatmapStatsMap.containsKey(beatmapStatsId)) {
+                    continue;
+                }
+
                 BeatmapStats beatmapStats = BeatmapStats.builder()
                         .id(beatmapStatsId)
                         .guessed(0)
@@ -315,17 +323,22 @@ public class BeatmapService {
             }
         }
 
+        String title = jsonMap.get("title");
+        title = title.replace(" (TV Size)", "");
+        title = title.replace(" (Short Ver.)", "");
+        title = title.replace(" (Cut Ver.)", "");
+
         Beatmap beatmap = Beatmap.builder()
                 .beatmapStats(beatmapStatsMap)
                 .beatmapset_id(Integer.parseInt(jsonMap.get("beatmapset_id")))
-                .artist(jsonMap.get("artist"))
-                .title(jsonMap.get("title"))
+                .artist(existingBeatmap != null ? existingBeatmap.getArtist() : jsonMap.get("artist"))
+                .title(existingBeatmap != null ? existingBeatmap.getTitle() : title)
                 .creator(jsonMap.get("creator"))
                 .language(jsonMap.get("language_id"))
                 .genre(jsonMap.get("genre_id"))
-                .tags(tagString)
+                .tags(existingBeatmap != null ? existingBeatmap.getTags() : tagString)
                 .approved_date(new Timestamp(dateFormat.parse(jsonMap.get("approved_date")).getTime()))
-                .blur(false)
+                .blur(existingBeatmap != null && existingBeatmap.isBlur())
                 .build();
 
         System.out.println("Adding beatmap: " + beatmap);
@@ -336,13 +349,14 @@ public class BeatmapService {
     public Beatmap addBlur(String beatmapset_id) {
         Beatmap beatmap = beatmapRepository.findById(Integer.parseInt(beatmapset_id)).orElse(null);
         if (beatmap == null) {
+            logger.error("Beatmap not found: " + beatmapset_id);
             return null;
         }
 
         List<BeatmapReport> beatmapReport = beatmapReportRepository.findAllByBeatmapsetId(Integer.parseInt(beatmapset_id));
         beatmapReportRepository.deleteAll(beatmapReport);
 
-        resourceService.getImage(Integer.parseInt(beatmapset_id), true);
+        resourceService.forceGetImage(Integer.parseInt(beatmapset_id), true);
 
         if (beatmap.isBlur()) return null;
 
