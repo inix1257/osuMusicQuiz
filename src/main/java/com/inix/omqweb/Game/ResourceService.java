@@ -36,7 +36,13 @@ public class ResourceService {
     public void getImage(int beatmapsetId, boolean blur) {
         String imageUrl = "https://assets.ppy.sh/beatmaps/" + beatmapsetId + "/covers/raw.jpg";
         Path path = Path.of("./preview/" + beatmapsetId + ".jpg");
-        fetchAndSaveImage(imageUrl, path, blur);
+        fetchAndSaveImage(imageUrl, path, blur, false);
+    }
+
+    public void forceGetImage(int beatmapsetId, boolean blur) {
+        String imageUrl = "https://assets.ppy.sh/beatmaps/" + beatmapsetId + "/covers/raw.jpg";
+        Path path = Path.of("./preview/" + beatmapsetId + ".jpg");
+        fetchAndSaveImage(imageUrl, path, blur, true);
     }
 
     @Async
@@ -73,9 +79,9 @@ public class ResourceService {
         }
     }
 
-    private void fetchAndSaveImage(String url, Path path, boolean blur) {
+    private void fetchAndSaveImage(String url, Path path, boolean blur, boolean isForce) {
         try {
-            if (!Files.exists(path)) {
+            if (!Files.exists(path) || isForce) {
                 webClient.get()
                         .uri(url)
                         .retrieve()
@@ -131,10 +137,9 @@ public class ResourceService {
             int originalWidth = originalImage.getWidth();
             int originalHeight = originalImage.getHeight();
             double aspectRatio = (double) originalWidth / originalHeight;
-            int newWidth = 960; // Desired width
-            int newHeight = (int) (newWidth / aspectRatio); // Calculated height
+            int newWidth = 960;
+            int newHeight = (int) (newWidth / aspectRatio);
 
-            // Create a new image with the new dimensions
             BufferedImage resizedImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_RGB);
             Graphics2D g = resizedImage.createGraphics();
             g.drawImage(originalImage, 0, 0, newWidth, newHeight, null);
@@ -144,14 +149,11 @@ public class ResourceService {
             if (applyBlur) {
                 int blurLevel = 50; // Desired blur level
 
-                // Define a kernel that blurs an image
                 float[] blurKernel = new float[blurLevel * blurLevel];
                 Arrays.fill(blurKernel, 1.0f / (blurLevel * blurLevel));
 
-                // Create a ConvolveOp object with the blur kernel
                 ConvolveOp blurOp = new ConvolveOp(new Kernel(blurLevel, blurLevel, blurKernel));
 
-                // Apply the blur effect to the resized image
                 resizedImage = blurOp.filter(resizedImage, null);
             }
 

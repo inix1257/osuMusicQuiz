@@ -1,6 +1,8 @@
 package com.inix.omqweb.Game;
 
 import com.inix.omqweb.Util.AESUtil;
+import com.inix.omqweb.osuAPI.Player;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -25,79 +27,63 @@ public class ResourceController {
 
     @GetMapping("/audio/{encryptedId}")
     public Mono<ResponseEntity<Resource>> getAudio(@PathVariable String encryptedId) {
-        try {
-            String id = aesUtil.decrypt(encryptedId);
-            Path path = Path.of("./preview/" + id + ".mp3");
+        String id = aesUtil.decrypt(encryptedId);
+        Path path = Path.of("./preview/" + id + ".mp3");
 
-            if (Files.exists(path)) {
-                Resource resource = new FileSystemResource(path);
-                return Mono.just(
-                        ResponseEntity.ok()
-                                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                                .body(resource)
-                );
-            } else {
-                throw new RuntimeException("File not found: " + path);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to decrypt the ID:" + encryptedId);
+        if (Files.exists(path)) {
+            Resource resource = new FileSystemResource(path);
+            return Mono.just(
+                    ResponseEntity.ok()
+                            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                            .body(resource)
+            );
+        } else {
+            throw new RuntimeException("File not found: " + path);
         }
+
     }
 
     @GetMapping("/image/{encryptedId}")
     public Mono<ResponseEntity<Resource>> getImage(@PathVariable String encryptedId) {
         String id;
-        try {
-            id = aesUtil.decrypt(encryptedId);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to decrypt the ID:" + encryptedId);
-        }
+        id = aesUtil.decrypt(encryptedId);
 
         Path path = Path.of("./preview/" + id + ".jpg");
 
-        try {
-            if (Files.exists(path)) {
-                Resource resource = new FileSystemResource(path);
-                return Mono.just(
-                        ResponseEntity.ok()
-                                .contentType(MediaType.IMAGE_JPEG)
-                                .body(resource)
-                );
-            } else {
-                throw new RuntimeException("File not found: " + path);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error while retrieving the file: " + path, e);
+        if (Files.exists(path)) {
+            Resource resource = new FileSystemResource(path);
+            return Mono.just(
+                    ResponseEntity.ok()
+                            .contentType(MediaType.IMAGE_JPEG)
+                            .body(resource)
+            );
+        } else {
+            throw new RuntimeException("File not found: " + path);
         }
+
     }
 
     @GetMapping("/image/{encryptedId}/{encryptedKey}")
     public Mono<ResponseEntity<Resource>> getOriginalImage(@PathVariable String encryptedId, @PathVariable String encryptedKey) {
         String id;
         String key;
-        try {
-            id = aesUtil.decrypt(encryptedId);
-            key = aesUtil.decrypt(encryptedKey);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to decrypt the ID:" + encryptedId);
-        }
+
+        id = aesUtil.decrypt(encryptedId);
+        key = aesUtil.decrypt(encryptedKey);
 
         Path path = Path.of("./preview/" + id + "_original.jpg");
 
-        try {
-            if (Files.exists(path)) {
-                Resource resource = new FileSystemResource(path);
-                return Mono.just(
-                        ResponseEntity.ok()
-                                .contentType(MediaType.IMAGE_JPEG)
-                                .body(resource)
-                );
-            } else {
-                throw new RuntimeException("File not found: " + path);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Error while retrieving the file: " + path, e);
+        if (Files.exists(path)) {
+            Resource resource = new FileSystemResource(path);
+            return Mono.just(
+                    ResponseEntity.ok()
+                            .contentType(MediaType.IMAGE_JPEG)
+                            .body(resource)
+            );
+        } else {
+            throw new RuntimeException("File not found: " + path);
         }
+
     }
 
     @GetMapping("/beatmap/{id}")
