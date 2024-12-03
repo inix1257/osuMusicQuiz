@@ -51,8 +51,7 @@ public class AESUtil {
         }
     }
 
-    private Key generateKey() throws Exception {
-        Key key = new SecretKeySpec(secretKey.getBytes(), ALGORITHM);
-        return key;
+    private Key generateKey() {
+        return new SecretKeySpec(secretKey.getBytes(), ALGORITHM);
     }
 }
