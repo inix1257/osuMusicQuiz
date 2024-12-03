@@ -48,7 +48,7 @@ export default {
   },
 
   async mounted() {
-    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers`, {})
+    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers?gamemode=STD&guessmode=TITLE`, {})
         .then((response) => {
           this.possibleAnswers = response.data;
         })
