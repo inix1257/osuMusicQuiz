@@ -109,26 +109,15 @@ export default {
     },
 
     requestLeaveRoom() {
+      if (this.webSocketService) {
+        this.webSocketService.disconnect();
+        this.webSocketService = null;
+      }
+
       apiService.post('/api/leaveGame', {
         gameId: this.gameId,
         userId: this.me.id,
       })
-          .then((response) => {
-            if (response.data) {
-              if (this.webSocketService) {
-                this.webSocketService.disconnect();
-              }
-            } else {
-              console.error('Error leaving game');
-            }
-          })
-          .catch((error) => {
-            console.error('Error leaving game', error);
-          });
-    },
-
-    beforeUnload(event) {
-      this.requestLeaveRoom();
     },
 
     sendChatMessage(content) {
@@ -310,6 +299,7 @@ export default {
               this.players = response.data.players;
               this.game = response.data;
               this.setInputPlaceholder();
+              this.getPossibleAnswers();
 
             } else {
               alert("Either you already have joined this game, or the game does not exist.")
@@ -392,6 +382,16 @@ export default {
       }
     },
 
+    getPossibleAnswers() {
+      apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers?gamemode=${this.game.gameMode}&guessmode=${this.game.guessMode}`, {})
+          .then((response) => {
+            this.possibleAnswers = response.data;
+          })
+          .catch((error) => {
+            console.error('Error getting beatmap', error);
+          });
+    },
+
     updateSettings(newSettings) {
       this.settings = newSettings;
     },
@@ -418,27 +418,8 @@ export default {
     }
 
     await this.joinGame(roompw, false);
-    var possibleAnswerURL = 'possibleAnswers';
 
-    if (this.game) {
-      if (this.game.guessMode === 'ARTIST') {
-        possibleAnswerURL = 'possibleAnswers_artist';
-      } else if (this.game.guessMode === 'CREATOR') {
-        possibleAnswerURL = 'possibleAnswers_creator';
-      }
-    }
-
-    apiService.get(`${process.env.VUE_APP_API_URL}/api/${possibleAnswerURL}`, {})
-        .then((response) => {
-          this.possibleAnswers = response.data;
-        })
-        .catch((error) => {
-          console.error('Error getting beatmap', error);
-        });
-
-    // window.addEventListener('beforeunload', this.beforeUnload);
-    // window.addEventListener('unload', this.requestLeaveRoom);
-
+    window.addEventListener('beforeunload', this.requestLeaveRoom);
 
     setTimeout(() => {
       const audioPlayer = this.$refs.audio;
@@ -480,6 +461,7 @@ export default {
       },
       onGameStatus: (message) => {
         // Handle game status updates
+
         if (message.body === "gameStart") {
           this.isPlaying = true;
           this.isGuessing = true;
@@ -492,21 +474,7 @@ export default {
             player.guessedRightAlias = false;
           });
 
-          var possibleAnswerURL = 'possibleAnswers';
-
-          if (this.game.guessMode === 'ARTIST') {
-            possibleAnswerURL = 'possibleAnswers_artist';
-          } else if (this.game.guessMode === 'CREATOR') {
-            possibleAnswerURL = 'possibleAnswers_creator';
-          }
-
-          apiService.get(`${process.env.VUE_APP_API_URL}/api/${possibleAnswerURL}`, {})
-              .then((response) => {
-                this.possibleAnswers = response.data;
-              })
-              .catch((error) => {
-                console.error('Error getting beatmap', error);
-              });
+          this.getPossibleAnswers();
         } else if (message.body === "gameEnd") {
           this.isPlaying = false;
           this.highlightStartButton = true;
@@ -709,8 +677,7 @@ export default {
   },
 
   beforeUnmount() {
-    // window.removeEventListener('beforeunload', this.beforeUnload);
-    // window.removeEventListener('unload', this.requestLeaveRoom);
+    window.removeEventListener('beforeunload', this.requestLeaveRoom);
 
     clearInterval(this.countdownInterval)
     clearInterval(this.inactivityTimer)
@@ -747,13 +714,6 @@ export default {
         default:
           return '';
       }
-    },
-
-    getAnswerRate() {
-      if (this.currentBeatmap.playcount === 0) {
-        return 0; // Avoid division by zero
-      }
-      return ((this.currentBeatmap.playcount_answer / this.currentBeatmap.playcount) * 100).toFixed(2) + "%";
     },
 
     getBeatmapUrl() {
@@ -870,15 +830,21 @@ export default {
               </div>
               <div class="info-text">Difficulty</div>
             </div>
-<!--            <div class="icon-text-container">-->
-<!--              <div class="icon-container">-->
-<!--                <font-awesome-icon :icon="['fas', modeIcon]" class="info-icon" />-->
-<!--              </div>-->
-<!--              <div class="info-text">Mode</div>-->
-<!--            </div>-->
+            <div class="icon-text-container">
+              <div class="icon-container">
+                <div class="gameroom-difficulty">{{ this.game.gameMode }}</div>
+              </div>
+              <div class="info-text">Mode</div>
+            </div>
+            <div class="icon-text-container">
+              <div class="icon-container">
+                <div class="gameroom-difficulty">{{ this.game.guessMode }}</div>
+              </div>
+              <div class="info-text">Guess</div>
+            </div>
             <div class="icon-text-container">
               <div class="icon-container">{{ this.game.questionIndex }}/{{ this.game.totalQuestions }}</div>
-              <div class="info-text">Current / Total</div>
+              <div class="info-text">Maps</div>
             </div>
           </div>
         </div>
@@ -941,7 +907,8 @@ export default {
               :currentBeatmap="currentBeatmap"
               :isGuessing="isGuessing"
               :getBeatmapUrl="getBeatmapUrl"
-              :getAnswerRate="getAnswerRate"
+              :gameMode="this.game.gameMode"
+              :guessMode="this.game.guessMode"
               :difficultyClass="difficultyClass"
               :formatDate="formatDate"
               :answers="answers"
@@ -969,7 +936,7 @@ export default {
               :isGuessing="isGuessing"
               :me="me"
               :game="game"
-              @showUserPage="showPlayerInfoModal = true; userpageId = player.id; console.log('asdasd')"
+              @showUserPage="showPlayerInfoModal = true; userpageId = player.id;"
           />
         </div>
 
