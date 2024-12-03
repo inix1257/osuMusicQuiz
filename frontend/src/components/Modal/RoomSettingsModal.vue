@@ -490,7 +490,7 @@ export default {
                 <label>Game Mode</label>
                 <div class="radio-group inner-rightalign">
                   <div v-for="mode in gameModes" :key="mode">
-                    <input type="radio" :id="mode" :value="mode" v-model="selectedGameMode" :disabled="mode !== 'STD'">
+                    <input type="radio" :id="mode" :value="mode" v-model="selectedGameMode">
                     <label :for="mode">{{ mode }}</label>
                   </div>
                 </div>
