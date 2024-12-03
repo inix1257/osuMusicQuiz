@@ -4,6 +4,7 @@ import com.inix.omqweb.Achievement.AchievementService;
 import com.inix.omqweb.Beatmap.*;
 import com.inix.omqweb.Beatmap.Alias.Alias;
 import com.inix.omqweb.Beatmap.Alias.AliasType;
+import com.inix.omqweb.Discord.DiscordWebhookService;
 import com.inix.omqweb.Donation.Donation;
 import com.inix.omqweb.Donation.DonationRepository;
 import com.inix.omqweb.Donation.PlayerDonationDTO;
@@ -42,6 +43,7 @@ public class GameManager {
     private final LobbyHistoryDetailRepository lobbyHistoryDetailRepository;
     private final ResourceService resourceService;
     private final SystemMessageHandler systemMessageHandler;
+    private final DiscordWebhookService discordWebhookService;
     private final AESUtil aesUtil;
 
     private final Logger logger = LoggerFactory.getLogger(GameManager.class);
@@ -59,7 +61,7 @@ public class GameManager {
 
     private final ProfileUtil profileUtil;
 
-    @PostConstruct
+//    @PostConstruct
     private void createDebugLobbies() {
         if (!profileUtil.isDevEnv()) return;
         // Create lobbies for debug purpose
@@ -961,6 +963,8 @@ public class GameManager {
         lobbyHistoryRepository.save(lobbyHistory);
 
         playerRepository.saveAll(game.getPlayers());
+
+        discordWebhookService.sendWebhook(game.getName() + " has started!\n" + game.getPlayerListAsString() + "\n" + "Total: " + game.getPlayers().size() + " players");
 
         return true;
     }
