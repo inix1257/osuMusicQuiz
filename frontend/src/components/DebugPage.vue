@@ -46,6 +46,8 @@
     </div>
 
     <h2>Handle blur</h2>
+    <input type="text" v-model="blur_beatmapId" placeholder="Beatmapset ID" />
+    <button @click="addBlur(blur_beatmapId)">Add blur</button><br>
     <button @click="loadBeatmapReports">Load beatmap reports</button>
     <div v-for="beatmap in beatmapReports" :key="beatmap.id" class="beatmap-container">
       <div class="beatmap">
@@ -116,15 +118,15 @@ export default {
   mounted() {
     this.getGameRooms()
 
-    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers`, {})
+      apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers?gamemode=ANY&guessmode=TITLE`, {})
         .then((response) => {
           this.list_titles = response.data;
         })
-    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers_artist`, {})
+    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers?gamemode=ANY&guessmode=ARTIST`, {})
         .then((response) => {
           this.list_artists = response.data;
         })
-    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers_creator`, {})
+    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers?gamemode=ANY&guessmode=CREATOR`, {})
         .then((response) => {
           this.list_creators = response.data;
         })
@@ -209,8 +211,18 @@ export default {
     },
 
     addBlur(beatmapId) {
-      apiService.post(`${process.env.VUE_APP_API_URL}/api/addBlur?beatmapsetId=${beatmapId}`)
-          .then(this.loadBeatmapReports)
+      var beatmapsetId = String(beatmapId);
+
+      if (beatmapsetId.includes("beatmapsets")) {
+        const split = beatmapsetId.split("/");
+        beatmapsetId = split[split.length - 1];
+      }
+
+      apiService.post(`${process.env.VUE_APP_API_URL}/api/addBlur?beatmapsetId=${beatmapsetId}`)
+          .then(() => {
+            this.logMessages.push(`Blurred beatmap ${beatmapsetId}`);
+            this.loadBeatmapReports();
+          })
     },
 
     deleteReport(beatmapId) {
