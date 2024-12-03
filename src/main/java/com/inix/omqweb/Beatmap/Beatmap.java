@@ -44,6 +44,8 @@ public class Beatmap {
     private String genre;
     private String tags;
 
+    private boolean deleted;
+
     @Transient
     private double total_guess_rate;
 
@@ -75,11 +77,9 @@ public class Beatmap {
     }
 
     @Transient
-    @JsonIgnore
     private int id;
 
     @Transient
-    @JsonIgnore
     private int favourite_count;
 
     @Transient
@@ -87,7 +87,6 @@ public class Beatmap {
     private float bpm;
 
     @Transient
-    @JsonIgnore
     private int play_count;
 
     public String getArtistAndTitle() {

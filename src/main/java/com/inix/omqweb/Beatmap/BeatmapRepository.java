@@ -25,14 +25,23 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
     @Query(value = "SELECT * FROM beatmap ORDER BY RAND() LIMIT :limit", nativeQuery = true)
     List<Beatmap> findRandom(int limit);
 
-    @Query(value = "SELECT * FROM beatmap WHERE (playcount_answer/playcount) >= 0.7 ORDER BY RAND() LIMIT :limit", nativeQuery = true)
-    List<Beatmap> findRandomEasy(int limit);
+    @Query(value = "SELECT DISTINCT b.title FROM beatmap b " +
+            "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
+            "WHERE b.beatmapset_id IN (SELECT bs_inner.beatmapset_id FROM beatmap_stats bs_inner WHERE bs_inner.game_mode = :gameMode) " +
+            "AND b.deleted = false", nativeQuery = true)
+    List<String> findDistinctTitles(String gameMode);
 
-    @Query(value = "SELECT * FROM beatmap WHERE (playcount_answer/playcount) > 0.3 AND (playcount_answer/playcount) < 0.7 ORDER BY RAND() LIMIT :limit", nativeQuery = true)
-    List<Beatmap> findRandomNormal(int limit);
+    @Query(value = "SELECT DISTINCT b.artist FROM beatmap b " +
+            "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
+            "WHERE b.beatmapset_id IN (SELECT bs_inner.beatmapset_id FROM beatmap_stats bs_inner WHERE bs_inner.game_mode = :gameMode) " +
+            "AND b.deleted = false", nativeQuery = true)
+    List<String> findDistinctArtists(String gameMode);
 
-    @Query(value = "SELECT * FROM beatmap WHERE (playcount_answer/playcount) <= 0.3 ORDER BY RAND() LIMIT :limit", nativeQuery = true)
-    List<Beatmap> findRandomHard(int limit);
+    @Query(value = "SELECT DISTINCT b.creator FROM beatmap b " +
+            "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
+            "WHERE b.beatmapset_id IN (SELECT bs_inner.beatmapset_id FROM beatmap_stats bs_inner WHERE bs_inner.game_mode = :gameMode) " +
+            "AND b.deleted = false", nativeQuery = true)
+    List<String> findDistinctCreators(String gameMode);
 
     @Query("SELECT DISTINCT b.title FROM Beatmap b")
     List<String> findDistinctTitles();
@@ -45,22 +54,20 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
 
     @Query(value = "SELECT b.*, (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) AS total_guess_rate FROM beatmap b " +
             "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
-            "WHERE bs.guess_mode = :guessMode " +
+            "WHERE bs.guess_mode = :guessMode AND b.deleted = false " +
             "GROUP BY b.beatmapset_id, bs.guess_mode " +
             "ORDER BY (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) DESC", nativeQuery = true)
     List<Beatmap> findBeatmapsByAnswerRate(@Param("guessMode") String guessMode);
 
-    @Query("SELECT b FROM Beatmap b WHERE b.approved_date BETWEEN :startDate AND :endDate")
-    List<Beatmap> findBeatmapsByApprovedDateRange(Timestamp startDate, Timestamp endDate);
-
     @Query(value = "SELECT b.*, (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) as total_guess_rate FROM beatmap b " +
             "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
-            "WHERE b.approved_date BETWEEN :startDate AND :endDate " +
+            "WHERE b.beatmapset_id IN (SELECT bs_inner.beatmapset_id FROM beatmap_stats bs_inner WHERE bs_inner.guess_mode = :guessMode AND bs_inner.game_mode = :gameMode) " +
+            "AND b.approved_date BETWEEN :startDate AND :endDate " +
             "AND bs.guess_mode = :guessMode " +
-            "AND bs.game_mode = :gameMode " +
             "AND b.tags LIKE :tags " +
             "AND b.genre IN :genres " +
             "AND b.language IN :languages " +
+            "AND b.deleted = false " +
             "GROUP BY b.beatmapset_id, bs.guess_mode " +
             "HAVING ((SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) BETWEEN :diffL1 AND :diffU1 " +
             "OR (SUM(bs.guessed) / SUM(IF(bs.played = 0, 1, bs.played))) BETWEEN :diffL2 AND :diffU2 " +
@@ -96,7 +103,7 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
 
     List<Beatmap> findAll(Specification<Beatmap> spec);
 
-    @Query(value = "SELECT * FROM beatmap b WHERE b.beatmapset_id NOT IN (SELECT d.beatmapset_id FROM daily_guess d) AND (answer_rate > 0.3) AND (playcount >= 100) AND (blur = false) ORDER BY RAND() LIMIT 1", nativeQuery = true)
+    @Query(value = "SELECT * FROM beatmap b WHERE b.beatmapset_id NOT IN (SELECT d.beatmapset_id FROM daily_guess d) ORDER BY RAND() LIMIT 1", nativeQuery = true)
     Beatmap findRandomBeatmapNotInDailyGuess();
 
     @Query(value = "SELECT * FROM beatmap WHERE beatmapset_id = :beatmapset_id", nativeQuery = true)
