@@ -39,11 +39,14 @@ export default {
       showCopiedMessage: false,
       correctGuess: null,
       timeLeft: '',
-      volume: 0.4,
+      volume: localStorage.getItem("volume") / 100,
       isPlaying: false,
       currentTime: 0,
       duration: 0,
       playbackTimeout: null,
+      tooltipVisible: false,
+      isLoading: true,
+      latestGuess: null,
     }
   },
 
@@ -64,14 +67,16 @@ export default {
           this.retryCount = response.data.retryCount;
           this.correctGuess = response.data.guessed;
 
+          this.isLoading = false;
+
           if (response.data.dailyGuessLog) {
             this.dailyGuessLog = response.data.dailyGuessLog;
             this.currentBeatmap = this.dailyGuessLog.dailyGuess.beatmap;
             this.revealStatus = true;
           }
         })
-        .catch(error => {
-          console.error("Error fetching daily osudle:", error);
+        .catch(() => {
+          alert('An error occurred while fetching today\'s daily osudle. Please try again later.');
         });
 
     this.me = await getUserData();
@@ -116,9 +121,21 @@ export default {
 
     const audioPlayer = this.$refs.audioPlayer;
     if (audioPlayer) {
-      audioPlayer.volume = this.volume;
       audioPlayer.addEventListener('timeupdate', this.updateProgress);
     }
+
+    setTimeout(() => {
+      const audioPlayer = this.$refs.audio;
+      if (audioPlayer) {
+        const volume = localStorage.getItem("volume");
+        if (volume) {
+          this.volume = volume;
+          audioPlayer.volume = volume / 100;
+        } else {
+          audioPlayer.volume = 0.2;
+        }
+      }
+    }, 1000);
   },
 
   beforeUnmount() {
@@ -211,10 +228,10 @@ export default {
     },
 
     selectAutocompleteOption(index) {
-      if (index !== -1) {
+      if (index === -1) {
+        this.answerInput = this.autocompleteOptions[0];
+      } else {
         this.answerInput = this.autocompleteOptions[index];
-        this.autocompleteOptions = [];
-        this.selectedOptionIndex = -1;
       }
 
       this.submitAnswer()
@@ -224,6 +241,8 @@ export default {
       if (!this.answerInput) {
         return;
       }
+
+      this.latestGuess = this.answerInput;
 
       this.webSocketService.sendMessage(this.answerInput);
       this.answerInput = "";
@@ -262,6 +281,10 @@ export default {
     },
 
     playAudio() {
+      if (this.isLoading) {
+        return;
+      }
+
       const audioPlayer = this.$refs.audioPlayer;
       if (audioPlayer) {
         this.controlAudioPlayback(audioPlayer);
@@ -272,10 +295,26 @@ export default {
 
     controlAudioPlayback(audioPlayer) {
       var playbackDuration = 0;
-      if (this.retryCount <= 3) {
-        playbackDuration = parseInt(this.retryCount) * 2 + 1;
-      }else{
-        playbackDuration = 10;
+      console.log(this.retryCount);
+      switch (Number(this.retryCount)) {
+        case 0:
+          playbackDuration = 0.5;
+          break;
+        case 1:
+          playbackDuration = 2;
+          break;
+        case 2:
+          playbackDuration = 5;
+          break;
+        case 3:
+          playbackDuration = 7;
+          break;
+        case 4:
+          playbackDuration = 10;
+          break;
+        default:
+          playbackDuration = 0.5;
+          break;
       }
 
       audioPlayer.currentTime = 0;
@@ -314,7 +353,11 @@ export default {
       this.isPlaying = false;
     },
 
-
+    handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        this.selectAutocompleteOption(this.selectedOptionIndex);
+      }
+    },
   },
 
   watch: {
@@ -340,6 +383,13 @@ export default {
 
       this.autocompleteOptions = filteredOptions.slice(0, 5);
     },
+
+    volume(newVal) {
+      const audioPlayer = this.$refs.audioPlayer;
+      if (audioPlayer) {
+        audioPlayer.volume = newVal;
+      }
+    }
   },
 
   computed: {
@@ -379,17 +429,17 @@ export default {
       </a>
     </div>
     <div class="modal-content" @click.stop="">
-      <button class="close-button" @click="closeIntroPage">
-        <font-awesome-icon :icon="['fas', 'x']" />
-      </button>
+<!--      <button class="close-button" @click="closeIntroPage">-->
+<!--        <font-awesome-icon :icon="['fas', 'x']" />-->
+<!--      </button>-->
       <div class="osudle-header">
         <div class="header-content">
-          <h1 class="text-osudle">Daily osudle {{ dailyNumber }}</h1>
+          <h1 class="text-osudle">Daily osudle <strong>#{{ dailyNumber }}</strong></h1>
         </div>
       </div>
 
       <div class="question-image-container">
-        <div class="question-image-cover" v-if="(retryCount < 3 && !revealStatus)">(bg reveal at 3rd try)</div>
+        <div class="question-image-cover" v-if="(retryCount < 3 && !revealStatus)">?</div>
         <div class="image-wrapper">
           <img v-if="retryCount >= 3 || revealStatus" :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
         </div>
@@ -400,10 +450,30 @@ export default {
         <progress :value="currentTime" :max="duration"></progress>
       </div>
       <div class="audio-player-controls">
-        <button v-if="!isPlaying" @click="playAudio"><font-awesome-icon :icon="['fas', 'play']" /></button>
-        <button v-else @click="stopAudio"><font-awesome-icon :icon="['fas', 'stop']" /></button>
+        <button v-if="!isPlaying" @click="playAudio" class="audio-player-controls-button" :class="{ 'button-play-loading': isLoading }">
+          <font-awesome-icon :icon="['fas', 'play']"/>
+        </button>
+        <button v-else @click="stopAudio" class="audio-player-controls-button">
+          <font-awesome-icon :icon="['fas', 'stop']"/>
+        </button>
+        <div class="div-volume">
+          <font-awesome-icon :icon="['fas', 'volume-high']"/>
+          <input class="input-volume" type="range" v-model="volume" min="0" max="1" step="0.01">
+        </div>
+        <div class="tooltip-container">
+          <font-awesome-icon class="icon-osudle-help" :icon="['fas', 'circle-question']" @mouseover="tooltipVisible = true" @mouseleave="tooltipVisible = false"/>
+          <div v-if="tooltipVisible" class="tooltip">
+            1st Try: 0.5s<br>
+            2nd Try: 2s<br>
+            3rd Try: 5s<br>
+            4th Try: 7s + BG<br>
+            5th Try: 10s
+          </div>
+        </div>
       </div>
-      <div v-if="retryCount !== 0"><span :class="guessClass(correctGuess)">{{ getGuessStatus }}</span> ({{ retryCount }}/5)</div>
+      <div v-if="retryCount !== 0">
+        <div class="div-yourguess">Your Guess: <span :class="guessClass(correctGuess)">{{ latestGuess }}</span> ({{ retryCount }}/5)</div>
+      </div>
       <div v-if="!loginStatus">
         <p>You need to login with osu! to play daily osudle</p>
       </div>
@@ -418,7 +488,7 @@ export default {
                v-if="loginStatus"
                v-on:keydown.up.prevent="selectedOptionIndex > 0 ? selectedOptionIndex-- : selectedOptionIndex = autocompleteOptions.length - 1"
                v-on:keydown.down.prevent="selectedOptionIndex < autocompleteOptions.length - 1 ? selectedOptionIndex++ : selectedOptionIndex = 0"
-               v-on:keydown.enter.prevent="selectAutocompleteOption(selectedOptionIndex)" v-on:focus="inputFocused = true">
+               @keydown="handleKeyPress" v-on:focus="inputFocused = true">
         <div v-if="autocompleteOptions.length && inputFocused" class="autocomplete-dropdown">
           <div v-for="(option, index) in autocompleteOptions" :key="option" @click="selectAutocompleteOption(index)" :class="{ 'selected': index === selectedOptionIndex }" class="autocomplete-option">
             {{ option }}
@@ -453,12 +523,6 @@ export default {
 
 .modal-content {
   position: relative;
-  width: 80%;
-  max-width: 80vh;
-  height: 80%;
-  max-height: 80vh;
-  background-color: var(--color-secondary);
-  border: 1px solid #ccc;
   border-radius: 5px;
   padding: 20px;
   display: flex;
@@ -480,7 +544,7 @@ export default {
   text-align: center;
 }
 
-input {
+#input-answer {
   width: 71vh;
   height: 3em;
   box-sizing: border-box;
@@ -540,7 +604,9 @@ input {
 }
 
 .text-osudle {
+  font-family: 'Exo 2', 'Sen', serif;
   font-size: 2em;
+  font-weight: normal;
   color: var(--color-text);
   text-align: center;
   flex-grow: 1;
@@ -642,10 +708,15 @@ input {
   justify-content: center;
   align-items: center;
   margin-top: 10px;
-  gap: 10px;
+  gap: 25px;
 }
 
-.audio-player-controls button {
+.button-play-loading {
+  color: #3a3737 !important;
+  border: 2px solid #3a3737 !important;
+}
+
+.audio-player-controls-button {
   width: 50px;
   height: 50px;
   font-size: 1.5em;
@@ -655,15 +726,16 @@ input {
   margin-top: 0.5em;
   margin-bottom: 0.5em;
   cursor: pointer;
-  border-radius: 50%; /* Make the button circular */
+  border-radius: 50%;
 }
 
 .progress-container {
-  width: 90%;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 10px;
+  border-radius: 5px;
 }
 
 progress {
@@ -671,6 +743,9 @@ progress {
   height: 10px;
   -webkit-appearance: none;
   appearance: none;
+  border-radius: 5px;
+  background-color: var(--color-disabled);
+  border: 1px solid var(--color-body);
 }
 
 progress::-webkit-progress-bar {
@@ -705,7 +780,7 @@ progress::-webkit-progress-value {
 
 .question-image-cover {
   position: absolute;
-  background-color: var(--color-disabled);
+  background-color: #201e1e;
   width: 72vh;
   height: 41vh;
   z-index: 1;
@@ -713,7 +788,10 @@ progress::-webkit-progress-value {
   justify-content: center;
   align-items: center;
   text-align: center;
-  border: 3px solid var(--color-disabled);
+  border: 3px solid var(--color-body);
+  border-radius: 10px;
+  font-size: 5em;
+  font-weight: bold;
 }
 
 .question-image-container {
@@ -732,5 +810,52 @@ progress::-webkit-progress-value {
   font-family: 'Sen', serif;
   background-color: var(--color-secondary);
   color: var(--color-text);
+}
+
+.input-volume {
+  width: 100px;
+  height: 20px;
+}
+
+.div-volume {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-secondary);
+  padding: 10px;
+  border-radius: 20px;
+  border: 2px solid var(--color-body);
+}
+
+.icon-osudle-help {
+  font-size: 1.5em;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.tooltip-container {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  z-index: 10;
+  opacity: 0.9;
+  text-align: left;
+}
+
+.div-yourguess {
+  font-size: 1.2em;
+  font-weight: normal;
 }
 </style>
