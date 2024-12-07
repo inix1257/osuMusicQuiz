@@ -17,7 +17,7 @@ public interface BeatmapReportRepository extends JpaRepository<BeatmapReport, In
                          JOIN beatmap b ON rb.beatmapset_id = b.beatmapset_id
                 WHERE rb.report_type = 1
                 GROUP BY rb.beatmapset_id, b.artist, b.title
-                HAVING COUNT(DISTINCT rb.user_id) >= 5
+                HAVING COUNT(DISTINCT rb.user_id) >= 3
                 ORDER BY reportCount DESC;""", nativeQuery = true)
     List<BeatmapReportProjection> findMostReportedBeatmaps();
 }
