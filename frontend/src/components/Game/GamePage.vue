@@ -344,6 +344,7 @@ export default {
                 break;
             }
             this.$router.push('/');
+            throw new Error("An error occurred while joining the game.");
           })
           .finally(() => {
             this.isLoading = false;
@@ -355,12 +356,6 @@ export default {
       return apiService.post(`${process.env.VUE_APP_API_URL}/api/deleteGame`, {
         gameId: this.gameId
       })
-          .then(() => {
-
-          })
-          .catch((error) => {
-            console.error('Error deleting game', error);
-          });
     },
 
     resetInactivityTimer() {
@@ -387,9 +382,6 @@ export default {
           .then((response) => {
             this.possibleAnswers = response.data;
           })
-          .catch((error) => {
-            console.error('Error getting beatmap', error);
-          });
     },
 
     updateSettings(newSettings) {
@@ -417,7 +409,11 @@ export default {
       localStorage.setItem("roompw", this.password);
     }
 
-    await this.joinGame(roompw, false);
+    try{
+      await this.joinGame(roompw, false);
+    } catch (e) {
+      this.$router.push('/');
+    }
 
     window.addEventListener('beforeunload', this.requestLeaveRoom);
 
