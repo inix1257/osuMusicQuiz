@@ -1,5 +1,6 @@
 package com.inix.omqweb.Game;
 
+import com.inix.omqweb.Achievement.AchievementService;
 import com.inix.omqweb.Announcement.AnnouncementSendDTO;
 import com.inix.omqweb.Beatmap.Alias.AliasAddDTO;
 import com.inix.omqweb.DTO.*;
@@ -30,6 +31,7 @@ public class omqController {
     private final GameManager gameManager;
     private final BeatmapService beatmapService;
     private final PlayerRepository playerRepository;
+    private final AchievementService achievementService;
 
     private final ProfileUtil profileUtil;
 
@@ -40,7 +42,6 @@ public class omqController {
 
     @PostMapping("/createNewGame")
     public ResponseEntity<Game> createNewGame(@RequestBody CreateGameDTO createGameDTO, HttpServletRequest request) {
-        // Get user from token
         Player player = (Player) request.getAttribute("userInfo");
 
         Game game = gameManager.createGame(createGameDTO, player);
@@ -71,14 +72,13 @@ public class omqController {
         };
     }
 
-    @Profile("dev")
     @PostMapping("/joinGameLegacy")
     public void joinGameLegacy(@RequestBody JoinGameLegacyDTO joinGameLegacyDTO, HttpServletRequest request) {
         if (!profileUtil.isDevEnv()) return;
 
         Player player = (Player) request.getAttribute("userInfo");
 
-        if (!player.getId().equals(adminUserId)) {
+        if (!achievementService.isModerator(player)) {
             return;
         }
 
@@ -107,7 +107,7 @@ public class omqController {
         }
 
         if (!game.getOwner().equals(player)) {
-            if (!player.getId().equals(adminUserId)) {
+            if (!achievementService.isModerator(player)) {
                 return;
             }
         }
@@ -229,7 +229,7 @@ public class omqController {
     public ResponseEntity<Beatmap> addBeatmap(@RequestBody BeatmapAddDTO beatmapAddDTO, HttpServletRequest request) throws IOException, ParseException {
         Player player = (Player) request.getAttribute("userInfo");
 
-        if (!player.getId().equals(adminUserId)) {
+        if (!achievementService.isModerator(player)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
 
@@ -240,7 +240,7 @@ public class omqController {
     public void sendAnnouncement(@RequestBody AnnouncementSendDTO announcementSendDTO, HttpServletRequest request) {
         Player player = (Player) request.getAttribute("userInfo");
 
-        if (!player.getId().equals(adminUserId)) {
+        if (!achievementService.isModerator(player)) {
             return;
         }
 
@@ -251,7 +251,7 @@ public class omqController {
     public ResponseEntity<?> addAlias(@RequestBody AliasAddDTO aliasAddDTO, HttpServletRequest request) {
         Player player = (Player) request.getAttribute("userInfo");
 
-        if (!player.getId().equals(adminUserId)) {
+        if (!achievementService.isModerator(player)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
 
