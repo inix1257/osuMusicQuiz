@@ -2,7 +2,7 @@ import axios from "axios";
 import apiService from "../api/apiService";
 
 export async function getUserData(token) {
-    return apiService.get(`${process.env.VUE_APP_API_URL}/api/getme`, {
+    return apiService.get(`${process.env.VUE_APP_API_URL}/api/me`, {
         params: {
             token: token
         }
