@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class osuAPIController {
     private final osuAPIService osuAPIService;
 
-    @GetMapping("/getme")
+    @GetMapping("/me")
     public ResponseEntity<Player> getMe(HttpServletRequest request) {
         Player userInfo = (Player) request.getAttribute("userInfo");
 
