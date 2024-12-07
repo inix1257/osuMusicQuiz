@@ -964,7 +964,13 @@ public class GameManager {
 
         playerRepository.saveAll(game.getPlayers());
 
-        discordWebhookService.sendWebhook(game.getName() + " has started!\n" + game.getPlayerListAsString() + "\n" + "Total: " + game.getPlayers().size() + " players");
+        String message = """
+    Lobby name: `%s`
+    Players: `%s`
+    Total: `%d` players
+    """.formatted(game.getName(), game.getPlayerListAsString(), game.getPlayers().size());
+
+        discordWebhookService.sendWebhook(message);
 
         return true;
     }
