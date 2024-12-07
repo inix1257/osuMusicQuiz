@@ -87,6 +87,12 @@ export default {
     selectGuessMode(guessMode) {
       this.selectedGuessMode = guessMode;
     },
+
+    getTotalStats() {
+      const totalGuesses = this.player.playerStats.reduce((acc, stat) => acc + stat.guessed, 0);
+      const totalPlays = this.player.playerStats.reduce((acc, stat) => acc + stat.played, 0);
+      return `${totalGuesses}/${totalPlays} (${(totalGuesses / totalPlays * 100 || 0).toFixed(2)}%)`;
+    },
   },
 
   mounted() {
@@ -99,24 +105,6 @@ export default {
           (stat) =>
               stat.gameMode === this.selectedGameMode &&
               stat.guessMode === this.selectedGuessMode
-      );
-    },
-    totalGuesses() {
-      return (
-          this.player.maps_guessed_easy +
-          this.player.maps_guessed_normal +
-          this.player.maps_guessed_hard +
-          this.player.maps_guessed_insane +
-          this.player.maps_guessed_extra
-      );
-    },
-    totalPlays() {
-      return (
-          this.player.maps_played_easy +
-          this.player.maps_played_normal +
-          this.player.maps_played_hard +
-          this.player.maps_played_insane +
-          this.player.maps_played_extra
       );
     },
   },
@@ -171,7 +159,10 @@ export default {
             {{ stat.guessed }}/{{ stat.played }}
             ({{ (stat.guessed / stat.played * 100 || 0).toFixed(2) }}%)
           </p>
-          <p v-if="filteredStats.length === 0">No stats found for this mode</p>
+          <p v-if="filteredStats.length > 0">Mode Total: {{ filteredStats.reduce((acc, stat) => acc + stat.guessed, 0) }}/{{ filteredStats.reduce((acc, stat) => acc + stat.played, 0) }}</p>
+          <p v-else>No stats found for this mode</p>
+
+          <p class="user-guesses">User Total: {{ getTotalStats() }}</p>
         </div>
 
         <p class="user-register-date">OMQ Registration: {{ formatDate(player.register_date) }}</p>
