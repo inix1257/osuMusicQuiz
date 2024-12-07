@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.inix.omqweb.Achievement.Achievement;
+import com.inix.omqweb.Achievement.AchievementAcquirement;
 import com.inix.omqweb.DTO.PlayerStatsDTO;
 import jakarta.persistence.*;
 import lombok.*;
@@ -72,6 +73,19 @@ public class Player {
     @ManyToOne
     @JoinColumn(name = "current_title_achievement", referencedColumnName = "id")
     private Achievement current_title_achievement;
+
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    @JsonIgnore
+    private List<AchievementAcquirement> achievements;
+
+    @Transient
+    @JsonGetter("achievements")
+    public List<Achievement> getAchievements() {
+        return achievements.stream()
+                .map(AchievementAcquirement::getAchievement)
+                .collect(Collectors.toList());
+    }
 
     @Transient
     @JsonIgnore
