@@ -1,14 +1,20 @@
 package com.inix.omqweb.Daily;
 
+import com.inix.omqweb.Beatmap.Alias.Alias;
+import com.inix.omqweb.Beatmap.Alias.AliasRepository;
 import com.inix.omqweb.Beatmap.Beatmap;
 import com.inix.omqweb.Beatmap.BeatmapRepository;
 import com.inix.omqweb.Util.AnswerUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,18 +25,19 @@ public class DailyGuessManager {
     private final DailyGuessRepository dailyGuessRepository;
     private final DailyGuessLogRepository dailyGuessLogRepository;
     private final PlayerRepository playerRepository;
+    private final AliasRepository aliasRepository;
 
     private final SimpMessagingTemplate template;
 
     private final ConcurrentHashMap<String, DailyGuessLog> playerGuesses = new ConcurrentHashMap<>();
 
-    //    @PostConstruct
+//    @PostConstruct
     public void init() {
         List<DailyGuess> dailyGuesses = new ArrayList<>();
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         calendar.set(Calendar.YEAR, 2024);
         calendar.set(Calendar.MONTH, Calendar.DECEMBER);
-        calendar.set(Calendar.DAY_OF_MONTH, 5);
+        calendar.set(Calendar.DAY_OF_MONTH, 2);
 
         for (int i = 0; i < 50; i++) {
             calendar.set(Calendar.HOUR_OF_DAY, 0);
@@ -65,11 +72,20 @@ public class DailyGuessManager {
 
         Date currentDate = calendar.getTime();
 
-//        if (date.after(currentDate)) {
-//            date = currentDate;
-//        }
+        LocalDate currentLocalDate = currentDate.toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
 
-        return dailyGuessRepository.findFirstByDateAfter(currentDate);
+        // Replace this with your specific date
+        LocalDate specificDate = LocalDate.of(2024, 11, 18);
+
+        int daysPassed = (int) ChronoUnit.DAYS.between(specificDate, currentLocalDate);
+
+        DailyGuess dailyGuess = dailyGuessRepository.findDailyGuessById(daysPassed + 1);
+
+        List<Alias> aliases = aliasRepository.findAllByBeatmapIds(Collections.singletonList(dailyGuess.getBeatmap().getBeatmapset_id()));
+
+        dailyGuess.getBeatmap().setAliases(aliases);
+
+        return dailyGuess;
     }
 
     public void submitGuess(String userId, String guess) {
@@ -107,6 +123,16 @@ public class DailyGuessManager {
 
         Beatmap beatmap = dailyGuess.getBeatmap();
         boolean correct = AnswerUtil.checkAnswer(beatmap.getTitle(), guess) >= 0.97;
+
+        if (!correct && beatmap.getAliases() != null) {
+            for (Alias alias : beatmap.getAliases()) {
+                if (AnswerUtil.checkAnswer(alias.getName(), guess) >= 0.97) {
+                    correct = true;
+                    break;
+                }
+            }
+        }
+
         dailyGuessLog.setGuessed(correct);
 
         if (correct || dailyGuessLog.getRetryCount() >= 5) {
