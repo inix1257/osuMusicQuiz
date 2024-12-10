@@ -71,7 +71,7 @@ export default {
         totalAnswers++;
         if (history.answer) {
           correctAnswers++;
-          totalPoints += history.difficulty_bonus * history.speed_bonus;
+          totalPoints += history.difficulty_bonus * history.speed_bonus * history.lobbyHistory.poolsize_bonus;
         }
         totalTimeTaken += history.timetaken;
       });
