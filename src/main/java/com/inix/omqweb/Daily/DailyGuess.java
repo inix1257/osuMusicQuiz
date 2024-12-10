@@ -17,7 +17,6 @@ public class DailyGuess {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
-    private Date date;
 
     @ManyToOne
     @JoinColumn(name = "beatmapset_id")

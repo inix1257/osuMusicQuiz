@@ -47,7 +47,6 @@ public class DailyGuessManager {
             Date day = calendar.getTime();
 
             DailyGuess dailyGuess = DailyGuess.builder()
-                    .date(day)
                     .beatmap(beatmapRepository.findRandomBeatmapNotInDailyGuess())
                     .build();
 
