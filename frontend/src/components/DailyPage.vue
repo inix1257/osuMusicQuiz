@@ -46,6 +46,7 @@ export default {
       playbackTimeout: null,
       tooltipVisible: false,
       isLoading: true,
+      isWebsocketConnected: false,
       latestGuess: null,
     }
   },
@@ -117,7 +118,9 @@ export default {
             }
           },
         }
-    );
+    ).then(() => {
+      this.isWebsocketConnected = true;
+    });
 
     const audioPlayer = this.$refs.audioPlayer;
     if (audioPlayer) {
@@ -156,6 +159,10 @@ export default {
 
   methods: {
     closeIntroPage() {
+      if (this.webSocketService) {
+        this.webSocketService.disconnect();
+        this.webSocketService = null;
+      }
       this.$emit('close-intro');
     },
 
@@ -450,7 +457,7 @@ export default {
         <progress :value="currentTime" :max="duration"></progress>
       </div>
       <div class="audio-player-controls">
-        <button v-if="!isPlaying" @click="playAudio" class="audio-player-controls-button" :class="{ 'button-play-loading': isLoading }">
+        <button v-if="!isPlaying" @click="playAudio" class="audio-player-controls-button" :class="{ 'button-play-loading': isLoading || !isWebsocketConnected }">
           <font-awesome-icon :icon="['fas', 'play']"/>
         </button>
         <button v-else @click="stopAudio" class="audio-player-controls-button">
