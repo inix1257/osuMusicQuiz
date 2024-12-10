@@ -428,24 +428,24 @@ export default {
                 </label>
                 <div class="inner-rightalign">
                   <div class="checkbox-div">
-                    <input type="checkbox" id="easy" value="EASY" v-model="difficulty">
-                    <label for="easy" class="difficulty-easy">Easy</label>
+                    <input type="checkbox" id="easy" value="EASY" v-model="difficulty" class="difficulty-checkbox">
+                    <label for="easy" class="difficulty-label difficulty-easy">E</label>
                   </div>
                   <div class="checkbox-div">
-                    <input type="checkbox" id="normal" value="NORMAL" v-model="difficulty">
-                    <label for="normal" class="difficulty-normal">Normal</label>
+                    <input type="checkbox" id="normal" value="NORMAL" v-model="difficulty" class="difficulty-checkbox">
+                    <label for="normal" class="difficulty-label difficulty-normal">N</label>
                   </div>
                   <div class="checkbox-div">
-                    <input type="checkbox" id="hard" value="HARD" v-model="difficulty">
-                    <label for="hard" class="difficulty-hard">Hard</label>
+                    <input type="checkbox" id="hard" value="HARD" v-model="difficulty" class="difficulty-checkbox">
+                    <label for="hard" class="difficulty-label difficulty-hard">H</label>
                   </div>
                   <div class="checkbox-div">
-                    <input type="checkbox" id="insane" value="INSANE" v-model="difficulty">
-                    <label for="insane" class="difficulty-insane">Insane</label>
+                    <input type="checkbox" id="insane" value="INSANE" v-model="difficulty" class="difficulty-checkbox">
+                    <label for="insane" class="difficulty-label difficulty-insane">I</label>
                   </div>
                   <div class="checkbox-div">
-                    <input type="checkbox" id="extra" value="EXTRA" v-model="difficulty">
-                    <label for="extra" class="difficulty-extra">Extra</label>
+                    <input type="checkbox" id="extra" value="EXTRA" v-model="difficulty" class="difficulty-checkbox">
+                    <label for="extra" class="difficulty-label difficulty-extra">X</label>
                   </div>
                 </div>
               </div>
@@ -602,8 +602,8 @@ export default {
   background-color: var(--color-secondary);
   padding: 20px;
   border-radius: 10px;
-  width: 50vw;
-  height: 50vh;
+  width: 50em;
+  height: 30em;
   box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
   z-index: 100;
 }
@@ -814,6 +814,38 @@ input[type="checkbox"] + label {
 .checkbox-div {
   display: flex;
   align-items: center;
+}
+
+.difficulty-checkbox {
+  display: none;
+}
+
+.difficulty-label {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  border: 2px solid rgba(27, 73, 101, 0.24);
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.difficulty-checkbox:checked + .difficulty-label {
+  border: 2px solid var(--color-primary);
+
+}
+
+.difficulty-checkbox:not(:checked) + .difficulty-label {
+  background-color: var(--color-secondary);
+  color: var(--color-disabled);
+}
+
+.difficulty-checkbox:disabled + .difficulty-label {
+  background-color: var(--color-disabled);
+  color: var(--color-disabled);
 }
 
 .tooltip-container {
