@@ -22,4 +22,15 @@ public class Achievement {
     public String toString() {
         return "Achievement(id=" + this.getId() + ", name=" + this.getName() + ", description=" + this.getDescription() + ", title_name=" + this.getTitle_name() + ")";
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Achievement other)) {
+            return false;
+        }
+        return other.getId() == this.getId();
+    }
 }
