@@ -27,7 +27,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -52,16 +55,11 @@ public class GameManager {
 
     private final AchievementService achievementService;
 
-    private final int MIN_COOLDOWN_TIME = 3;
-    private final int MAX_COOLDOWN_TIME = 15;
-    private final int MIN_GUESSING_TIME = 10;
-    private final int MAX_GUESSING_TIME = 30;
-    private final int MIN_TOTAL_QUESTIONS = 10;
-    private final int MAX_TOTAL_QUESTIONS = 100;
+
 
     private final ProfileUtil profileUtil;
 
-//    @PostConstruct
+    @PostConstruct
     private void createDebugLobbies() {
         if (!profileUtil.isDevEnv()) return;
         // Create lobbies for debug purpose
@@ -77,7 +75,7 @@ public class GameManager {
                     .totalQuestions(10)
                     .guessingTime(10)
                     .cooldownTime(5)
-//                    .password("asd")
+                    .password("asd")
                     .displayMode(List.of(DisplayMode.AUDIO))
                     .poolMode(PoolMode.TOUHOU)
                     .difficulty(List.of(GameDifficulty.EASY, GameDifficulty.NORMAL, GameDifficulty.HARD, GameDifficulty.INSANE))
@@ -224,6 +222,7 @@ public class GameManager {
         return Game.GAME_JOIN_STATUS_SUCCESS; // if the player successfully joined the game
     }
 
+    // FOR DEBUG PURPOSE
     public boolean joinGameLegacy(JoinGameLegacyDTO joinGameLegacyDTO) {
         UUID gameId = UUID.fromString(joinGameLegacyDTO.getGameId());
         Player player = playerRepository.findById(joinGameLegacyDTO.getUserId()).orElseThrow();
@@ -231,10 +230,6 @@ public class GameManager {
         Game game = getGameById(gameId);
         if (game == null) {
             return false;
-        }
-
-        if(game.getPlayers().contains(player)) {
-//            return false;
         }
 
         game.getPlayers().add(player);
@@ -815,6 +810,13 @@ public class GameManager {
         return game;
     }
 
+    private final int MIN_COOLDOWN_TIME = 3;
+    private final int MAX_COOLDOWN_TIME = 15;
+    private final int MIN_GUESSING_TIME = 10;
+    private final int MAX_GUESSING_TIME = 30;
+    private final int MIN_TOTAL_QUESTIONS = 10;
+    private final int MAX_TOTAL_QUESTIONS = 100;
+
     private void setGameProperties(Game game, GameSettingsDTO gameSettingsDTO) {
         game.setName(gameSettingsDTO.getName() != null ? gameSettingsDTO.getName() : game.getOwner().getUsername() + "'s game");
         game.setTotalQuestions(Math.min(MAX_TOTAL_QUESTIONS, Math.max(MIN_TOTAL_QUESTIONS, gameSettingsDTO.getTotalQuestions())));
@@ -1071,6 +1073,22 @@ public class GameManager {
         List<Object[]> groupedDonations = donationRepository.findDonationsGroupedByPlayer();
         List<Donation> recentDonations = donationRepository.findRecentDonations();
 
+        LocalDateTime endDate = LocalDateTime.now(ZoneId.of("UTC")).plusDays(1);
+        LocalDateTime startDate = endDate.minusDays(7);
+
+        Timestamp startTimestamp = Timestamp.valueOf(startDate);
+        Timestamp endTimestamp = Timestamp.valueOf(endDate);
+
+        System.out.println("Start: " + startTimestamp + " | End: " + endTimestamp);
+
+        List<Object[]> recentPlayers = playerRepository.getSeasonalLeaderboard(startTimestamp, endTimestamp);
+
+        List<SeasonalLeaderboardDTO> seasonalLeaderboard = recentPlayers.stream()
+                .map(result -> new SeasonalLeaderboardDTO((String) result[0], (String) result[1], (String) result[2], (Double) result[3]))
+                .sorted(Comparator.comparingDouble(SeasonalLeaderboardDTO::getRecent_points).reversed())
+                .limit(5)
+                .toList();
+
         List<PlayerDonationDTO> donators = groupedDonations.stream()
                 .map(result -> new PlayerDonationDTO((Player) result[0], (Double) result[1]))
                 .sorted(Comparator.comparingDouble(PlayerDonationDTO::getTotalAmount).reversed())
@@ -1083,6 +1101,7 @@ public class GameManager {
         leaderboardDTO.setTopPlayers(players);
         leaderboardDTO.setTopDonators(donators);
         leaderboardDTO.setRecentDonations(recentDonations);
+        leaderboardDTO.setTopRecentPlayers(seasonalLeaderboard);
         leaderboardDTO.setTotalItems(totalPlayers);
 
         return leaderboardDTO;
