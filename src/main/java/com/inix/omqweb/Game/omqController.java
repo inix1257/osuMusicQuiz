@@ -35,9 +35,6 @@ public class omqController {
 
     private final ProfileUtil profileUtil;
 
-    @Value("${osu.adminUserId}")
-    private String adminUserId;
-
     private final Logger logger = LoggerFactory.getLogger(omqController.class);
 
     @PostMapping("/createNewGame")
@@ -61,14 +58,20 @@ public class omqController {
         return switch (gameManager.joinGame(joinGameDTO, player)) {
             case Game.GAME_JOIN_STATUS_SUCCESS ->
                     ResponseEntity.ok(gameManager.getGameById(UUID.fromString(joinGameDTO.getGameId())));
-            case Game.GAME_JOIN_STATUS_NOT_EXIST -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+            case Game.GAME_JOIN_STATUS_NOT_EXIST ->
+                    ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
             case Game.GAME_JOIN_STATUS_USER_ALREADY_EXISTS, Game.GAME_JOIN_STATUS_USER_ALREADY_IN_ANOTHER_GAME ->
                     ResponseEntity.status(HttpStatus.CONFLICT).body(null);
-            case Game.GAME_JOIN_STATUS_GAME_IS_PLAYING -> ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
-            case Game.GAME_JOIN_STATUS_INCORRECT_PASSWORD -> ResponseEntity.status(HttpStatus.LOCKED).body(null);
-            case Game.GAME_JOIN_STATUS_INVALID_TOKEN -> ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
-            case Game.GAME_JOIN_STATUS_USER_IS_BANNED -> ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
-            default -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+            case Game.GAME_JOIN_STATUS_GAME_IS_PLAYING ->
+                    ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
+            case Game.GAME_JOIN_STATUS_INCORRECT_PASSWORD ->
+                    ResponseEntity.status(HttpStatus.LOCKED).body(null);
+            case Game.GAME_JOIN_STATUS_INVALID_TOKEN ->
+                    ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            case Game.GAME_JOIN_STATUS_USER_IS_BANNED ->
+                    ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
+            default ->
+                    ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         };
     }
 
@@ -135,10 +138,10 @@ public class omqController {
 
     @PostMapping("/kickPlayer")
     public void kickPlayer(@RequestBody PlayerTargetDTO playerTargetDTO, HttpServletRequest request) {
-        Player player = (Player) request.getAttribute("userInfo");
+        Player player = getPlayer(request);
         Game game = gameManager.getGameById(UUID.fromString(playerTargetDTO.getGameId()));
 
-        if (game == null || !game.getOwner().equals(player) && !player.getId().equals(adminUserId)) {
+        if (game == null || !game.getOwner().equals(player) && !achievementService.isModerator(player)) {
             throw new RuntimeException("User: " + player.getUsername() + " is not the owner of the game " + game.getUuid());
         }
 
@@ -149,10 +152,10 @@ public class omqController {
 
     @PostMapping("/banPlayer")
     public void banPlayer(@RequestBody PlayerTargetDTO playerTargetDTO, HttpServletRequest request) {
-        Player player = (Player) request.getAttribute("userInfo");
+        Player player = getPlayer(request);
         Game game = gameManager.getGameById(UUID.fromString(playerTargetDTO.getGameId()));
 
-        if (game == null || !game.getOwner().equals(player) && !player.getId().equals(adminUserId)) {
+        if (game == null || !game.getOwner().equals(player) && !achievementService.isModerator(player)) {
             throw new RuntimeException("User: " + player.getUsername() + " is not the owner of the game " + game.getUuid());
         }
 
@@ -163,7 +166,7 @@ public class omqController {
 
     @PostMapping("/transferHost")
     public void transferHost(@RequestBody PlayerTargetDTO playerTargetDTO, HttpServletRequest request) {
-        Player player = (Player) request.getAttribute("userInfo");
+        Player player = getPlayer(request);
         Game game = gameManager.getGameById(UUID.fromString(playerTargetDTO.getGameId()));
 
         if (game == null || !game.getOwner().equals(player)) {
@@ -194,7 +197,7 @@ public class omqController {
 
     @PostMapping("/updateRoomSettings")
     public ResponseEntity<Game> updateRoomSettings(@RequestBody UpdateRoomSettingsDTO updateRoomSettingsDTO, HttpServletRequest request) {
-        Player player = (Player) request.getAttribute("userInfo");
+        Player player = getPlayer(request);
         Game game = gameManager.getGameById(updateRoomSettingsDTO.getUuid());
 
         if (game == null || !game.getOwner().equals(player)) {
@@ -233,6 +236,8 @@ public class omqController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
 
+        logger.info(player.getUsername() + " added beatmapset " + beatmapAddDTO.getBeatmapsetId());
+
         return ResponseEntity.ok(beatmapService.addBeatmap(beatmapAddDTO.getBeatmapsetId()));
     }
 
@@ -249,7 +254,7 @@ public class omqController {
 
     @PostMapping("/addAlias")
     public ResponseEntity<?> addAlias(@RequestBody AliasAddDTO aliasAddDTO, HttpServletRequest request) {
-        Player player = (Player) request.getAttribute("userInfo");
+        Player player = getPlayer(request);
 
         if (!achievementService.isModerator(player)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
@@ -265,6 +270,16 @@ public class omqController {
 
         beatmapService.addAlias(repeatAlias);
 
+        logger.info(player.getUsername() + " added alias " + aliasAddDTO.getSource() + " -> " + aliasAddDTO.getTarget());
+
         return ResponseEntity.ok(null);
+    }
+
+    private Player getPlayer(HttpServletRequest request) {
+        return (Player) request.getAttribute("userInfo");
+    }
+
+    private boolean isGameOwner(Player player, Game game) {
+        return game.getOwner().equals(player);
     }
 }
