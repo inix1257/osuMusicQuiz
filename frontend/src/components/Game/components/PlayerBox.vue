@@ -48,7 +48,6 @@ export default {
   },
   methods: {
     showPlayerInfoModal() {
-      console.log('showing player info modal');
       this.$emit('showUserPage', this.userpageId);
     },
     kickPlayer(player) {
