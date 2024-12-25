@@ -14,6 +14,6 @@ public class LeaderboardDTO {
     private List<Player> topPlayers;
     private List<PlayerDonationDTO> topDonators;
     private List<Donation> recentDonations;
-    private List<Player> topRecentPlayers;
+    private List<SeasonalLeaderboardDTO> topRecentPlayers;
     private int totalItems;
 }
