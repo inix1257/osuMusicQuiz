@@ -58,6 +58,7 @@ public class BeatmapReportController {
 
         if (achievementService.isModerator(player)) {
             beatmapService.deleteReport(beatmapsetId);
+            logger.info("Moderator {} deleted report from beatmapset {}", player.getUsername(), beatmapsetId);
             return ResponseEntity.ok().build();
         } else {
             logger.warn("Player {} tried to delete report from beatmapset {}", player.getId(), beatmapsetId);

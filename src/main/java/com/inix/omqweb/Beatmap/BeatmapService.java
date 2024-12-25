@@ -339,9 +339,10 @@ public class BeatmapService {
                 .tags(existingBeatmap != null ? existingBeatmap.getTags() : tagString)
                 .approved_date(new Timestamp(dateFormat.parse(jsonMap.get("approved_date")).getTime()))
                 .blur(existingBeatmap != null && existingBeatmap.isBlur())
+                .deleted(existingBeatmap != null && existingBeatmap.isDeleted())
                 .build();
 
-        System.out.println("Adding beatmap: " + beatmap);
+        logger.info("Adding beatmap: " + beatmap.getArtistAndTitle() + " for gamemode: " + gameModes);
 
         return beatmapRepository.save(beatmap);
     }
@@ -469,10 +470,6 @@ public class BeatmapService {
 
                 aliasesToSave.add(alias);
             }
-        }
-
-        for (Alias alias : aliasesToSave) {
-            System.out.println("Alias: " + alias);
         }
 
         aliasRepository.saveAll(aliasesToSave);
