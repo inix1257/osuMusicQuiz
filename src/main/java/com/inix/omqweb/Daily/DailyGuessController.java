@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Date;
-import java.util.UUID;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -22,9 +22,9 @@ public class DailyGuessController {
     private final AESUtil aesUtil;
 
     @GetMapping("/daily")
-    public DailyGuessDTO getDailyGuessBase64(HttpServletRequest request) {
+    public DailyGuessDTO getDailyGuessBase64(HttpServletRequest request, @RequestParam(defaultValue = "-1") int dailyId) {
         Player userInfo = (Player) request.getAttribute("userInfo");
-        DailyGuess dailyGuess = dailyGuessManager.getFirstDailyGuessAfterDate();
+        DailyGuess dailyGuess = (dailyId == -1) ? dailyGuessManager.getTodaysDaily() : dailyGuessManager.getDaily(dailyId);
 
         if (dailyGuess == null) {
             // No daily guess found
@@ -34,7 +34,7 @@ public class DailyGuessController {
         DailyGuessLog dailyGuessLog = null;
 
         if (userInfo != null) {
-            dailyGuessLog = dailyGuessManager.getDailyGuessLog(userInfo);
+            dailyGuessLog = dailyGuessManager.getDailyGuessLog(userInfo, dailyGuess.getId());
         }
 
         int beatmapId = dailyGuess.getBeatmap().getBeatmapset_id();
@@ -51,8 +51,28 @@ public class DailyGuessController {
                 .build();
     }
 
+    @GetMapping("/dailyarchive")
+    public List<DailyGuessDTO> getDailyGuessArchive(HttpServletRequest request) {
+        Player userInfo = (Player) request.getAttribute("userInfo");
+        List<DailyGuessLog> dailyGuessLogs = dailyGuessManager.getDailyGuessLogs(userInfo);
+
+        return dailyGuessLogs.stream()
+                .map(dailyGuessLog -> {
+                    int beatmapId = dailyGuessLog.getDailyGuess().getBeatmap().getBeatmapset_id();
+
+                    return DailyGuessDTO.builder()
+                            .base64(aesUtil.encrypt(String.valueOf(beatmapId)))
+                            .dailyNumber(dailyGuessLog.getDailyGuess().getId())
+                            .retryCount(dailyGuessLog.getRetryCount())
+                            .guessed(dailyGuessLog.isGuessed())
+                            .dailyGuessLog(dailyGuessLog.isGuessed() ? dailyGuessLog : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
     @MessageMapping("/daily")
     public void dailyChat(Message message) {
-        dailyGuessManager.submitGuess(message.getSenderId(), message.getContent());
+        dailyGuessManager.submitGuess(message.getSenderId(), message.getContent(), message.getDailyId());
     }
 }

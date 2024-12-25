@@ -7,7 +7,6 @@ import com.inix.omqweb.Beatmap.BeatmapRepository;
 import com.inix.omqweb.Util.AnswerUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -62,23 +61,16 @@ public class DailyGuessManager {
     /*
     This method uses UTC time, reminder to fix if this needs to get changed to local time
      */
-    public DailyGuess getFirstDailyGuessAfterDate() {
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
+    public DailyGuess getDaily(int dailyId) {
+        LocalDate startDate = LocalDate.of(2024, 11, 18);
+        LocalDate currentDate = LocalDate.now(ZoneId.of("UTC"));
+        int daysSinceStart = (int) ChronoUnit.DAYS.between(startDate, currentDate) + 1;
 
-        Date currentDate = calendar.getTime();
+        if (dailyId > daysSinceStart) {
+            throw new IllegalArgumentException("The dailyId is in the future.");
+        }
 
-        LocalDate currentLocalDate = currentDate.toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
-
-        // Replace this with your specific date
-        LocalDate specificDate = LocalDate.of(2024, 11, 18);
-
-        int daysPassed = (int) ChronoUnit.DAYS.between(specificDate, currentLocalDate);
-
-        DailyGuess dailyGuess = dailyGuessRepository.findDailyGuessById(daysPassed + 1);
+        DailyGuess dailyGuess = dailyGuessRepository.findDailyGuessById(dailyId);
 
         List<Alias> aliases = aliasRepository.findAllByBeatmapIds(Collections.singletonList(dailyGuess.getBeatmap().getBeatmapset_id()));
 
@@ -87,8 +79,28 @@ public class DailyGuessManager {
         return dailyGuess;
     }
 
-    public void submitGuess(String userId, String guess) {
-        DailyGuess dailyGuess = getFirstDailyGuessAfterDate();
+    public DailyGuess getTodaysDaily() {
+        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        Date date = calendar.getTime();
+
+        LocalDate currentLocalDate = date.toInstant().atZone(ZoneId.of("UTC")).toLocalDate();
+
+        // Assume that the first daily is on 2024-11-18
+        // If you want to change the start date, change the date below
+        LocalDate startDate = LocalDate.of(2024, 11, 18);
+
+        int daysPassed = (int) ChronoUnit.DAYS.between(startDate, currentLocalDate);
+
+        return getDaily(daysPassed + 1);
+    }
+
+    public void submitGuess(String userId, String guess, int dailyId) {
+        DailyGuess dailyGuess = getDaily(dailyId);
         if (dailyGuess == null) {
             return;
         }
@@ -101,7 +113,7 @@ public class DailyGuessManager {
             return;
         }
 
-        DailyGuessLog dailyGuessLog = dailyGuessLogRepository.findByPlayerIdAndDate(player, date);
+        DailyGuessLog dailyGuessLog = dailyGuessLogRepository.findByPlayerIdAndDailyGuessLogId(player.getId(), dailyId);
 
         if (dailyGuessLog == null) {
             dailyGuessLog = DailyGuessLog.builder()
@@ -143,18 +155,16 @@ public class DailyGuessManager {
         dailyGuessLogRepository.save(dailyGuessLog);
     }
 
-    public DailyGuessLog getDailyGuessLog(Player player) {
-        DailyGuess dailyGuess = getFirstDailyGuessAfterDate();
+    public DailyGuessLog getDailyGuessLog(Player player, int dailyId) {
+        DailyGuess dailyGuess = getDaily(dailyId);
         if (dailyGuess == null) {
             return null;
         }
 
-        Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        Date date = calendar.getTime();
+        return dailyGuessLogRepository.findByPlayerIdAndDailyGuessLogId(player.getId(), dailyId);
+    }
 
-        return dailyGuessLogRepository.findByPlayerIdAndDate(player, date);
+    public List<DailyGuessLog> getDailyGuessLogs(Player player) {
+        return dailyGuessLogRepository.findByPlayerId(player.getId());
     }
 }
