@@ -17,6 +17,7 @@ import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { faVolumeHigh, faVolumeXmark } from "@fortawesome/free-solid-svg-icons";
 import { faGear } from "@fortawesome/free-solid-svg-icons";
 import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { faCaretLeft, faCaretRight } from "@fortawesome/free-solid-svg-icons";
 import { faMoon, faSun } from "@fortawesome/free-solid-svg-icons";
 import { faMinimize, faMaximize } from "@fortawesome/free-solid-svg-icons";
 import { faCrown } from "@fortawesome/free-solid-svg-icons";
@@ -25,8 +26,10 @@ import { faPlay, faStop } from "@fortawesome/free-solid-svg-icons";
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { faHeart } from "@fortawesome/free-solid-svg-icons";
 import { faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
+import { faRotate } from "@fortawesome/free-solid-svg-icons";
+import { faClockRotateLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import FullLeaderboard from "@/components/FullLeaderboard.vue";
+import FullLeaderboard from "@/components/Leaderboard/FullLeaderboard.vue";
 import DebugPage from "@/components/DebugPage.vue";
 import UserPage from "@/components/UserPage.vue";
 import AboutPage from "@/components/AboutPage.vue";
@@ -92,6 +95,7 @@ library.add(faEye, faEyeSlash)
 library.add(faVolumeHigh, faVolumeXmark)
 library.add(faGear)
 library.add(faCaretDown, faCaretUp)
+library.add(faCaretLeft, faCaretRight)
 library.add(faMoon, faSun)
 library.add(faMinimize, faMaximize)
 library.add(faCrown)
@@ -100,6 +104,8 @@ library.add(faMagnifyingGlass)
 library.add(faPlay, faStop)
 library.add(faCircleQuestion)
 library.add(faHeart)
+library.add(faRotate)
+library.add(faClockRotateLeft)
 
 const app = createApp(App);
 app.use(router)
