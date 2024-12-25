@@ -5,11 +5,13 @@ import AnnouncementPage from "@/components/AnnouncementPage.vue";
 import GameroomPage from "@/components/Game/GameList.vue";
 import apiService from "../api/apiService";
 import RoomSettingsModal from "@/components/Modal/RoomSettingsModal.vue";
+import RecentDonators from "@/components/RecentDonators.vue";
 
 
 export default {
   name: 'MainPage',
   components: {
+    RecentDonators,
     RoomSettingsModal,
     LeaderboardPage,
     AnnouncementPage,
@@ -30,7 +32,11 @@ export default {
       showPublicRoomsOnly: false,
       sortBy: 'players',
       sortDescending: true,
-      isModalOpen: false
+      isModalOpen: false,
+      totalPlayers: [],
+      topDonators: [],
+      recentDonations: [],
+      seasonalPlayers: [],
     };
   },
   methods: {
@@ -43,7 +49,6 @@ export default {
         alert("You need to login to create a game.")
         this.isModalOpen = false;
         this.isLoading = false;
-        return;
       }
     },
 
@@ -78,6 +83,13 @@ export default {
 
   mounted() {
       this.getGamerooms();
+
+      apiService.get('/api/leaderboard').then((response) => {
+        this.totalPlayers = response.data.topPlayers;
+        this.topDonators = response.data.topDonators;
+        this.seasonalPlayers = response.data.topRecentPlayers;
+        this.recentDonations = response.data.recentDonations;
+      });
   },
 
   computed: {
@@ -123,13 +135,24 @@ export default {
   <div id="app">
     <div class="main-grid">
       <div class="gameroom-container">
+        <RecentDonators :donations="recentDonations" />
+
         <div class="gameroom-upper-container">
+
           <div class="gameroom-statistics">
             <span class="gameroom-statistics-number">{{ getGameroomCount() }}</span> lobbies, <span
               class="gameroom-statistics-number">{{ getGameroomPlayers() }}</span> players online
           </div>
 
           <input type="text" v-model="searchTerm" placeholder="Search game rooms by title or player..." class="gameroom-searchinput">
+          <button @click="getGamerooms" class="button-searchbar">
+            <font-awesome-icon :icon="['fas', 'arrows-rotate']" />
+          </button>
+          <button @click="openModal" class="button-searchbar button-create">
+            <font-awesome-icon :icon="['fas', 'plus']" />
+          </button>
+
+
 
         </div>
         <div class="gameroom-upper-searchoptions-container" v-if="false">
@@ -155,11 +178,7 @@ export default {
       </div>
 
       <div class="info-div">
-        <div class="button-row">
-          <button @click="getGamerooms" class="refresh-button">Refresh List</button>
-          <button @click="openModal" class="create-game-button">Create Game</button>
-        </div>
-        <LeaderboardPage />
+        <LeaderboardPage :totalPlayers="totalPlayers" :topDonators="topDonators" :seasonalPlayers="seasonalPlayers" />
       </div>
 
       <RoomSettingsModal v-if="isModalOpen" actionType="create" @close-modal="isModalOpen = false" />
@@ -184,9 +203,8 @@ export default {
 }
 
 .gameroom-container {
-  grid-template-columns: 1fr; /* Create a 1-column grid */
-  gap: 20px; /* Add some space between the game rooms */
-  margin-top: 20px;
+  grid-template-columns: 1fr;
+  gap: 20px;
   height: 80vh;
   width: 65vw;
 }
@@ -198,12 +216,13 @@ export default {
   overflow: auto;
 }
 
-.create-game-button {
+.button-searchbar {
   border: none;
   outline: none;
   background-color: var(--color-secondary);
   color: var(--color-text);
   padding: 10px 20px;
+  margin: 0 2px;
   font-size: 1em;
   font-family: Sen, Arial, sans-serif;
   cursor: pointer;
@@ -211,42 +230,18 @@ export default {
   transition: background-color 0.3s ease;
 }
 
-.create-game-button:hover {
+.button-create {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.button-searchbar:hover {
   background-color: #aac9e8;
 }
 
 .owner-highlight .avatar {
   border: 2px solid #f0f0f0; /* Add a border to the owner's avatar */
 }
-
-.refresh-button {
-  border: none;
-  outline: none;
-  background-color: var(--color-secondary);
-  color: var(--color-text);
-  padding: 10px 20px;
-  font-size: 1em;
-  font-family: Sen, Arial, sans-serif;
-  cursor: pointer;
-  border-radius: 10px;
-  transition: background-color 0.3s ease;
-}
-
-.refresh-button:hover {
-  background-color: #aac9e8;
-}
-
-.button-row {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  width: 100%;
-}
-
-
-
-
 
 .gameroom-upper-container {
   display: flex;
