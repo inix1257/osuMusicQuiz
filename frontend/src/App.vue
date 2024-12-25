@@ -68,7 +68,7 @@ import UserPage from "@/components/UserPage.vue";
 import AboutPage from "@/components/AboutPage.vue";
 import GameLog from "@/components/GameLog.vue";
 import DonationPage from "@/components/DonationPage.vue";
-import IntroPage from "@/components/DailyPage.vue";
+import IntroPage from "@/components/Daily/DailyPage.vue";
 
 export default {
   name: 'App',
@@ -204,6 +204,7 @@ html[data-theme="darkMode"] {
   --color-body: #3c3c3c;
   --color-bodysecondary: #434343;
   --color-text: #ffffff;
+  --color-subtext: #d3d3d3;
   --color-disabled: #474747;
   --color-primary: #95a5d6;
   --color-secondary: #2b2b2e;
@@ -216,6 +217,7 @@ html[data-theme="lightMode"] {
   --color-body: rgb(204, 207, 215);
   --color-bodysecondary: #eaeaea;
   --color-text: #151515;
+  --color-subtext: #474747;
   --color-disabled: #d3d3d3;
   --color-primary: #95a5d6;
   --color-secondary: #ffffff;
