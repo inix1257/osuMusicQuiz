@@ -13,14 +13,12 @@
       <tr class="spaced-row" v-for="(player, index) in players" :key="index" v-on:click.stop="showUserpage = true; userpageId = player.id">
         <td>{{ index + 1 }}</td>
         <td><img :src="player.avatar_url" alt="Profile Picture" class="avatar" /></td>
-        <td>{{ player.username }}</td>
+        <td><strong>{{ player.username }}</strong></td>
         <td>{{ formatPoints(player.points) }}</td>
       </tr>
       </tbody>
     </table>
-    <div class="button-container">
-      <button class="full-leaderboard-button" @click="goToFullLeaderboard">Show Full Leaderboard</button>
-    </div>
+
     <div class="modal-overlay" v-if="showUserpage" @click.stop="showUserpage = false">
       <UserPage :playerId="userpageId"></UserPage>
     </div>
@@ -50,15 +48,12 @@ export default {
       window.open(`https://osu.ppy.sh/users/${id}`, '_blank')
     },
 
-    goToFullLeaderboard() {
-      this.$router.push('/leaderboard');
-    },
-
     formatPoints(points) {
       if (points >= 1000) {
         return (points / 1000).toFixed(1) + 'k';
+      } else {
+        return points.toFixed(1);
       }
-      return points;
     }
   },
 };
@@ -91,29 +86,5 @@ export default {
 
 .spaced-row {
   cursor: pointer;
-}
-
-.button-container {
-  display: flex;
-  justify-content: right;
-}
-
-.full-leaderboard-button {
-  background-color: var(--color-primary);
-  border: none;
-  color: white;
-  padding: 8px 16px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 0.8em;
-  cursor: pointer;
-  border-radius: 4px;
-  transition-duration: 0.4s;
-}
-
-.full-leaderboard-button:hover {
-  background-color: white;
-  color: black;
 }
 </style>

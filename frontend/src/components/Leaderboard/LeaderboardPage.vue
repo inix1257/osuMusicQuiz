@@ -1,65 +1,63 @@
 <template>
   <div class="leaderboard-container">
     <div class="leaderboard-div">
-      <h1>Leaderboard</h1>
-      <Leaderboard :players="totalPlayers" />
+      <h1>Weekly Leaderboard</h1>
+      <div class="leaderboard-div-inner">
+        <Leaderboard v-if="currentLeaderboard === 0" :players="seasonalPlayers"/>
+      </div>
+
+      <div class="button-container">
+        <button class="full-leaderboard-button" @click="goToFullLeaderboard">Full Leaderboard</button>
+      </div>
 
     </div>
     <div class="leaderboard-div">
       <h1>Top Donators</h1>
       <DonationLeaderboard :playerInfo="topDonators" />
     </div>
-<!--    <div v-if="currentLeaderboard === 1" class="leaderboard-div">-->
-<!--      <h1>Donator Leaderboard</h1>-->
-<!--      <Leaderboard :players="donatorPlayers" />-->
-<!--    </div>-->
-<!--    <div v-if="currentLeaderboard === 2" class="leaderboard-div">-->
-<!--      <h1>Another Leaderboard</h1>-->
-<!--      <Leaderboard :players="anotherPlayers" />-->
-<!--    </div>-->
   </div>
 </template>
 
 <script>
-import apiService from "@/api/apiService";
 import Leaderboard from "@/components/Leaderboard/Leaderboard.vue";
 import DonationLeaderboard from "@/components/Leaderboard/DonationLeaderboard.vue";
 
 export default {
   components: { Leaderboard, DonationLeaderboard },
+  props: {
+    totalPlayers: {
+      type: Array,
+      required: true,
+    },
+    topDonators: {
+      type: Array,
+      required: true,
+    },
+    seasonalPlayers: {
+      type: Array,
+      required: true,
+    },
+  },
   data() {
     return {
       currentLeaderboard: 0,
       intervalId: null,
-      totalPlayers: [],
-      topDonators: [],
     };
   },
   methods: {
-    async fetchLeaderboardData() {
-      const response = await apiService.get('/api/leaderboard');
-      this.totalPlayers = response.data.topPlayers;
-      this.topDonators = response.data.topDonators;
-
-      // const totalResponse = await apiService.get('/api/leaderboard?page=0&limit=5');
-      // this.totalPlayers = totalResponse.data.players;
-
-      // const donatorResponse = await apiService.get('/api/leaderboard/donator');
-      // this.donatorPlayers = donatorResponse.data.players;
-      //
-      // const anotherResponse = await apiService.get('/api/leaderboard/another');
-      // this.anotherPlayers = anotherResponse.data.players;
+    switchLeaderboard() {
+      this.currentLeaderboard = (this.currentLeaderboard + 1) % 2;
     },
-    startSlideshow() {
-      this.intervalId = setInterval(() => {
-        this.currentLeaderboard = (this.currentLeaderboard + 1) % 3;
-      }, 5000);
+
+    goToFullLeaderboard() {
+      this.$router.push('/leaderboard');
     },
   },
+
   async created() {
-    await this.fetchLeaderboardData();
-    // this.startSlideshow();
+    // this.intervalId = setInterval(this.switchLeaderboard, 5000);
   },
+
   beforeUnmount() {
     clearInterval(this.intervalId);
   },
@@ -76,6 +74,13 @@ export default {
   border-radius: 20px;
   padding: 1em;
   margin-bottom: 1em;
+  overflow: hidden;
+  position: relative;
+}
+
+.span-weekly {
+  font-size: 0.6em;
+  color: var(--color-subtext);
 }
 
 h1 {
@@ -83,5 +88,37 @@ h1 {
   text-align: center;
   margin-top: 0.2em;
   margin-bottom: 1em;
+}
+
+.button-container {
+  display: flex;
+  justify-content: right;
+}
+
+.full-leaderboard-button {
+  background-color: var(--color-disabled);
+  border: none;
+  color: white;
+  padding: 8px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 0.8em;
+  cursor: pointer;
+  border-radius: 4px;
+  transition-duration: 0.4s;
+}
+
+.full-leaderboard-button:hover {
+  background-color: white;
+  color: black;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+
+.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
+  opacity: 0;
 }
 </style>
