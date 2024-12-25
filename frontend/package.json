@@ -1,6 +1,6 @@
 {
   "name": "osuMusicQuiz",
-  "version": "1.0.4",
+  "version": "1.0.24",
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve --port 8081 --mode local",
@@ -15,10 +15,11 @@
     "@stomp/stompjs": "^7.0.0",
     "@trevoreyre/autocomplete-vue": "^3.0.2",
     "@vitejs/plugin-vue": "^5.0.5",
-    "axios": "^1.6.7",
+    "axios": "1.7.4",
     "core-js": "^3.8.3",
     "dotenv": "^16.4.5",
     "fast-levenshtein": "^3.0.0",
+    "howler": "^2.2.4",
     "moment": "^2.30.1",
     "osu-web.js": "^2.4.0",
     "pinia": "^2.1.7",

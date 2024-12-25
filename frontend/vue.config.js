@@ -8,7 +8,7 @@ module.exports = defineConfig({
   filenameHashing: true,
   productionSourceMap: true,
   css: { sourceMap: true },
-  outputDir: "../src/main/resources/static", //webpack build 시 결과물 위치
+  outputDir: "../src/main/resources/static",
 
   configureWebpack: (config) => {
     config.output.filename = "js/[name].[hash].js";
