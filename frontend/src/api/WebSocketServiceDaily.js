@@ -16,7 +16,6 @@ export default class WebSocketService {
                 {},
                 () => {
                     this.stompClient.subscribe(`/daily/${this.userId}`, callbacks.onMessage);
-                    // this.stompClient.subscribe(`/daily`, callbacks.onMessage);
                     this.stompClient.subscribe(`/daily/${this.userId}/reveal`, callbacks.onReveal);
                     resolve(true);
                 },
@@ -34,10 +33,11 @@ export default class WebSocketService {
         }
     }
 
-    sendMessage(message) {
+    sendMessage(message, dailyNumber) {
         const userId = this.userId;
 
         this.stompClient.send(`/send/daily`, {}, JSON.stringify({
+            dailyId: dailyNumber,
             senderId: userId,
             content: message,
         }));
