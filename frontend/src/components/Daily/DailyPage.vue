@@ -1,14 +1,15 @@
 <script>
-import apiService from "../api/apiService";
+import apiService from "../../api/apiService";
 import WebSocketServiceDaily from "@/api/WebSocketServiceDaily";
 import {useUserStore} from "@/stores/userStore";
 import {getUserData} from "@/service/authService";
 import moment from "moment/moment";
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
+import DailyArchive from "@/components/Daily/DailyArchive.vue";
 
 export default {
   name: 'IntroPage',
-  components: {FontAwesomeIcon},
+  components: {DailyArchive, FontAwesomeIcon},
 
   setup() {
     const userStore = useUserStore();
@@ -48,6 +49,8 @@ export default {
       isLoading: true,
       isWebsocketConnected: false,
       latestGuess: null,
+      showArchive: false,
+      startDate: new Date(Date.UTC(2024, 10, 18)),
     }
   },
 
@@ -75,9 +78,6 @@ export default {
             this.currentBeatmap = this.dailyGuessLog.dailyGuess.beatmap;
             this.revealStatus = true;
           }
-        })
-        .catch(() => {
-          alert('An error occurred while fetching today\'s daily osudle. Please try again later.');
         });
 
     this.me = await getUserData();
@@ -158,6 +158,18 @@ export default {
   },
 
   methods: {
+    getTodayDailyId() {
+      const today = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()));
+      return this.calculateDailyId(today);
+    },
+
+    calculateDailyId(date) {
+      if (!date) return '';
+      const timeDiff = date - this.startDate;
+      const dailyId = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+      return dailyId > 0 ? dailyId : '';
+    },
+
     closeIntroPage() {
       if (this.webSocketService) {
         this.webSocketService.disconnect();
@@ -191,39 +203,8 @@ export default {
       window.location.href = `${URL}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}&scope=${SCOPE}&state=${STATE}`;
     },
 
-    getAnswerRate() {
-      if (this.currentBeatmap.playcount === 0) {
-        return 0; // Avoid division by zero
-      }
-      return ((this.currentBeatmap.playcount_answer / this.currentBeatmap.playcount) * 100).toFixed(2) + "%";
-    },
-
     formatDate(date) {
       return moment(date).format('MMMM Do YYYY');
-    },
-
-    formatDecimal(value) {
-      if (value === 0) {
-        return '0 pts';
-      }
-      return value.toFixed(2) + ' pts';
-    },
-
-    difficultyClass(difficulty) {
-      switch (difficulty) {
-        case 'EASY':
-          return 'difficulty-easy';
-        case 'NORMAL':
-          return 'difficulty-normal';
-        case 'HARD':
-          return 'difficulty-hard';
-        case 'INSANE':
-          return 'difficulty-insane';
-        case 'EXTRA':
-          return 'difficulty-extra';
-        default:
-          return '';
-      }
     },
 
     guessClass(guessed) {
@@ -251,7 +232,7 @@ export default {
 
       this.latestGuess = this.answerInput;
 
-      this.webSocketService.sendMessage(this.answerInput);
+      this.webSocketService.sendMessage(this.answerInput, this.dailyNumber);
       this.answerInput = "";
     },
 
@@ -302,19 +283,18 @@ export default {
 
     controlAudioPlayback(audioPlayer) {
       var playbackDuration = 0;
-      console.log(this.retryCount);
       switch (Number(this.retryCount)) {
         case 0:
-          playbackDuration = 0.5;
+          playbackDuration = 0.3;
           break;
         case 1:
-          playbackDuration = 2;
+          playbackDuration = 1;
           break;
         case 2:
-          playbackDuration = 5;
+          playbackDuration = 3;
           break;
         case 3:
-          playbackDuration = 7;
+          playbackDuration = 5;
           break;
         case 4:
           playbackDuration = 10;
@@ -365,6 +345,56 @@ export default {
         this.selectAutocompleteOption(this.selectedOptionIndex);
       }
     },
+
+    openArchivePage() {
+      this.showArchive = true;
+    },
+
+    handleOpenDaily(day) {
+      this.showArchive = false;
+      this.dailyNumber = day;
+      this.imageSourceBase64 = "";
+      this.audioSourceBase64 = "";
+      this.answerInput = "";
+      this.autocompleteOptions = [];
+      this.selectedOptionIndex = -1;
+      this.inputFocused = false;
+      this.revealStatus = false;
+      this.currentBeatmap = {};
+      this.log = [];
+      this.retryCount = 0;
+      this.placeholderText = "Guess the title of the beatmap!";
+      this.dailyGuessLog = [];
+      this.showCopiedMessage = false;
+      this.correctGuess = null;
+      this.timeLeft = '';
+      this.volume = localStorage.getItem("volume") / 100;
+      this.isPlaying = false;
+      this.currentTime = 0;
+      this.duration = 0;
+      this.playbackTimeout = null;
+      this.tooltipVisible = false;
+      this.isLoading = true;
+      this.latestGuess = null;
+      this.showArchive = false;
+
+      apiService.get(`${process.env.VUE_APP_API_URL}/api/daily?dailyId=${day}`, {})
+          .then(response => {
+            this.imageSourceBase64 = response.data.base64;
+            this.audioSourceBase64 = response.data.base64;
+            this.dailyNumber = response.data.dailyNumber;
+            this.retryCount = response.data.retryCount;
+            this.correctGuess = response.data.guessed;
+
+            this.isLoading = false;
+
+            if (response.data.dailyGuessLog) {
+              this.dailyGuessLog = response.data.dailyGuessLog;
+              this.currentBeatmap = this.dailyGuessLog.dailyGuess.beatmap;
+              this.revealStatus = true;
+            }
+          });
+    }
   },
 
   watch: {
@@ -416,32 +446,33 @@ export default {
 </script>
 
 <template>
-  <div class="modal-overlay" @click="closeIntroPage">
-    <div v-if="revealStatus" class="beatmap-info-container">
+  <div class="modal-overlay" @click.prevent="closeIntroPage">
+    <DailyArchive v-if="showArchive" @open-daily="handleOpenDaily"/>
+    <div v-if="revealStatus && !showArchive" class="beatmap-info-container">
       <a :href="getBeatmapUrl" target="_blank">
         <h2>Beatmap Information</h2>
         <div class="beatmap-info-inner">
           <p>Artist: <strong>{{ currentBeatmap.artist }}</strong></p>
           <p>Title: <strong>{{ currentBeatmap.title }}</strong></p>
           <p>Mapper: <strong>{{ currentBeatmap.creator }}</strong></p>
-<!--          <p>Answer Rate: <strong>{{ getAnswerRate() }}</strong> <span class="beatmap-info-playcount">({{ currentBeatmap.playcount_answer }}/{{ currentBeatmap.playcount }})</span></p>-->
-<!--          <p><strong><span class="beatmap-info-difficulty" :class="difficultyClass(currentBeatmap.beatmapDifficulty)">[{{ currentBeatmap.beatmapDifficulty }}]</span></strong></p>-->
           <p>Ranked on <strong>{{ formatDate(currentBeatmap.approved_date) }}</strong></p>
           <br>
-          <!--            <p>Total Points: {{ answers[me.id].totalPoints.toFixed(2) }}</p>-->
           <div class="beatmap-info-clickme">
             Click to view the beatmap on osu!
           </div>
         </div>
       </a>
     </div>
-    <div class="modal-content" @click.stop="">
-<!--      <button class="close-button" @click="closeIntroPage">-->
-<!--        <font-awesome-icon :icon="['fas', 'x']" />-->
-<!--      </button>-->
+    <div v-if="!showArchive" class="modal-content" @click.stop="">
       <div class="osudle-header">
         <div class="header-content">
           <h1 class="text-osudle">Daily osudle <strong>#{{ dailyNumber }}</strong></h1>
+          <div class="button-archive" @click.prevent="openArchivePage">
+            <font-awesome-icon :icon="['fas', 'clock-rotate-left']"/>
+          </div>
+        </div>
+        <div v-if="getTodayDailyId() !== dailyNumber" class="osudle-header-archivetext">
+          (You are viewing an archived osudle)
         </div>
       </div>
 
@@ -470,10 +501,10 @@ export default {
         <div class="tooltip-container">
           <font-awesome-icon class="icon-osudle-help" :icon="['fas', 'circle-question']" @mouseover="tooltipVisible = true" @mouseleave="tooltipVisible = false"/>
           <div v-if="tooltipVisible" class="tooltip">
-            1st Try: 0.5s<br>
-            2nd Try: 2s<br>
-            3rd Try: 5s<br>
-            4th Try: 7s + BG<br>
+            1st Try: 0.3s<br>
+            2nd Try: 1s<br>
+            3rd Try: 3s<br>
+            4th Try: 5s + BG<br>
             5th Try: 10s
           </div>
         </div>
@@ -509,7 +540,6 @@ export default {
         <button class="share-button" v-if="revealStatus" @click="generateShareLink">Share  <font-awesome-icon :icon="['fas', 'share-nodes']" /></button>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -617,6 +647,12 @@ export default {
   color: var(--color-text);
   text-align: center;
   flex-grow: 1;
+  margin: 0 0;
+}
+
+.osudle-header-archivetext {
+  font-size: 1em;
+  color: var(--color-subtext);
 }
 
 .close-button {
@@ -692,10 +728,10 @@ export default {
 }
 
 .osudle-header {
-  display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
+  margin-bottom: 1em;
 }
 
 .header-content {
@@ -864,5 +900,16 @@ progress::-webkit-progress-value {
 .div-yourguess {
   font-size: 1.2em;
   font-weight: normal;
+}
+
+.button-archive {
+  background-color: var(--color-secondary);
+  color: var(--color-text);
+  border: 1px solid #ccc;
+  border-radius: 50%;
+  padding: 0.3em 0.5em;
+  font-size: 1.0em;
+  cursor: pointer;
+  margin-left: 1em;
 }
 </style>
