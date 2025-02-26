@@ -1,6 +1,13 @@
 <template>
   <div class="debug-page">
-<!--    <BeatmapRenderer />-->
+    <div>
+      <BeatmapRenderer ref="beatmapRenderer"/>
+      <button @click="resetCurrentTime()">reset currentTime</button>
+      <br>
+      <input type="text" v-model="beatmapId" placeholder="Beatmap ID">
+      <button @click="updateBeatmap(beatmapId)">Update beatmap</button>
+    </div>
+
     <div class="log-container">
       <div v-for="logMessage in logMessages" :key="logMessage" class="log-message">
         <p>{{ logMessage }}</p>
@@ -13,7 +20,14 @@
 
     <h2>Add Beatmap</h2>
     <input type="text" v-model="userInput" placeholder="Beatmapset ID" />
-    <button v-on:click="addBeatmap">Add Beatmap</button>
+    <button v-on:click="addBeatmap('')">Add Beatmap</button>
+    <br><br>
+
+    <h2>Add Beatmap (Pattern)</h2>
+    This section is for adding beatmaps for pattern guessing mode. Use <strong>Beatmap ID</strong> and <strong>NOT Beatmapset ID</strong>
+    <br>
+    <input type="text" v-model="userInput" placeholder="Beatmap ID" />
+    <button v-on:click="addBeatmap('pattern')">Add Beatmap</button>
     <br><br>
 
     <h2>Alias</h2>
@@ -85,6 +99,7 @@
 import axios from "axios";
 import apiService from "@/api/apiService";
 import BeatmapRenderer from "@/components/osu/Render/BeatmapRenderer.vue";
+import {setBeatmap, setCurrentTime, setCurrentTimeToPreviewPoint} from "@/components/osu/Render/Renderer";
 
 export default {
   name: 'DebugPage',
@@ -113,6 +128,8 @@ export default {
       targetAliasInput: '',
       filteredOptions: [],
       filteredTargetOptions: [],
+      currentTime: 0,
+      beatmapId: ''
     }
   },
   mounted() {
@@ -180,7 +197,7 @@ export default {
       }
     },
 
-    addBeatmap() {
+    addBeatmap(mode) {
       const beatmapsetId = this.userInput;
 
       if (beatmapsetId.includes("beatmapsets")) {
@@ -189,18 +206,22 @@ export default {
       }
 
       apiService.post(`${process.env.VUE_APP_API_URL}/api/addBeatmap`,  {
-        beatmapsetId: this.userInput
+        beatmapsetId: this.userInput,
+        mode: mode
       })
           .then((response) => {
             if (response.data) {
               // handle success
-              this.logMessages.push(response.data);
+              if (mode === 'pattern') {
+                this.logMessages.push(response.data.artistAndTitle + " has been added to the pattern pool");
+              } else {
+                this.logMessages.push(response.data.artistAndTitle + " has been added");
+              }
             } else {
               // handle failure
               this.logMessages.push("map already exists : " + this.userInput);
             }
           })
-
     },
 
     loadBeatmapReports() {
@@ -260,12 +281,6 @@ export default {
       this.targetAliasInput = option;
       this.filteredTargetOptions = [];
     },
-    clearOptions() {
-      this.filteredOptions = [];
-    },
-    clearTargetOptions() {
-      this.filteredTargetOptions = [];
-    },
 
     submitAlias() {
       apiService.post(`${process.env.VUE_APP_API_URL}/api/addAlias`, {
@@ -273,6 +288,14 @@ export default {
         target: this.targetAliasInput,
         type: this.selectedAliasType.toUpperCase()
       })
+    },
+
+    resetCurrentTime() {
+      this.$refs.beatmapRenderer.resetCurrentTime();
+    },
+
+    updateBeatmap(beatmapId) {
+      this.$refs.beatmapRenderer.updateBeatmapBypass(beatmapId);
     }
   },
   components: {
