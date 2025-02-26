@@ -59,7 +59,7 @@ public class GameManager {
 
     private final ProfileUtil profileUtil;
 
-    @PostConstruct
+//    @PostConstruct
     private void createDebugLobbies() {
         if (!profileUtil.isDevEnv()) return;
         // Create lobbies for debug purpose
@@ -146,8 +146,6 @@ public class GameManager {
 
         game.setOwner(owner);
         game.setLastActivity(new Date());
-        game.setGameMode(createGameDTO.getGameMode());
-        game.setGuessMode(createGameDTO.getGuessMode());
         game.setCreationDate(new Date());
 
         if(games.containsKey(game.getUuid())) {
@@ -578,7 +576,6 @@ public class GameManager {
             try{
                 // Get the next beatmap, encode the beatmapset_id in Base64 and send it to the frontend
                 sendEncodedBeatmapId(game);
-
             } catch (Exception e) {
                 logger.error("Failed to continue the game, isGuessing = false: ", e);
             }
@@ -660,11 +657,14 @@ public class GameManager {
             resourceService.getImageAsync(nextBeatmap.getBeatmapset_id(), nextBeatmap.isBlur());
         }
 
-        EncryptedBeatmapInfo encryptedBeatmapInfo = new EncryptedBeatmapInfo();
+        EncryptedBeatmapInfoDTO encryptedBeatmapInfoDTO = new EncryptedBeatmapInfoDTO();
         String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
-        encryptedBeatmapInfo.setBase64(encodedId);
-        encryptedBeatmapInfo.setBlur(beatmap.isBlur());
-        systemMessageHandler.onGameProgressUpdate(game, encryptedBeatmapInfo);
+        if (game.getGuessMode() == GuessMode.PATTERN) {
+            encryptedBeatmapInfoDTO.setBeatmapId(aesUtil.encrypt(String.valueOf(beatmap.getBeatmapPattern().getBeatmap_id())));
+        }
+        encryptedBeatmapInfoDTO.setBase64(encodedId);
+        encryptedBeatmapInfoDTO.setBlur(beatmap.isBlur());
+        systemMessageHandler.onGameProgressUpdate(game, encryptedBeatmapInfoDTO);
     }
 
     public void updateActivity(Game game) {
@@ -784,10 +784,6 @@ public class GameManager {
             }
         }
 
-        if (prevGame.isRanked() && !game.isRanked()) {
-//            messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby do not meet the requirements for ranked play. Games will be unranked and profile stats will not be updated.");
-        }
-
         if (!prevGame.isRanked() && game.isRanked()) {
             messageService.sendSystemMessage(game.getUuid(), "Game settings for this lobby meet the requirements for ranked play. Games will be ranked and profile stats will be updated.");
         }
@@ -798,6 +794,10 @@ public class GameManager {
             tags = "touhou";
         } else if (game.getPoolMode() == PoolMode.VOCALOID) {
             tags = "vocaloid";
+        }
+
+        if (game.getDisplayMode().contains(DisplayMode.PATTERN)) {
+            game.setGuessMode(GuessMode.PATTERN);
         }
 
         BeatmapPool beatmapPool = beatmapService.getBeatmapsWithSettings(game.getStartYear(), game.getEndYear(),
@@ -848,6 +848,10 @@ public class GameManager {
         if ((!game.getDisplayMode().contains(DisplayMode.AUDIO) || !game.getDisplayMode().contains(DisplayMode.BACKGROUND))
         || (game.getGuessMode() == GuessMode.ARTIST || game.getGuessMode() == GuessMode.CREATOR)) {
 //            game.setRanked(false);
+        }
+
+        if (game.getDisplayMode().contains(DisplayMode.PATTERN)) {
+            game.setGuessMode(GuessMode.PATTERN);
         }
 
         game.getDifficulty().clear();
@@ -972,7 +976,7 @@ public class GameManager {
     Total: `%d` players
     """.formatted(game.getName(), game.getPlayerListAsString(), game.getPlayers().size());
 
-        discordWebhookService.sendWebhook(message);
+        discordWebhookService.sendLobbyWebhook(message);
 
         return true;
     }
@@ -1079,13 +1083,11 @@ public class GameManager {
         Timestamp startTimestamp = Timestamp.valueOf(startDate);
         Timestamp endTimestamp = Timestamp.valueOf(endDate);
 
-        System.out.println("Start: " + startTimestamp + " | End: " + endTimestamp);
-
         List<Object[]> recentPlayers = playerRepository.getSeasonalLeaderboard(startTimestamp, endTimestamp);
 
         List<SeasonalLeaderboardDTO> seasonalLeaderboard = recentPlayers.stream()
                 .map(result -> new SeasonalLeaderboardDTO((String) result[0], (String) result[1], (String) result[2], (Double) result[3]))
-                .sorted(Comparator.comparingDouble(SeasonalLeaderboardDTO::getRecent_points).reversed())
+                .sorted(Comparator.comparingDouble(SeasonalLeaderboardDTO::getPoints).reversed())
                 .limit(5)
                 .toList();
 

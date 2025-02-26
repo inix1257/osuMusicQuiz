@@ -6,12 +6,14 @@ import com.inix.omqweb.Beatmap.Alias.AliasAddDTO;
 import com.inix.omqweb.DTO.*;
 import com.inix.omqweb.Beatmap.Beatmap;
 import com.inix.omqweb.Beatmap.BeatmapService;
+import com.inix.omqweb.Discord.DiscordWebhookService;
 import com.inix.omqweb.Util.ProfileUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.websocket.server.PathParam;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +34,8 @@ public class omqController {
     private final BeatmapService beatmapService;
     private final PlayerRepository playerRepository;
     private final AchievementService achievementService;
+
+    private final DiscordWebhookService discordWebhookService;
 
     private final ProfileUtil profileUtil;
 
@@ -236,9 +240,21 @@ public class omqController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
 
-        logger.info(player.getUsername() + " added beatmapset " + beatmapAddDTO.getBeatmapsetId());
+        if (beatmapAddDTO.getMode().equals("pattern")) {
+            ResponseEntity<Beatmap> responseEntity = ResponseEntity.ok(beatmapService.addBeatmapPattern(beatmapAddDTO.getBeatmapsetId()));
+            Beatmap beatmap = responseEntity.getBody();
 
-        return ResponseEntity.ok(beatmapService.addBeatmap(beatmapAddDTO.getBeatmapsetId()));
+            discordWebhookService.sendBeatmapWebhook("(Pattern Pool) Added beatmapset `" + beatmap.getArtistAndTitle() + " (" + beatmap.getBeatmapset_id() + ")` by `" + player.getUsername() + "`");
+
+            return responseEntity;
+        } else {
+            ResponseEntity<Beatmap> responseEntity = ResponseEntity.ok(beatmapService.addBeatmap(beatmapAddDTO.getBeatmapsetId()));
+            Beatmap beatmap = responseEntity.getBody();
+
+            discordWebhookService.sendBeatmapWebhook("Added beatmapset `" + beatmap.getArtistAndTitle() + " (" + beatmap.getBeatmapset_id() + ")` by `" + player.getUsername() + "`");
+
+            return responseEntity;
+        }
     }
 
     @PostMapping("/ingameAnnouncement")
@@ -271,6 +287,8 @@ public class omqController {
         beatmapService.addAlias(repeatAlias);
 
         logger.info(player.getUsername() + " added alias " + aliasAddDTO.getSource() + " -> " + aliasAddDTO.getTarget());
+
+        discordWebhookService.sendBeatmapWebhook("Added alias `" + aliasAddDTO.getSource() + " -> " + aliasAddDTO.getTarget() + "` by `" + player.getUsername() + "`");
 
         return ResponseEntity.ok(null);
     }

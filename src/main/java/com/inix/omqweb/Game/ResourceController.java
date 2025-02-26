@@ -4,6 +4,7 @@ import com.inix.omqweb.Util.AESUtil;
 import com.inix.omqweb.osuAPI.Player;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -86,8 +87,51 @@ public class ResourceController {
 
     }
 
-    @GetMapping("/beatmap/{id}")
-    public String getBeatmap(@PathVariable String id) {
+    @GetMapping("/beatmap/{encryptedId}")
+    public String getBeatmap(@PathVariable String encryptedId) {
+        String id = aesUtil.decrypt(encryptedId);
+        StringBuilder textData = new StringBuilder();
+        Path path = Path.of("./preview/beatmap/" + id + ".osu");
+
+        if (Files.exists(path)) {
+            try {
+                textData.append(Files.readString(path));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            String urlString = "https://osu.ppy.sh/osu/" + id;
+            try {
+                URL url = new URL(urlString);
+                URLConnection urlConnection = url.openConnection();
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()))) {
+                    String line;
+                    String currentSection = "";
+                    while ((line = reader.readLine()) != null) {
+                        if (line.startsWith("[") && line.endsWith("]")) {
+                            currentSection = line;
+                        }
+                        if (currentSection.equals("[Metadata]") || currentSection.equals("[Events]")) {
+                            continue;
+                        }
+                        if (line.startsWith("AudioFilename:")) {
+                            continue;
+                        }
+                        textData.append(line).append("\n");
+                    }
+                }
+                Files.writeString(path, textData.toString());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return textData.toString();
+    }
+
+    @GetMapping("/beatmapbp/{id}")
+    @Profile("dev")
+    public String getBeatmapBypass(@PathVariable String id) {
         StringBuilder textData = new StringBuilder();
 
         String urlString = "https://osu.ppy.sh/osu/" + id;
@@ -107,4 +151,6 @@ public class ResourceController {
 
         return textData.toString();
     }
+
+
 }
