@@ -13,11 +13,13 @@ import BeatmapInfo from "@/components/Game/components/BeatmapInfo.vue";
 import IngameSettingsPage from "@/components/Game/components/IngameSettingsPage.vue";
 import PlayerBox from "@/components/Game/components/PlayerBox.vue";
 import PlayerBoxCompact from "@/components/Game/components/PlayerBoxCompact.vue";
+import BeatmapRenderer from "@/components/osu/Render/BeatmapRenderer.vue";
 
 
 export default {
   name: 'GamePage',
   components: {
+    BeatmapRenderer,
     PlayerBoxCompact,
     PlayerBox, IngameSettingsPage, BeatmapInfo, ChatSection, UserPage, FontAwesomeIcon, RoomSettingsModal},
   setup() {
@@ -88,6 +90,272 @@ export default {
     };
   },
   methods: {
+    initialize() {
+      window.addEventListener('beforeunload', this.requestLeaveRoom);
+
+      setTimeout(() => {
+        const audioPlayer = this.$refs.audio;
+        if (audioPlayer) {
+          const volume = localStorage.getItem("volume");
+          if (volume) {
+            this.volume = volume;
+            audioPlayer.volume = volume / 100;
+          } else {
+            audioPlayer.volume = 0.2;
+          }
+        }
+      }, 1000);
+
+      const messageContainer = this.$el.querySelector('.message-wrapper');
+      messageContainer.addEventListener('scroll', () => {
+        const {scrollTop, scrollHeight, clientHeight} = messageContainer;
+        this.isScrolling = scrollTop + clientHeight >= scrollHeight * 0.9;
+      });
+
+      this.resetInactivityTimer();
+
+      this.webSocketService = new WebSocketService(this.gameId);
+      this.webSocketService.connect({
+        onMessage: (message) => {
+          // Handle chat messages
+          var msg = JSON.parse(message.body);
+
+          // Adjust timezone
+          msg.timestamp = new Date();
+
+          this.messages.push(msg);
+
+          // Remove the oldest message if the message count exceeds 100
+          if (this.messages.length > 100) {
+            this.messages.shift();
+          }
+        },
+        onGameStatus: (message) => {
+          // Handle game status updates
+
+          if (message.body === "gameStart") {
+            this.isPlaying = true;
+            this.isGuessing = true;
+            this.game.questionIndex = 1;
+
+            this.players.forEach((player) => {
+              player.totalPoints = 0;
+              player.totalGuess = 0;
+              player.guessedRight = false;
+              player.guessedRightAlias = false;
+            });
+
+            this.getPossibleAnswers();
+          } else if (message.body === "gameEnd") {
+            this.isPlaying = false;
+            this.highlightStartButton = true;
+            setTimeout(() => {
+              this.highlightStartButton = false;
+            }, 2000); // highlight for 2 seconds
+          } else if (message.body === "gameDeleted") {
+            this.kicked = true;
+            alert("This game has been deleted due to inactivity.");
+            this.$router.push('/');
+          }
+        },
+        onGameProgress: (message) => {
+          if (!this.game) {
+            return;
+          }
+          // Handle game progress updates
+          this.isPlaying = true;
+          this.isGuessing = true;
+          this.answerInput = "";
+          this.inputFocused = false;
+
+          // If display mode does not include AUDIO, stop the audio
+          if (!this.game.displayMode.includes('AUDIO')) {
+            const audioPlayer = this.$refs.audio;
+            if (audioPlayer) {
+              audioPlayer.pause();
+              audioPlayer.currentTime = 0;
+            }
+          }
+
+          var encryptedBeatmapInfo = JSON.parse(message.body);
+          this.ownGuessRight = false;
+          this.ownGuessRightAlias = false;
+          if (this.game.displayMode.includes('BACKGROUND')) {
+            this.imageSourceBase64 = encryptedBeatmapInfo.base64;
+          }
+          if (this.game.displayMode.includes('AUDIO')) {
+            this.audioSourceBase64 = encryptedBeatmapInfo.base64;
+          }
+          if (this.game.displayMode.includes('PATTERN')) {
+            this.updateBeatmap(encryptedBeatmapInfo.beatmapId);
+            this.audioSourceBase64 = encryptedBeatmapInfo.base64;
+          }
+          this.timeLeft = this.game.guessingTime - 1;
+          this.game.questionIndex++;
+          this.countdownInterval = setInterval(() => {
+            this.timeLeft--;
+            if (this.timeLeft <= 0) {
+              clearInterval(this.countdownInterval);
+            }
+          }, 1000);
+
+          this.players.forEach((player) => {
+            player.guessedRight = false;
+            player.answerSubmitted = false;
+          });
+        },
+        onGameLeaderboard: (message) => {
+          // Handle game leaderboard updates
+          this.isGuessing = false;
+          this.inputFocused = false;
+
+          this.autocompleteOptions = [];
+
+          clearInterval(this.countdownInterval)
+
+          this.timeLeft = 0;
+
+          const audioPlayer = this.$refs.audio;
+          if (audioPlayer) {
+            audioPlayer.pause();
+            audioPlayer.currentTime = 0;
+            audioPlayer.volume = this.volume / 100;
+            audioPlayer.play()
+          }
+
+          var leaderboard = JSON.parse(message.body);
+
+          // Iterate over the players array
+          this.players.forEach((player) => {
+            if (!player) return;
+            // Find the corresponding entry in the leaderboard object
+            let leaderboardEntry = leaderboard[player.username];
+            // If the leaderboard entry exists, update the player's point property
+            if (leaderboardEntry) {
+              if (!player.totalGuess) {
+                player.totalGuess = 0;
+                player.totalPoints = 0;
+              }
+
+              player.guessedRight = leaderboardEntry.correct;
+              player.guessedRightAlias = leaderboardEntry.aliasCorrect;
+              if (player.id === this.me.id && player.guessedRight) {
+                this.ownGuessRight = true;
+              }
+              // Update the point property
+              player.totalGuess = leaderboardEntry.totalGuess;
+              player.totalPoints = leaderboardEntry.totalPoints;
+            } else {
+              player.guessedRight = false;
+              player.guessedRightAlias = false;
+            }
+          });
+
+          this.players.sort((a, b) => b.totalPoints - a.totalPoints);
+        },
+        onAnswer: (message) => {
+          // Handle answer updates
+          this.currentBeatmap = JSON.parse(message.body);
+
+          if (this.game.guessMode === 'TITLE') {
+            this.answerInput = this.currentBeatmap.title;
+          } else if (this.game.guessMode === 'ARTIST') {
+            this.answerInput = this.currentBeatmap.artist;
+          } else if (this.game.guessMode === 'CREATOR') {
+            this.answerInput = this.currentBeatmap.creator;
+          }
+
+          if (this.game.displayMode.includes('PATTERN')) {
+            this.answerInput = this.currentBeatmap.title;
+            this.resetCurrentTime();
+          }
+
+          this.players.forEach((player) => {
+            player.answerSubmitted = false;
+          });
+
+          this.answerSubmitted = false;
+        },
+        onAnswerSubmission: (message) => {
+          // Handle answer submission updates
+          var answerSubmissions = JSON.parse(message.body);
+
+          this.players.forEach((player) => {
+            player.answerSubmitted = answerSubmissions[player.id];
+          });
+        },
+        onPlayersAnswers: (message) => {
+          // Handle players' answers updates
+          this.answers = JSON.parse(message.body);
+        },
+        onPlayers: (message) => {
+          // Handle players updates
+          // Save the previous player list for points
+          const previousPlayers = this.players;
+          this.players = JSON.parse(message.body);
+
+          // Update the points of the players
+          this.players.forEach((player) => {
+            const previousPlayer = previousPlayers.find((p) => p.id === player.id);
+            if (previousPlayer) {
+              player.totalGuess = previousPlayer.totalGuess;
+              player.totalPoints = previousPlayer.totalPoints;
+              player.guessedRight = previousPlayer.guessedRight;
+            }
+          });
+        },
+        onRoomSettings: (message) => {
+          // Handle room settings updates
+          this.game = JSON.parse(message.body);
+          this.showDropdown = false;
+          this.setInputPlaceholder();
+        },
+        onAnnouncement: (message) => {
+          // Handle announcement updates
+          this.messages.push({
+            announcement: true,
+            systemMessage: true,
+            content: message.body,
+            timestamp: Date.now(),
+          });
+        },
+        onBlurReveal: (message) => {
+          // Handle blur reveal updates
+          this.imageSourceBase64 = message.body;
+        },
+        onPlayerKick: (message) => {
+          // Handle player kick updates
+          const player = JSON.parse(message.body);
+          if (player.id === this.me.id) {
+            if (this.webSocketService){
+              this.webSocketService.disconnect();
+            }
+            this.kicked = true;
+            this.$router.push('/');
+            alert("You have been kicked from the game.");
+          }
+        },
+        onPlayerInactivityKick: (message) => {
+          const player = JSON.parse(message.body);
+          if (player.id === this.me.id) {
+            if (this.webSocketService){
+              this.webSocketService.disconnect();
+            }
+            this.kicked = true;
+            this.$router.push('/');
+            alert("You have been kicked from the game due to inactivity.");
+          }
+        }
+      }).then(() => {
+        this.isConnected = true;
+        this.messages.push({
+          systemMessage: true,
+          content: "Successfully connected to the game room.",
+          timestamp: Date.now(),
+        });
+      });
+    },
+
     startGame() {
       this.isLoading = true;
       apiService.post('/api/startGame', {
@@ -301,6 +569,8 @@ export default {
               this.setInputPlaceholder();
               this.getPossibleAnswers();
 
+              this.initialize();
+
             } else {
               alert("Either you already have joined this game, or the game does not exist.")
               this.$router.push('/');
@@ -396,7 +666,15 @@ export default {
       } else if (this.settings.submitTab && event.key === 'Tab') {
         this.selectAutocompleteOption(this.selectedOptionIndex);
       }
-    }
+    },
+
+    updateBeatmap(encodedBeatmapId) {
+      this.$refs.beatmapRenderer.updateBeatmap(encodedBeatmapId);
+    },
+
+    resetCurrentTime() {
+      this.$refs.beatmapRenderer.resetCurrentTime();
+    },
   },
 
   async mounted() {
@@ -414,262 +692,6 @@ export default {
     } catch (e) {
       this.$router.push('/');
     }
-
-    window.addEventListener('beforeunload', this.requestLeaveRoom);
-
-    setTimeout(() => {
-      const audioPlayer = this.$refs.audio;
-      if (audioPlayer) {
-        const volume = localStorage.getItem("volume");
-        if (volume) {
-          this.volume = volume;
-          audioPlayer.volume = volume / 100;
-        } else {
-          audioPlayer.volume = 0.2;
-        }
-      }
-    }, 1000);
-
-    const messageContainer = this.$el.querySelector('.message-wrapper');
-    messageContainer.addEventListener('scroll', () => {
-      const {scrollTop, scrollHeight, clientHeight} = messageContainer;
-      this.isScrolling = scrollTop + clientHeight >= scrollHeight * 0.9;
-    });
-
-    this.resetInactivityTimer();
-
-
-    this.webSocketService = new WebSocketService(this.gameId);
-    this.webSocketService.connect({
-      onMessage: (message) => {
-        // Handle chat messages
-        var msg = JSON.parse(message.body);
-
-        // Adjust timezone
-        msg.timestamp = new Date();
-
-        this.messages.push(msg);
-
-        // Remove the oldest message if the message count exceeds 100
-        if (this.messages.length > 100) {
-          this.messages.shift();
-        }
-      },
-      onGameStatus: (message) => {
-        // Handle game status updates
-
-        if (message.body === "gameStart") {
-          this.isPlaying = true;
-          this.isGuessing = true;
-          this.game.questionIndex = 1;
-
-          this.players.forEach((player) => {
-            player.totalPoints = 0;
-            player.totalGuess = 0;
-            player.guessedRight = false;
-            player.guessedRightAlias = false;
-          });
-
-          this.getPossibleAnswers();
-        } else if (message.body === "gameEnd") {
-          this.isPlaying = false;
-          this.highlightStartButton = true;
-          setTimeout(() => {
-            this.highlightStartButton = false;
-          }, 2000); // highlight for 2 seconds
-        } else if (message.body === "gameDeleted") {
-          this.kicked = true;
-          alert("This game has been deleted due to inactivity.");
-          this.$router.push('/');
-        }
-      },
-      onGameProgress: (message) => {
-        if (!this.game) {
-          return;
-        }
-        // Handle game progress updates
-        this.isPlaying = true;
-        this.isGuessing = true;
-        this.answerInput = "";
-        this.inputFocused = false;
-
-        // If display mode does not include AUDIO, stop the audio
-        if (!this.game.displayMode.includes('AUDIO')) {
-          const audioPlayer = this.$refs.audio;
-          if (audioPlayer) {
-            audioPlayer.pause();
-            audioPlayer.currentTime = 0;
-          }
-        }
-
-        var encryptedBeatmapInfo = JSON.parse(message.body);
-        this.ownGuessRight = false;
-        this.ownGuessRightAlias = false;
-        if (this.game.displayMode.includes('BACKGROUND')) {
-          this.imageSourceBase64 = encryptedBeatmapInfo.base64;
-        }
-        if (this.game.displayMode.includes('AUDIO')) {
-          this.audioSourceBase64 = encryptedBeatmapInfo.base64;
-        }
-        this.timeLeft = this.game.guessingTime - 1;
-        this.game.questionIndex++;
-        this.countdownInterval = setInterval(() => {
-          this.timeLeft--;
-          if (this.timeLeft <= 0) {
-            clearInterval(this.countdownInterval);
-          }
-        }, 1000);
-
-        this.players.forEach((player) => {
-          player.guessedRight = false;
-          player.answerSubmitted = false;
-        });
-      },
-      onGameLeaderboard: (message) => {
-        // Handle game leaderboard updates
-        this.isGuessing = false;
-        this.inputFocused = false;
-
-        this.autocompleteOptions = [];
-
-        clearInterval(this.countdownInterval)
-
-        this.timeLeft = 0;
-
-        const audioPlayer = this.$refs.audio;
-        if (audioPlayer) {
-          audioPlayer.pause();
-          audioPlayer.currentTime = 0;
-          audioPlayer.play()
-        }
-
-
-        var leaderboard = JSON.parse(message.body);
-
-        // Iterate over the players array
-        this.players.forEach((player) => {
-          if (!player) return;
-          // Find the corresponding entry in the leaderboard object
-          let leaderboardEntry = leaderboard[player.username];
-          // If the leaderboard entry exists, update the player's point property
-          if (leaderboardEntry) {
-            if (!player.totalGuess) {
-              player.totalGuess = 0;
-              player.totalPoints = 0;
-            }
-
-            player.guessedRight = leaderboardEntry.correct;
-            player.guessedRightAlias = leaderboardEntry.aliasCorrect;
-            if (player.id === this.me.id && player.guessedRight) {
-              this.ownGuessRight = true;
-            }
-            // Update the point property
-            player.totalGuess = leaderboardEntry.totalGuess;
-            player.totalPoints = leaderboardEntry.totalPoints;
-          } else {
-            player.guessedRight = false;
-            player.guessedRightAlias = false;
-          }
-        });
-
-        this.players.sort((a, b) => b.totalPoints - a.totalPoints);
-      },
-      onAnswer: (message) => {
-        // Handle answer updates
-        this.currentBeatmap = JSON.parse(message.body);
-
-        if (this.game.guessMode === 'TITLE') {
-          this.answerInput = this.currentBeatmap.title;
-        } else if (this.game.guessMode === 'ARTIST') {
-          this.answerInput = this.currentBeatmap.artist;
-        } else if (this.game.guessMode === 'CREATOR') {
-          this.answerInput = this.currentBeatmap.creator;
-        }
-
-        this.players.forEach((player) => {
-          player.answerSubmitted = false;
-        });
-
-        this.answerSubmitted = false;
-      },
-      onAnswerSubmission: (message) => {
-        // Handle answer submission updates
-        var answerSubmissions = JSON.parse(message.body);
-
-        this.players.forEach((player) => {
-          player.answerSubmitted = answerSubmissions[player.id];
-        });
-      },
-      onPlayersAnswers: (message) => {
-        // Handle players' answers updates
-        this.answers = JSON.parse(message.body);
-      },
-      onPlayers: (message) => {
-        // Handle players updates
-        // Save the previous player list for points
-        const previousPlayers = this.players;
-        this.players = JSON.parse(message.body);
-
-        // Update the points of the players
-        this.players.forEach((player) => {
-          const previousPlayer = previousPlayers.find((p) => p.id === player.id);
-          if (previousPlayer) {
-            player.totalGuess = previousPlayer.totalGuess;
-            player.totalPoints = previousPlayer.totalPoints;
-            player.guessedRight = previousPlayer.guessedRight;
-          }
-        });
-      },
-      onRoomSettings: (message) => {
-        // Handle room settings updates
-        this.game = JSON.parse(message.body);
-        this.showDropdown = false;
-        this.setInputPlaceholder();
-      },
-      onAnnouncement: (message) => {
-        // Handle announcement updates
-        this.messages.push({
-          announcement: true,
-          systemMessage: true,
-          content: message.body,
-          timestamp: Date.now(),
-        });
-      },
-      onBlurReveal: (message) => {
-        // Handle blur reveal updates
-        this.imageSourceBase64 = message.body;
-      },
-      onPlayerKick: (message) => {
-        // Handle player kick updates
-        const player = JSON.parse(message.body);
-        if (player.id === this.me.id) {
-          if (this.webSocketService){
-            this.webSocketService.disconnect();
-          }
-          this.kicked = true;
-          this.$router.push('/');
-          alert("You have been kicked from the game.");
-        }
-      },
-      onPlayerInactivityKick: (message) => {
-        const player = JSON.parse(message.body);
-        if (player.id === this.me.id) {
-          if (this.webSocketService){
-            this.webSocketService.disconnect();
-          }
-          this.kicked = true;
-          this.$router.push('/');
-          alert("You have been kicked from the game due to inactivity.");
-        }
-      }
-    }).then(() => {
-      this.isConnected = true;
-      this.messages.push({
-        systemMessage: true,
-        content: "Successfully connected to the game room.",
-        timestamp: Date.now(),
-      });
-    });
   },
 
   beforeUnmount() {
@@ -739,7 +761,13 @@ export default {
         if (audioPlayer) {
           audioPlayer.load();
           if (newVal) {
-            audioPlayer.play();
+            if (this.game.displayMode.includes('PATTERN') && this.isGuessing) {
+              audioPlayer.volume = 0;
+              audioPlayer.play();
+            } else {
+              audioPlayer.play();
+            }
+
           }
         }
       });
@@ -771,11 +799,24 @@ export default {
     },
 
     volume(newVal) {
+      let beatmapRenderer = this.$refs.beatmapRenderer;
+      if (beatmapRenderer) {
+        beatmapRenderer.setVolume(newVal / 100 * 0.3);
+      }
+
+      if (this.isGuessing && this.game.displayMode.includes('PATTERN')) {
+        return;
+      }
+
       let audioPlayer = this.$refs.audio;
+
       if (audioPlayer) {
+        this.volume = newVal;
         audioPlayer.volume = newVal / 100;
         localStorage.setItem("volume", newVal);
       }
+
+
     },
 
     me: {
@@ -849,9 +890,11 @@ export default {
 
         <div v-if="this.game">
           <div class="question-image-container">
-            <div class="question-image-cover" v-if="!toggleImage || (!this.game.displayMode.includes('BACKGROUND') && isGuessing)"></div>
+            <div class="question-image-cover" v-if="!toggleImage || ((!this.game.displayMode.includes('BACKGROUND') && !this.game.displayMode.includes('PATTERN')) && isGuessing)"></div>
+
             <div class="image-wrapper">
-              <img :src="'/image/' + this.imageSourceBase64" alt="" class="question-image">
+              <BeatmapRenderer v-if="this.game && (this.game.displayMode.includes('PATTERN'))" class="beatmap-renderer" ref="beatmapRenderer"/>
+              <img :src="'/image/' + this.imageSourceBase64" alt="" class="question-image" v-else>
               <img :src="icon_report" alt="" class="icon-report" v-on:click="toggleReportDropdown" v-if="isPlaying"/>
               <font-awesome-icon :icon="['fas', 'volume-high']" class="icon-showSettings" @click="showUserSettings = !showUserSettings"/>
               <div class="settings-container" v-if="showUserSettings">
@@ -870,8 +913,10 @@ export default {
             </div>
           </div>
 
+
+
           <div class="audio-input-container">
-            <audio hidden ref="audio" v-if="this.game && (this.game.displayMode.includes('AUDIO'))" id="audioPlayer">
+            <audio hidden ref="audio" v-if="this.game && (this.game.displayMode.includes('AUDIO') || this.game.displayMode.includes('PATTERN'))" id="audioPlayer">
               <source :src="'/audio/' + this.audioSourceBase64" type="audio/mpeg">
               Your browser does not support the audio element.
             </audio>
@@ -1216,6 +1261,9 @@ UserPage {
   justify-content: center;
   align-items: center;
   position: relative;
+}
+
+.beatmap-renderer {
 }
 
 .audio-input-container {
