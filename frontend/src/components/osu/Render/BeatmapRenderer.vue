@@ -1,9 +1,14 @@
 <script>
-import hitcircleImage from '@/assets/siren.png';
+import hitcircleImage from '@/assets/osu/hitcircle.png';
 import icon_report from "@/assets/siren.png";
-import * as PIXI from "pixi.js";
-import {Application, Assets, Sprite} from "pixi.js";
-import {createPixiApp, resetTimer} from "@/components/osu/Render/Renderer";
+import {
+  createPixiApp,
+  setCurrentTime,
+  setCurrentTimeToPreviewPoint,
+  setBeatmap,
+  setBeatmapBypass,
+  setVolume
+} from "@/components/osu/Render/Renderer";
 
 export default {
   name: 'BeatmapRenderer',
@@ -13,34 +18,69 @@ export default {
       app: null,
       hitcircleImage: hitcircleImage,
       icon_report: icon_report,
+      currentTime: 0,
+      beatmapId: ''
     }
   },
 
   methods: {
     async draw() {
-      const app = await createPixiApp();
-      document.getElementById('pixi-container').appendChild(app.canvas);
-      // Draw a rectangle
+      this.app = await createPixiApp();
     },
 
-    resetTimer() {
-      resetTimer();
+    updateCurrentTime() {
+      setCurrentTime(parseInt(this.currentTime));
+    },
+
+    resetCurrentTime() {
+      setCurrentTimeToPreviewPoint();
+    },
+
+    updateBeatmap(beatmapId) {
+      setBeatmap(beatmapId);
+    },
+
+    updateBeatmapBypass(beatmapId) {
+      setBeatmapBypass(beatmapId);
+    },
+
+    setVolume(volume) {
+      setVolume(volume);
     }
   },
 
   mounted() {
-    // Create a Pixi application and append it to the container
     this.draw();
-    // this.draw(this.app);
+  },
+
+  beforeUnmount() {
+    if (this.app) {
+      this.app.ticker.stop();
+    }
   }
 
 }
 </script>
 
 <template>
-  <div id="pixi-container"></div>
+  <div>
+    <div id="pixi-container" class="pixi-container"></div>
+  </div>
+
 </template>
 
 <style scoped>
+.pixi-container {
+  width: 70vh;
+  height: 40vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
 
+.pixi-container canvas {
+  width: 70vh;
+  height: 40vh;
+}
 </style>
