@@ -101,4 +101,7 @@ public class Beatmap {
     @Transient
     @JsonIgnore
     List<Alias> aliases;
+
+    @Transient
+    private BeatmapPattern beatmapPattern;
 }

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -41,6 +42,7 @@ public class BeatmapService {
     private final BeatmapRepository beatmapRepository;
     private final PlayerRepository playerRepository;
     private final BeatmapReportRepository beatmapReportRepository;
+    private final BeatmapPatternRepository beatmapPatternRepository;
     private final ResourceService resourceService;
     private final AliasRepository aliasRepository;
     private final AESUtil aesUtil;
@@ -184,6 +186,13 @@ public class BeatmapService {
         Map<Integer, List<Alias>> beatmapAliasesMap = aliases.stream().collect(Collectors.groupingBy(alias -> alias.getBeatmap().getBeatmapset_id()));
         beatmaps.forEach(beatmap -> beatmap.setAliases(beatmapAliasesMap.getOrDefault(beatmap.getBeatmapset_id(), Collections.emptyList())));
 
+        if (guessMode == GuessMode.PATTERN) {
+            List<BeatmapPattern> beatmapPatterns = beatmapPatternRepository.findAllByBeatmapIds(beatmapIds);
+            Map<Integer, List<BeatmapPattern>> beatmapPatternsMap = beatmapPatterns.stream()
+                    .collect(Collectors.groupingBy(pattern -> pattern.getBeatmap().getBeatmapset_id()));
+            beatmaps.forEach(beatmap -> beatmap.setBeatmapPattern(beatmapPatternsMap.get(beatmap.getBeatmapset_id()).stream().findFirst().orElse(null)));
+        }
+
         BeatmapPool beatmapPool = new BeatmapPool();
         beatmapPool.setBeatmaps(beatmaps);
         beatmapPool.setTotalBeatmapPoolSize(beatmaps.size());
@@ -307,6 +316,8 @@ public class BeatmapService {
 
         for (GameMode gameMode : gameModes) {
             for (GuessMode guessMode : GuessMode.values()) {
+                if (guessMode == GuessMode.PATTERN) continue;
+
                 BeatmapStatsId beatmapStatsId = new BeatmapStatsId(Integer.parseInt(jsonMap.get("beatmapset_id")), gameMode, guessMode);
 
                 if (beatmapStatsMap.containsKey(beatmapStatsId)) {
@@ -347,6 +358,58 @@ public class BeatmapService {
         return beatmapRepository.save(beatmap);
     }
 
+    public Beatmap addBeatmapPattern(String beatmapId) throws IOException {
+        URL url = new URL("https://osu.ppy.sh/api/get_beatmaps?k=" + apiKey + "&b=" + beatmapId);
+        BufferedReader bf; String line; String result="";
+        bf = new BufferedReader(new InputStreamReader(url.openStream()));
+
+        while((line=bf.readLine())!=null){
+            result=result.concat(line);
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, String>> jsonList = mapper.readValue(result, new TypeReference<List<Map<String, String>>>() {});
+
+        Map<String, String> jsonMap = jsonList.get(0);
+
+        Set<GameMode> gameModes = new HashSet<>();
+
+        for (Map<String, String> jm : jsonList) {
+            gameModes.add(GameMode.fromValue(Integer.parseInt(jm.get("mode"))));
+        }
+
+        Beatmap existingBeatmap = beatmapRepository.findById(Integer.parseInt(jsonMap.get("beatmapset_id"))).orElse(null);
+        Map<BeatmapStatsId, BeatmapStats> beatmapStatsMap = new HashMap<>();
+
+        // Check if the beatmap already exists
+        if (existingBeatmap != null) {
+            beatmapStatsMap = existingBeatmap.getBeatmapStats();
+        } else {
+            return null;
+        }
+
+        BeatmapStatsId beatmapStatsId = new BeatmapStatsId(Integer.parseInt(jsonMap.get("beatmapset_id")), GameMode.STD, GuessMode.PATTERN);
+
+        BeatmapStats beatmapStats = BeatmapStats.builder()
+                .id(beatmapStatsId)
+                .guessed(0)
+                .played(0)
+                .build();
+
+        if (!beatmapStatsMap.containsKey(beatmapStatsId)) {
+            beatmapStatsMap.put(beatmapStatsId, beatmapStats);
+        }
+
+        BeatmapPattern beatmapPattern = BeatmapPattern.builder()
+                .beatmap(existingBeatmap)
+                .beatmap_id(Integer.parseInt(jsonMap.get("beatmap_id")))
+                .version(jsonMap.get("version"))
+                .build();
+
+        beatmapPatternRepository.save(beatmapPattern);
+        return beatmapRepository.save(existingBeatmap);
+    }
+
     public Beatmap addBlur(String beatmapset_id) {
         Beatmap beatmap = beatmapRepository.findById(Integer.parseInt(beatmapset_id)).orElse(null);
         if (beatmap == null) {
@@ -363,7 +426,7 @@ public class BeatmapService {
 
         beatmap.setBlur(true);
 
-        logger.info("Adding blur to beatmap: " + beatmap.getArtistAndTitle());
+        logger.info("Adding blur to beatmap: " + beatmap.getId() + " / " + beatmap.getArtistAndTitle());
 
         return beatmapRepository.save(beatmap);
     }
@@ -408,11 +471,13 @@ public class BeatmapService {
                 .collect(Collectors.toList());
     }
 
-    public void deleteReport(String beatmapsetId) {
+    public Beatmap deleteReport(String beatmapsetId) {
         List<BeatmapReport> beatmapReports = beatmapReportRepository.findAllByBeatmapsetId(Integer.parseInt(beatmapsetId));
         beatmapReportRepository.deleteAll(beatmapReports);
 
         logger.info("Deleted reports for beatmap: " + beatmapsetId);
+
+        return beatmapReports.get(0).getBeatmap();
     }
 
     public void addAlias(AliasAddDTO aliasAddDTO) {

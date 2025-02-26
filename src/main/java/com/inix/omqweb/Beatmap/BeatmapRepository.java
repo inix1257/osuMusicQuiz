@@ -14,7 +14,6 @@ import java.sql.Timestamp;
 import java.util.List;
 
 @Repository
-
 public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
     List<Beatmap> findBeatmapsByCreator(String creator);
 
