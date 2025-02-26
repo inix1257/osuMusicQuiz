@@ -14,7 +14,6 @@ import java.util.Random;
 public class AESUtil {
     private final String ALGORITHM = "AES";
 
-    @Value("${aes.secretKey}")
     private String secretKey;
 
     @Scheduled(fixedRate = 1000 * 60 * 60 * 24)
