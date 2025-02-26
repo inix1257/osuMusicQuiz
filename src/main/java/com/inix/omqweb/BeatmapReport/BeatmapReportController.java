@@ -1,7 +1,9 @@
 package com.inix.omqweb.BeatmapReport;
 
 import com.inix.omqweb.Achievement.AchievementService;
+import com.inix.omqweb.Beatmap.Beatmap;
 import com.inix.omqweb.Beatmap.BeatmapService;
+import com.inix.omqweb.Discord.DiscordWebhookService;
 import com.inix.omqweb.osuAPI.Player;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +22,7 @@ public class BeatmapReportController {
     private final BeatmapService beatmapService;
     private final AchievementService achievementService;
 
-    private final Logger logger = LoggerFactory.getLogger(BeatmapReportController.class);
+    private final DiscordWebhookService discordWebhookService;
 
     @PostMapping("/reportBeatmap")
     public void reportBeatmap(@RequestBody BeatmapReportDTO beatmapReportDTO) {
@@ -34,7 +36,6 @@ public class BeatmapReportController {
         if (achievementService.isModerator(player)) {
             return ResponseEntity.ok(beatmapService.getMostReportedBeatmaps());
         } else {
-            logger.warn("Player {} tried to get beatmap reports", player.getId());
             return ResponseEntity.badRequest().build();
         }
     }
@@ -44,10 +45,10 @@ public class BeatmapReportController {
         Player player = (Player) request.getAttribute("userInfo");
 
         if (achievementService.isModerator(player)) {
-            beatmapService.addBlur(beatmapsetId);
+            Beatmap beatmap = beatmapService.addBlur(beatmapsetId);
+            discordWebhookService.sendBeatmapWebhook("Beatmap `" + beatmap.getArtistAndTitle() + " (" + beatmap.getBeatmapset_id() + ")` has been blurred by " + player.getUsername());
             return ResponseEntity.ok().build();
         } else {
-            logger.warn("Player {} tried to add blur to beatmapset {}", player.getId(), beatmapsetId);
             return ResponseEntity.badRequest().build();
         }
     }
@@ -57,11 +58,10 @@ public class BeatmapReportController {
         Player player = (Player) request.getAttribute("userInfo");
 
         if (achievementService.isModerator(player)) {
-            beatmapService.deleteReport(beatmapsetId);
-            logger.info("Moderator {} deleted report from beatmapset {}", player.getUsername(), beatmapsetId);
+            Beatmap beatmap = beatmapService.deleteReport(beatmapsetId);
+            discordWebhookService.sendBeatmapWebhook("Reports for beatmap `" + beatmap.getArtistAndTitle() + " (" + beatmap.getBeatmapset_id() + ")` have been deleted by " + player.getUsername());
             return ResponseEntity.ok().build();
         } else {
-            logger.warn("Player {} tried to delete report from beatmapset {}", player.getId(), beatmapsetId);
             return ResponseEntity.badRequest().build();
         }
     }
