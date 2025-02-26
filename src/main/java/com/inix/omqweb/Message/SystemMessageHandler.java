@@ -1,7 +1,7 @@
 package com.inix.omqweb.Message;
 
 import com.inix.omqweb.Beatmap.Beatmap;
-import com.inix.omqweb.Beatmap.EncryptedBeatmapInfo;
+import com.inix.omqweb.Beatmap.EncryptedBeatmapInfoDTO;
 import com.inix.omqweb.DTO.TotalGuessDTO;
 import com.inix.omqweb.Game.Game;
 import com.inix.omqweb.Game.PlayerAnswer;
@@ -59,8 +59,8 @@ public class SystemMessageHandler {
         sendMessage(game, "blurReveal", key);
     }
 
-    public void onGameProgressUpdate(Game game, EncryptedBeatmapInfo encryptedBeatmapInfo) {
-        sendMessage(game, "gameprogress", encryptedBeatmapInfo);
+    public void onGameProgressUpdate(Game game, EncryptedBeatmapInfoDTO encryptedBeatmapInfoDTO) {
+        sendMessage(game, "gameprogress", encryptedBeatmapInfoDTO);
     }
 
     public void onPlayerKick(Game game, Player targetPlayer) {
