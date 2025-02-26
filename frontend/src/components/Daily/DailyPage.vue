@@ -674,6 +674,7 @@ export default {
   padding: 10px;
   margin-top: 10px;
   font-size: 1.0em;
+  font-family: "Sen", "Noto Sans Korean", "serif";
   cursor: pointer;
 }
 
