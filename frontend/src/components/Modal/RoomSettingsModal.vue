@@ -394,6 +394,19 @@ export default {
         this.gameName = newVal.slice(0, 50);
       }
     },
+
+    displayMode(newVal, oldVal) {
+      if (newVal.includes('BACKGROUND') && !oldVal.includes('BACKGROUND') && oldVal.includes('PATTERN')) {
+        this.displayMode = ['BACKGROUND'];
+      }
+      if (newVal.includes('AUDIO') && !oldVal.includes('AUDIO') && oldVal.includes('PATTERN')) {
+        this.displayMode = ['AUDIO'];
+      }
+      if (newVal.includes('PATTERN') && !oldVal.includes('PATTERN')) {
+        this.displayMode = ['PATTERN'];
+      }
+
+    }
   }
 }
 </script>
@@ -449,6 +462,55 @@ export default {
                   </div>
                 </div>
               </div>
+
+              <div class="form-row">
+                <label>Year Range</label>
+                <div class="inner-rightalign">
+                  <input type="number" v-model="startYear" class="input-gameinfo input-yearrange">
+                  <strong>~</strong>
+                  <input type="number" v-model="endYear" class="input-gameinfo input-yearrange">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>Game Mode</label>
+                <div class="radio-group inner-rightalign">
+                  <select v-model="selectedGameMode" class="dropdown">
+                    <option v-for="mode in gameModes" :key="mode" :value="mode">{{ mode }}</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label>Display Mode</label>
+                <div class="inner-rightalign">
+                  <div class="div-displayModeInnerLeft">
+                    <div>
+                      <input type="checkbox" id="background" value="BACKGROUND" class="checkbox-displaymode" v-model="displayMode">
+                      <label for="background" class="label-displaymode" :class="{ 'displaymode-highlight': (displayMode.includes('BACKGROUND') || displayMode.includes('AUDIO'))}">
+                        <font-awesome-icon :icon="['fas', 'image']" />
+                        <div>Background</div>
+                      </label>
+                    </div>
+                    <div>
+                      <input type="checkbox" id="audio" value="AUDIO" class="checkbox-displaymode" v-model="displayMode">
+                      <label for="audio" class="label-displaymode" :class="{ 'displaymode-highlight': (displayMode.includes('BACKGROUND') || displayMode.includes('AUDIO'))}">
+                        <font-awesome-icon :icon="['fas', 'music']" />
+                        <div>Audio</div>
+                      </label>
+                    </div>
+                  </div>
+                  <div>
+                    <input type="checkbox" id="pattern" value="PATTERN" class="checkbox-displaymode" v-model="displayMode">
+                    <label for="pattern" class="label-displaymode" :class="{ 'displaymode-highlight': displayMode.includes('PATTERN')}">
+                      <font-awesome-icon :icon="['fas', 'shapes']" />
+                      <div>Pattern</div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-if="selectedTab === 'Advanced'">
               <div class="form-row">
                 <label>Total Beatmaps</label>
                 <select v-model="totalQuestions" class="dropdown">
@@ -479,25 +541,6 @@ export default {
 
               </div>
               <div class="form-row">
-                <label>Year Range</label>
-                <div class="inner-rightalign">
-                  <input type="number" v-model="startYear" class="input-gameinfo input-yearrange">
-                  <strong>~</strong>
-                  <input type="number" v-model="endYear" class="input-gameinfo input-yearrange">
-                </div>
-              </div>
-              <div class="form-row">
-                <label>Game Mode</label>
-                <div class="radio-group inner-rightalign">
-                  <div v-for="mode in gameModes" :key="mode">
-                    <input type="radio" :id="mode" :value="mode" v-model="selectedGameMode">
-                    <label :for="mode">{{ mode }}</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-if="selectedTab === 'Advanced'">
-              <div class="form-row">
                 <label for="autoskip" class="tooltip-container">Autoskip Guess Phase
                   <span class="tooltip">Automatically skip the guess phase if everyone submits their answer</span>
                 </label>
@@ -517,22 +560,9 @@ export default {
                 <label>Pool Mode</label>
                 <select v-model="poolMode" class="dropdown">
                   <option value="DEFAULT">Default</option>
-                  <option value="TOUHOU">Touhou</option>
-                  <option value="VOCALOID">Vocaloid</option>
+                  <option value="TOUHOU">Touhou Only</option>
+                  <option value="VOCALOID">Vocaloid Only</option>
                 </select>
-              </div>
-              <div class="form-row">
-                <label>Display Mode</label>
-                <div class="inner-rightalign">
-                  <div>
-                    <input type="checkbox" id="background" value="BACKGROUND" v-model="displayMode">
-                    <label for="background">Background</label>
-                  </div>
-                  <div>
-                    <input type="checkbox" id="audio" value="AUDIO" v-model="displayMode">
-                    <label for="audio">Audio</label>
-                  </div>
-                </div>
               </div>
             </div>
             <div v-if="selectedTab === 'Genres'">
@@ -743,7 +773,6 @@ export default {
   align-items: center;
 }
 
-/* Style for the checkbox input */
 input[type="checkbox"] {
   appearance: none;
   width: 20px;
@@ -796,6 +825,17 @@ input[type="checkbox"] + label {
   width: 100%;
   padding: 10px 20px;
   border: 2px solid var(--color-primary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.label-displaymode {
+  display: block;
+  width: 100%;
+  padding: 10px 20px;
+  border: 2px solid #00000000;
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -873,5 +913,40 @@ input[type="checkbox"] + label {
 .tooltip-container:hover .tooltip {
   visibility: visible;
   opacity: 1;
+}
+
+input[type="checkbox"]:disabled {
+  color: var(--color-disabled);
+  background-color: var(--color-disabled);
+}
+
+.checkbox-displaymode {
+  display: none;
+}
+
+.label-displaymode {
+  color: var(--color-disabled);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+input[type="checkbox"]:checked + .label-displaymode {
+  color: var(--color-text);
+}
+
+input[type="checkbox"]:disabled + .label-displaymode {
+  color: var(--color-disabled);
+}
+
+.div-displayModeInnerLeft {
+  gap: 10px;
+  display: flex;
+}
+
+.displaymode-highlight {
+  border: 2px solid var(--color-primary);
 }
 </style>
