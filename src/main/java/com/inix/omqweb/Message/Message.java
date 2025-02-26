@@ -28,6 +28,8 @@ public class Message {
     private String senderUsername;
     private String senderAvatarUrl;
 
+    private int dailyId;
+
     private String content;
     private boolean answer;
     private boolean isSystemMessage;
