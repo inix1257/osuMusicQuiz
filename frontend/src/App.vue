@@ -201,14 +201,14 @@ body {
 }
 
 html[data-theme="darkMode"] {
-  --color-body: #3c3c3c;
+  --color-body: #1A1A22;
   --color-bodysecondary: #434343;
   --color-text: #ffffff;
   --color-subtext: #d3d3d3;
   --color-disabled: #474747;
   --color-primary: #95a5d6;
-  --color-secondary: #2b2b2e;
-  --color-gameroom: #2b2b2e;
+  --color-secondary: #2A2A38;
+  --color-gameroom: #2A2A38;
   --color-player: rgba(117, 117, 117, 0.5);
 
 }
