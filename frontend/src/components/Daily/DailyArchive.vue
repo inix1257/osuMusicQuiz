@@ -124,7 +124,7 @@ export default {
       </div>
     </div>
     <div class="today-button-container">
-      <button class="today-button" @click.stop="getTodayDaily">Go to Today's osudle</button>
+      <button class="today-button" @click.stop="getTodayDaily">Back to Today's osudle</button>
     </div>
   </div>
 </template>
