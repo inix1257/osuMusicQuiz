@@ -7,7 +7,8 @@ import {
   setCurrentTimeToPreviewPoint,
   setBeatmap,
   setBeatmapBypass,
-  setVolume
+  setVolume,
+  setBackground
 } from "@/components/osu/Render/Renderer";
 
 export default {
@@ -46,6 +47,10 @@ export default {
 
     setVolume(volume) {
       setVolume(volume);
+    },
+
+    async updateBackground(imageUrl) {
+      await setBackground(imageUrl);
     }
   },
 
@@ -58,7 +63,6 @@ export default {
       this.app.ticker.stop();
     }
   }
-
 }
 </script>
 
