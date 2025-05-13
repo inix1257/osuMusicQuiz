@@ -448,7 +448,7 @@ export default {
 <template>
   <div class="modal-overlay" @click.prevent="closeIntroPage">
     <DailyArchive v-if="showArchive" @open-daily="handleOpenDaily"/>
-    <div v-if="revealStatus && !showArchive" class="beatmap-info-container">
+    <div v-if="revealStatus && !showArchive" class="beatmap-info-container" @click.stop>
       <a :href="getBeatmapUrl" target="_blank">
         <h2>Beatmap Information</h2>
         <div class="beatmap-info-inner">
