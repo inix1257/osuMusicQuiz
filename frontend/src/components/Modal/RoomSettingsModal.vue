@@ -245,6 +245,12 @@ export default {
         this.selectedGameMode = 'STD';
       }
 
+      if (this.displayMode.includes('PATTERN') && this.selectedGameMode !== 'STD') {
+        alert("Pattern mode is only available for standard game mode.");
+        this.isLoading = false;
+        return;
+      }
+
       const createGameDTO = {
         name: this.gameName,
         password: this.password,
