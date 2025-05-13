@@ -355,35 +355,41 @@ public class GameManager {
         int correctAnswerCount = 0;
 
         Beatmap beatmap = game.getBeatmaps().get(game.getQuestionIndex());
+        String answerToCheck = "";
+
+        List<Alias> aliases = Collections.emptyList();
+
+        if (game.getGuessMode() == GuessMode.ARTIST) {
+            answerToCheck = beatmap.getArtist();
+            // Both old and new alias systems
+            if (beatmap.getAliases() != null) {
+                aliases = beatmap.getAliases().stream()
+                        .filter(alias -> alias.getAliasType() == AliasType.ARTIST)
+                        .collect(Collectors.toList());
+            }
+        } else if (game.getGuessMode() == GuessMode.TITLE || game.getGuessMode() == GuessMode.PATTERN) {
+            answerToCheck = beatmap.getTitle();
+            // Both old and new alias systems
+            if (beatmap.getAliases() != null) {
+                aliases = beatmap.getAliases().stream()
+                        .filter(alias -> alias.getAliasType() == AliasType.TITLE)
+                        .collect(Collectors.toList());
+            }
+        } else if (game.getGuessMode() == GuessMode.CREATOR) {
+            answerToCheck = beatmap.getCreator();
+            // Both old and new alias systems
+            if (beatmap.getAliases() != null) {
+                aliases = beatmap.getAliases().stream()
+                        .filter(alias -> alias.getAliasType() == AliasType.CREATOR)
+                        .collect(Collectors.toList());
+            }
+        }
 
         for (Map.Entry<Player, PlayerAnswer> entry : game.getPlayerAnswers().entrySet()) {
-            List<Alias> aliases = beatmap.getAliases();
-            String answerToCheck;
-
-            switch (game.getGuessMode()) {
-                case ARTIST -> {
-                    answerToCheck = beatmap.getArtist();
-                    aliases = aliases.stream()
-                            .filter(alias -> alias.getAliasType() == AliasType.ARTIST)
-                            .collect(Collectors.toList());
-                }
-                case CREATOR -> {
-                    answerToCheck = beatmap.getCreator();
-                    aliases = aliases.stream()
-                            .filter(alias -> alias.getAliasType() == AliasType.CREATOR)
-                            .collect(Collectors.toList());
-                }
-                default -> {
-                    answerToCheck = beatmap.getTitle();
-                    aliases = aliases.stream()
-                            .filter(alias -> alias.getAliasType() == AliasType.TITLE)
-                            .collect(Collectors.toList());
-                }
-            }
-
             boolean checkAnswer = false;
             boolean checkAliasAnswer = false;
 
+            // Check against old alias system
             for (Alias alias : aliases) {
                 String aliasName = alias.getName();
                 double similarity = AnswerUtil.checkAnswer(entry.getValue().getAnswer(), aliasName);
@@ -394,7 +400,28 @@ public class GameManager {
                     break;
                 }
             }
+            
+            // Check against new alias system
+            if (!checkAnswer && beatmap.getAliasMap() != null) {
+                Map<String, List<String>> aliasMap = beatmap.getAliasMap();
+                String normalizedAnswer = entry.getValue().getAnswer().toLowerCase().trim();
+                String normalizedTarget = answerToCheck.toLowerCase().trim();
+                
+                // Check if the target has aliases
+                List<String> sourceTexts = aliasMap.getOrDefault(normalizedTarget, Collections.emptyList());
+                
+                // Check if the user's answer matches any of the source texts
+                for (String sourceText : sourceTexts) {
+                    double similarity = AnswerUtil.checkAnswer(normalizedAnswer, sourceText);
+                    if (similarity >= 0.96d) {
+                        checkAliasAnswer = true;
+                        checkAnswer = true;
+                        break;
+                    }
+                }
+            }
 
+            // Still check direct answer
             double similarity = AnswerUtil.checkAnswer(entry.getValue().getAnswer(), answerToCheck);
 
             if (similarity >= 0.96d) {
@@ -659,9 +686,11 @@ public class GameManager {
 
         EncryptedBeatmapInfoDTO encryptedBeatmapInfoDTO = new EncryptedBeatmapInfoDTO();
         String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
+        String encodedBeatmapSetId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
         if (game.getGuessMode() == GuessMode.PATTERN) {
             encryptedBeatmapInfoDTO.setBeatmapId(aesUtil.encrypt(String.valueOf(beatmap.getBeatmapPattern().getBeatmap_id())));
         }
+        encryptedBeatmapInfoDTO.setBeatmapSetId(encodedBeatmapSetId);
         encryptedBeatmapInfoDTO.setBase64(encodedId);
         encryptedBeatmapInfoDTO.setBlur(beatmap.isBlur());
         systemMessageHandler.onGameProgressUpdate(game, encryptedBeatmapInfoDTO);
@@ -973,8 +1002,13 @@ public class GameManager {
         String message = """
     Lobby name: `%s`
     Players: `%s`
+    Mode: `%s`
     Total: `%d` players
-    """.formatted(game.getName(), game.getPlayerListAsString(), game.getPlayers().size());
+    """.formatted(game.getName(), game.getPlayerListAsString(), game.getGuessMode(), game.getPlayers().size());
+
+        if (game.getPlayers().size() >= 8) {
+            message += "\n<@119484774908821506>";
+        }
 
         discordWebhookService.sendLobbyWebhook(message);
 
