@@ -45,6 +45,8 @@ public class BeatmapService {
     private final BeatmapPatternRepository beatmapPatternRepository;
     private final ResourceService resourceService;
     private final AliasRepository aliasRepository;
+    private final AliasNewRepository aliasNewRepository;
+    private final AliasNewService aliasNewService;
     private final AESUtil aesUtil;
 
     private final Logger logger = LoggerFactory.getLogger(BeatmapService.class);
@@ -178,15 +180,43 @@ public class BeatmapService {
                 languages.stream().map(LanguageType::getValue).toList(), gameMode.toString(),
                 guessMode.toString());
 
-        // Fetch aliases for all beatmaps in a single query
-        List<Integer> beatmapIds = beatmaps.stream().map(Beatmap::getBeatmapset_id).toList();
-        List<Alias> aliases = aliasRepository.findAllByBeatmapIds(beatmapIds);
-
-        // Map aliases to their respective beatmaps
-        Map<Integer, List<Alias>> beatmapAliasesMap = aliases.stream().collect(Collectors.groupingBy(alias -> alias.getBeatmap().getBeatmapset_id()));
-        beatmaps.forEach(beatmap -> beatmap.setAliases(beatmapAliasesMap.getOrDefault(beatmap.getBeatmapset_id(), Collections.emptyList())));
+        // Using AliasNew instead of old Alias system
+        if (guessMode == GuessMode.ARTIST || guessMode == GuessMode.TITLE || guessMode == GuessMode.CREATOR || guessMode == GuessMode.PATTERN) {
+            // Get all relevant aliases
+            List<AliasNew> newAliases = aliasNewRepository.findByAliasType(
+                guessMode == GuessMode.ARTIST ? AliasType.ARTIST :
+                guessMode == GuessMode.TITLE ? AliasType.TITLE :
+                AliasType.CREATOR
+            );
+            
+            // Get all unique target texts from our beatmaps
+            Set<String> availableTargets = beatmaps.stream()
+                .map(beatmap -> switch (guessMode) {
+                    case ARTIST -> beatmap.getArtist().toLowerCase();
+                    case TITLE, PATTERN -> beatmap.getTitle().toLowerCase();
+                    case CREATOR -> beatmap.getCreator().toLowerCase();
+                    default -> throw new IllegalArgumentException("Invalid guess mode for aliases: " + guessMode);
+                })
+                .collect(Collectors.toSet());
+            
+            // Filter aliases to only include those that match our beatmaps
+            Map<String, List<String>> aliasMap = new HashMap<>();
+            for (AliasNew alias : newAliases) {
+                String targetText = alias.getTargetText().toLowerCase();
+                if (availableTargets.contains(targetText)) {
+                    aliasMap.computeIfAbsent(targetText, k -> new ArrayList<>())
+                           .add(alias.getSourceText().toLowerCase());
+                }
+            }
+            
+            // Cache these for checking against user answers
+            for (Beatmap beatmap : beatmaps) {
+                beatmap.setAliasMap(aliasMap);
+            }
+        }
 
         if (guessMode == GuessMode.PATTERN) {
+            List<Integer> beatmapIds = beatmaps.stream().map(Beatmap::getBeatmapset_id).toList();
             List<BeatmapPattern> beatmapPatterns = beatmapPatternRepository.findAllByBeatmapIds(beatmapIds);
             Map<Integer, List<BeatmapPattern>> beatmapPatternsMap = beatmapPatterns.stream()
                     .collect(Collectors.groupingBy(pattern -> pattern.getBeatmap().getBeatmapset_id()));
@@ -481,6 +511,22 @@ public class BeatmapService {
     }
 
     public void addAlias(AliasAddDTO aliasAddDTO) {
+        // Create a new DTO for the new alias system
+        AliasNewAddDTO newAliasDTO = AliasNewAddDTO.builder()
+                .sourceText(aliasAddDTO.getSource())
+                .targetText(aliasAddDTO.getTarget())
+                .type(aliasAddDTO.getType())
+                .build();
+        
+        // Add the alias using the new service
+        aliasNewService.addAlias(newAliasDTO);
+    }
+    
+    /**
+     * Legacy method for adding aliases to the old system.
+     * Keep this method during the transition period.
+     */
+    private void addAliasLegacy(AliasAddDTO aliasAddDTO) {
         List<Beatmap> target = null, source = null;
 
         switch (aliasAddDTO.getType()) {
