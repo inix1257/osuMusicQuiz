@@ -10,11 +10,11 @@
       <div class="gameroom-header-extrainfo">
         <font-awesome-icon :icon="['fas', 'lock']" v-if="gameroom.private"/>
         <h2 class="gameroom-unranked" v-if="!gameroom.ranked">Unranked</h2>
-        <div v-if="!gameroom.displayMode.includes('AUDIO')" class="gameroom-difficulty-container">
+        <div v-if="!gameroom.displayMode.includes('AUDIO') && !gameroom.displayMode.includes('PATTERN')" class="gameroom-difficulty-container">
           <font-awesome-icon :icon="['fas', 'volume-xmark']"/>
           <strong>NO AUDIO</strong>
         </div>
-        <div v-if="!gameroom.displayMode.includes('BACKGROUND')" class="gameroom-difficulty-container">
+        <div v-if="!gameroom.displayMode.includes('BACKGROUND') && !gameroom.displayMode.includes('PATTERN')" class="gameroom-difficulty-container">
           <font-awesome-icon :icon="['fas', 'eye-slash']"/>
           <strong>NO BG</strong>
         </div>
@@ -22,7 +22,7 @@
       <div class="gameroom-header">
         <h2 class="gameroom-name">{{ gameroom.name }}</h2>
         <div class="gameroom-difficulty-container">
-          <div :class="gameroom.playing ? 'playing' : 'idle'">{{ gameroom.playing ? 'Playing' : 'Idle' }}</div>
+          <div :class="gameroom.playing ? 'playing' : 'idle'">{{ gameroom.playing ? 'In Progress' : 'Idle' }}</div>
         </div>
       </div>
       <div class="gameroom-details">
@@ -34,9 +34,6 @@
           <div v-for="diff in gameroom.difficulty" :key="diff" :class="difficultyClass(diff)" class="gameroom-difficulty">
             {{ difficultyName(diff) }}
           </div>
-        </div>
-        <div class="gameroom-difficulty-container">
-          {{ gameroom.guessingTime }}s / {{ gameroom.cooldownTime}}s
         </div>
         <div class="gameroom-difficulty-container">
           <div>{{ gameroom.questionIndex }} / {{ gameroom.totalQuestions }} Maps ({{ gameroom.startYear }} - {{ gameroom.endYear }})</div>
@@ -227,6 +224,8 @@ export default {
   border-radius: 8px;
   padding-left: 8px;
   padding-right: 8px;
+  padding-top: 4px;
+  padding-bottom: 4px;
   display: flex;
   gap: 6px;
   align-items: center;
