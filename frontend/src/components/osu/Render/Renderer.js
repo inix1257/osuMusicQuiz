@@ -23,13 +23,62 @@ import drum_hitfinish from '@/assets/osu/drum-hitfinish.wav';
 import drum_hitclap from '@/assets/osu/drum-hitclap.wav';
 import { sound } from '@pixi/sound';
 
-const display_width = 1280 / 2;
-const display_height = 720 / 2;
-const center_x = display_width / 2;
-const center_y = display_height / 2;
-const grid_unit = display_height * 0.8 / 384;
-const top_left_x = center_x - 256 * grid_unit;
-const top_left_y = center_y - 192 * grid_unit;
+// Base dimensions (osu! standard)
+const BASE_WIDTH = 1280;
+const BASE_HEIGHT = 720;
+const BASE_ASPECT_RATIO = BASE_WIDTH / BASE_HEIGHT;
+
+// Dynamic dimensions
+let display_width;
+let display_height;
+let center_x;
+let center_y;
+let grid_unit;
+let top_left_x;
+let top_left_y;
+
+function updateDisplayDimensions() {
+    const container = document.getElementById('pixi-container');
+    if (!container) return;
+
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    const containerAspectRatio = containerWidth / containerHeight;
+
+    // Calculate dimensions maintaining aspect ratio
+    if (containerAspectRatio > BASE_ASPECT_RATIO) {
+        // Container is wider than base aspect ratio
+        display_height = containerHeight;
+        display_width = display_height * BASE_ASPECT_RATIO;
+    } else {
+        // Container is taller than base aspect ratio
+        display_width = containerWidth;
+        display_height = display_width / BASE_ASPECT_RATIO;
+    }
+
+    // Update dependent variables
+    center_x = display_width / 2;
+    center_y = display_height / 2;
+    grid_unit = display_height * 0.8 / 384;
+    top_left_x = center_x - 256 * grid_unit;
+    top_left_y = center_y - 192 * grid_unit;
+
+    // Update PIXI app dimensions if it exists
+    if (app) {
+        app.renderer.resize(display_width, display_height);
+        
+        // Update background sprite if it exists
+        if (backgroundSprite && backgroundSprite.texture) {
+            const scaleX = display_width / backgroundSprite.texture.width;
+            const scaleY = display_height / backgroundSprite.texture.height;
+            const scale = Math.max(scaleX, scaleY);
+            
+            backgroundSprite.scale.set(scale);
+            backgroundSprite.x = (display_width - backgroundSprite.texture.width * scale) / 2;
+            backgroundSprite.y = (display_height - backgroundSprite.texture.height * scale) / 2;
+        }
+    }
+}
 
 var beatmap;
 var currentTime = 0;
@@ -38,14 +87,33 @@ var counter_approach = 0;
 var counter_hitcircle = 0;
 
 var app;
+var textElements;
+var textures;
+var backgroundSprite;
 
 var updating = false;
 
 export async function createPixiApp() {
+    // Initial dimension calculation
+    updateDisplayDimensions();
+
+    // Add resize listener
+    window.addEventListener('resize', updateDisplayDimensions);
+
     app = new Application();
-    await app.init({ background: '#6fa9d5', width: display_width, height: display_height, antialias: true });
+    await app.init({ 
+        background: '#000000', 
+        width: display_width, 
+        height: display_height, 
+        antialias: true
+    });
     app.stage.sortableChildren = true;
     document.getElementById('pixi-container').appendChild(app.canvas);
+
+    // Create background sprite
+    backgroundSprite = new PIXI.Sprite();
+    backgroundSprite.zIndex = -999999; // Ensure it stays in the background
+    app.stage.addChild(backgroundSprite);
 
     sound.init();
     sound.volumeAll = 0.1;
@@ -63,13 +131,13 @@ export async function createPixiApp() {
     sound.add('drum-hitfinish', drum_hitfinish);
     sound.add('drum-hitclap', drum_hitclap);
 
-    const textElements = setupTextElements(app);
-    const textures = await loadAssets();
+    textElements = setupTextElements(app);
+    textures = await loadAssets();
 
     app.ticker.add((time) => {
         if (updating || !beatmap) return;
         const { preempt, fade_in, ARms } = calculateARValues(beatmap.Difficulty.ApproachRate);
-        update(app, time, textElements, textures, preempt, fade_in, ARms)
+        update(time, preempt, fade_in, ARms)
     });
 
     return app;
@@ -169,7 +237,7 @@ function calculateARValues(AR) {
     return { preempt, fade_in, ARms };
 }
 
-function update(app, time, textElements, textures, preempt, fade_in, ARms) {
+function update(time, preempt, fade_in, ARms) {
     if (updateTime) currentTime += time.deltaMS;
 
     if (!beatmap) return;
@@ -190,9 +258,9 @@ function update(app, time, textElements, textures, preempt, fade_in, ARms) {
 
         if (timeDiff < ARms && timeDiff > 0) {
             counter_hitcircle++;
-            addHitObject(app, hitObject, textures, alpha, ARms);
+            addHitObject(hitObject, alpha, ARms);
         } else {
-            updateHitObject(app, hitObject, timeDiff, hitTime);
+            updateHitObject(hitObject, timeDiff, hitTime);
         }
     }
 
@@ -200,7 +268,7 @@ function update(app, time, textElements, textures, preempt, fade_in, ARms) {
     textElements.text_count_hitcircle.text = counter_hitcircle;
 }
 
-function addHitObject(app, hitObject, textures, alpha, ARms) {
+function addHitObject(hitObject, alpha, ARms) {
     const hitTime = hitObject.time;
     const zIndex = -hitTime;
     const timeDiff = hitTime - currentTime;
@@ -406,7 +474,7 @@ function addSlider(app, hitObject, textures, pos_x, pos_y, circleSize, comboColo
     hitObject.followCircle = followCircle;
 }
 
-function updateHitObject(app, hitObject, timeDiff, hitTime) {
+function updateHitObject(hitObject, timeDiff, hitTime) {
     if (hitObject.followCircle && timeDiff < 0) {
         const timingPoint = getTimingPointAt(hitTime, beatmap);
         const beatLength = timingPoint.closestBPM.beatLengthValue;
@@ -721,4 +789,50 @@ function playHitsound(normalset, additionSet, hitsound) {
 
 export function setVolume(volume) {
     sound.volumeAll = volume;
+}
+
+export async function setBackground(imageUrl) {
+    if (!app || !backgroundSprite) return;
+
+    try {
+        if (!imageUrl) {
+            // Remove the background sprite to show the default app background
+            backgroundSprite.texture = null;
+            return;
+        }
+
+        // Create a new Image object to preload and verify the image
+        const img = new Image();
+        img.crossOrigin = "anonymous"; // Enable CORS
+
+        // Create a promise to handle image loading
+        const loadPromise = new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = (error) => reject(error);
+            img.src = "/image/" + imageUrl;
+        });
+
+        // Wait for the image to load
+        await loadPromise;
+
+        // Create a texture from the loaded image
+        const texture = PIXI.Texture.from(img);
+        
+        // Calculate scaling to cover the entire display area while maintaining aspect ratio
+        const scaleX = display_width / texture.width;
+        const scaleY = display_height / texture.height;
+        const scale = Math.max(scaleX, scaleY);
+
+        // Update the background sprite
+        backgroundSprite.texture = texture;
+        backgroundSprite.scale.set(scale);
+        
+        // Center the image
+        backgroundSprite.x = (display_width - texture.width * scale) / 2;
+        backgroundSprite.y = (display_height - texture.height * scale) / 2;
+    } catch (error) {
+        console.error('Failed to load background image:', error);
+        // If there's an error, remove the background sprite
+        backgroundSprite.texture = null;
+    }
 }
