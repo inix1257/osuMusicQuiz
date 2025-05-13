@@ -7,7 +7,7 @@
       </div>
 
       <div class="button-container">
-        <button class="full-leaderboard-button" @click="goToFullLeaderboard">Full Leaderboard</button>
+        <button class="full-leaderboard-button" @click="goToFullLeaderboard">Show full leaderboard</button>
       </div>
 
     </div>
@@ -66,6 +66,7 @@ export default {
 
 <style scoped>
 .leaderboard-container {
+  width: 100%; 
   border-radius: 20px;
 }
 
@@ -88,30 +89,33 @@ h1 {
   text-align: center;
   margin-top: 0.2em;
   margin-bottom: 1em;
+  padding-bottom: 0.8em;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.3);
 }
 
 .button-container {
   display: flex;
-  justify-content: right;
+  justify-content: center;
 }
 
 .full-leaderboard-button {
-  background-color: var(--color-disabled);
+  background-color: transparent;
   border: none;
-  color: white;
+  color: var(--color-subtext);
   padding: 8px 16px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 0.8em;
+  font-family: "Sen", "Noto Sans Korean", "serif";
   cursor: pointer;
   border-radius: 4px;
   transition-duration: 0.4s;
 }
 
 .full-leaderboard-button:hover {
-  background-color: white;
-  color: black;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .fade-enter-active, .fade-leave-active {
