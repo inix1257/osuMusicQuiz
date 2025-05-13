@@ -60,6 +60,7 @@ export default {
       isScrolling: true,
       audio: null,
       volume: 20,
+      beatmapVolume: 30,
       toggleImage: true,
       toggleAudio: true,
       isRoomSettingsModalOpen: false,
@@ -103,6 +104,11 @@ export default {
           } else {
             audioPlayer.volume = 0.2;
           }
+        }
+
+        const savedBeatmapVolume = localStorage.getItem("beatmapVolume");
+        if (savedBeatmapVolume) {
+          this.beatmapVolume = savedBeatmapVolume;
         }
       }, 1000);
 
@@ -162,6 +168,7 @@ export default {
           if (!this.game) {
             return;
           }
+
           // Handle game progress updates
           this.isPlaying = true;
           this.isGuessing = true;
@@ -178,17 +185,19 @@ export default {
           }
 
           var encryptedBeatmapInfo = JSON.parse(message.body);
+
           this.ownGuessRight = false;
           this.ownGuessRightAlias = false;
           if (this.game.displayMode.includes('BACKGROUND')) {
             this.imageSourceBase64 = encryptedBeatmapInfo.base64;
           }
-          if (this.game.displayMode.includes('AUDIO')) {
-            this.audioSourceBase64 = encryptedBeatmapInfo.base64;
-          }
+
+          this.audioSourceBase64 = encryptedBeatmapInfo.base64;
+
           if (this.game.displayMode.includes('PATTERN')) {
             this.updateBeatmap(encryptedBeatmapInfo.beatmapId);
-            this.audioSourceBase64 = encryptedBeatmapInfo.base64;
+            this.updateBeatmapBackground('');
+            this.imageSourceBase64 = encryptedBeatmapInfo.base64;
           }
           this.timeLeft = this.game.guessingTime - 1;
           this.game.questionIndex++;
@@ -206,6 +215,7 @@ export default {
         },
         onGameLeaderboard: (message) => {
           // Handle game leaderboard updates
+
           this.isGuessing = false;
           this.inputFocused = false;
 
@@ -214,14 +224,6 @@ export default {
           clearInterval(this.countdownInterval)
 
           this.timeLeft = 0;
-
-          const audioPlayer = this.$refs.audio;
-          if (audioPlayer) {
-            audioPlayer.pause();
-            audioPlayer.currentTime = 0;
-            audioPlayer.volume = this.volume / 100;
-            audioPlayer.play()
-          }
 
           var leaderboard = JSON.parse(message.body);
 
@@ -265,9 +267,20 @@ export default {
             this.answerInput = this.currentBeatmap.creator;
           }
 
+          const audioPlayer = this.$refs.audio;
+          if (audioPlayer) {
+            audioPlayer.currentTime = 0;
+            audioPlayer.volume = this.volume / 100;
+
+            if (!audioPlayer.isPlaying) {
+              audioPlayer.play()
+            }
+          }
+
           if (this.game.displayMode.includes('PATTERN')) {
-            this.answerInput = this.currentBeatmap.title;
             this.resetCurrentTime();
+            this.updateBeatmapBackground(this.imageSourceBase64);
+            this.answerInput = this.currentBeatmap.title;
           }
 
           this.players.forEach((player) => {
@@ -382,6 +395,10 @@ export default {
         this.webSocketService = null;
       }
 
+      // if (this.$refs.beatmapRenderer) {
+      //   this.$refs.beatmapRenderer.clearBeatmap();
+      // }
+
       apiService.post('/api/leaveGame', {
         gameId: this.gameId,
         userId: this.me.id,
@@ -477,8 +494,8 @@ export default {
         this.answerInput = this.autocompleteOptions[index];
       }
 
-      this.autocompleteOptions = []; // Hides the dropdown
-      this.selectedOptionIndex = -1; // Reset the selected option index
+      this.autocompleteOptions = [];
+      this.selectedOptionIndex = -1; 
 
       this.submitAnswer()
     },
@@ -672,6 +689,10 @@ export default {
       this.$refs.beatmapRenderer.updateBeatmap(encodedBeatmapId);
     },
 
+    updateBeatmapBackground(encodedBeatmapSetId) {
+      this.$refs.beatmapRenderer.updateBackground(encodedBeatmapSetId);
+    },
+
     resetCurrentTime() {
       this.$refs.beatmapRenderer.resetCurrentTime();
     },
@@ -759,15 +780,32 @@ export default {
       this.$nextTick(() => {
         let audioPlayer = this.$refs.audio;
         if (audioPlayer) {
+          // Ensure audio is loaded before playing
           audioPlayer.load();
           if (newVal) {
-            if (this.game.displayMode.includes('PATTERN') && this.isGuessing) {
+            if (this.game.displayMode.includes('PATTERN') && this.isGuessing
+            || (!this.game.displayMode.includes('PATTERN') && !this.game.displayMode.includes('AUDIO') && this.isGuessing) ) {
               audioPlayer.volume = 0;
-              audioPlayer.play();
             } else {
-              audioPlayer.play();
+              // Handle autoplay promise
+              const playPromise = audioPlayer.play();
+              if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                  // Autoplay was prevented, show a message to the user
+                  this.messages.push({
+                    systemMessage: true,
+                    content: "Click anywhere on the page to enable audio playback.",
+                    timestamp: Date.now(),
+                  });
+                  // Add click listener to enable audio
+                  const enableAudio = () => {
+                    audioPlayer.play();
+                    document.removeEventListener('click', enableAudio);
+                  };
+                  document.addEventListener('click', enableAudio);
+                });
+              }
             }
-
           }
         }
       });
@@ -801,7 +839,7 @@ export default {
     volume(newVal) {
       let beatmapRenderer = this.$refs.beatmapRenderer;
       if (beatmapRenderer) {
-        beatmapRenderer.setVolume(newVal / 100 * 0.3);
+        beatmapRenderer.setVolume(this.beatmapVolume / 100 * 0.3);
       }
 
       if (this.isGuessing && this.game.displayMode.includes('PATTERN')) {
@@ -815,8 +853,14 @@ export default {
         audioPlayer.volume = newVal / 100;
         localStorage.setItem("volume", newVal);
       }
+    },
 
-
+    beatmapVolume(newVal) {
+      let beatmapRenderer = this.$refs.beatmapRenderer;
+      if (beatmapRenderer) {
+        beatmapRenderer.setVolume(newVal / 100 * 0.3);
+        localStorage.setItem("beatmapVolume", newVal);
+      }
     },
 
     me: {
@@ -898,7 +942,14 @@ export default {
               <img :src="icon_report" alt="" class="icon-report" v-on:click="toggleReportDropdown" v-if="isPlaying"/>
               <font-awesome-icon :icon="['fas', 'volume-high']" class="icon-showSettings" @click="showUserSettings = !showUserSettings"/>
               <div class="settings-container" v-if="showUserSettings">
-                <input type="range" min="0" max="100" value="50" class="slider" id="volume" v-model="volume" :disabled="!toggleAudio"/>
+                <div class="volume-control">
+                  <font-awesome-icon :icon="['fas', 'volume-high']" class="volume-icon"/>
+                  <input type="range" min="0" max="100" value="50" class="slider" id="volume" v-model="volume" :disabled="!toggleAudio"/>
+                </div>
+                <div class="volume-control">
+                  <font-awesome-icon :icon="['fas', 'play']" class="volume-icon"/>
+                  <input type="range" min="0" max="100" value="50" class="slider" id="beatmapVolume" v-model="beatmapVolume"/>
+                </div>
                 <div class="settings-toggles">
                   <font-awesome-icon :icon="['fas', 'eye']" v-if="toggleImage" v-on:click="toggleImage = !toggleImage"/>
                   <font-awesome-icon :icon="['fas', 'eye-slash']" v-else v-on:click="toggleImage = !toggleImage"/>
@@ -913,10 +964,8 @@ export default {
             </div>
           </div>
 
-
-
           <div class="audio-input-container">
-            <audio hidden ref="audio" v-if="this.game && (this.game.displayMode.includes('AUDIO') || this.game.displayMode.includes('PATTERN'))" id="audioPlayer">
+            <audio hidden ref="audio" v-if="this.game" id="audioPlayer" preload="auto">
               <source :src="'/audio/' + this.audioSourceBase64" type="audio/mpeg">
               Your browser does not support the audio element.
             </audio>
@@ -1090,6 +1139,7 @@ UserPage {
   border: 1px solid #ccc;
   background-color: var(--color-body);
   z-index: 4;
+  min-width: 200px;
 }
 
 .icon-container {
@@ -1483,7 +1533,24 @@ UserPage {
   height: 35vh;
 }
 
-/* Add this to your existing CSS in the <style> section */
+.volume-control {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.volume-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--color-text);
+}
+
+.volume-control label {
+  color: var(--color-text);
+  font-size: 0.9em;
+}
 
 @media (max-width: 768px) {
   .game-container {
