@@ -8,14 +8,14 @@ export default {
   <div>
     <div>
       <div class="div-links">
-        <a href="https://github.com/inix1257/osuMusicQuiz" target="_blank"><img src="@/assets/github.svg" alt="Github" class="svg-icon icon-normal"></a>
-        <a href="https://osu.ppy.sh/users/2688581" target="_blank"><img src="@/assets/osu.png" alt="osu" class="svg-icon icon-normal"></a>
+        <a href="https://github.com/inix1257/osuMusicQuiz" target="_blank" @click.stop><img src="@/assets/github.svg" alt="Github" class="svg-icon icon-normal"></a>
+        <a href="https://osu.ppy.sh/users/2688581" target="_blank" @click.stop><img src="@/assets/osu.png" alt="osu" class="svg-icon icon-normal"></a>
       </div>
       If you like this project, please consider donating to help with the server cost!<br>
       <br>
       <div class="div-links">
-        <a href="https://paypal.me/inix1257" target="_blank"><img src="@/assets/paypal.svg" alt="PayPal" class="svg-icon icon-paypal"></a><br>
-        <a href="https://ko-fi.com/luscent" target="_blank"><img src="@/assets/kofi.svg" alt="Ko-fi" class="svg-icon icon-kofi"></a><br>
+        <a href="https://ko-fi.com/luscent" target="_blank" @click.stop><img src="@/assets/kofi.svg" alt="Ko-fi" class="svg-icon icon-kofi">Support</a><br>
+        <a href="https://paypal.me/inix1257" target="_blank" @click.stop><img src="@/assets/paypal.svg" alt="PayPal" class="svg-icon icon-paypal">Support</a><br>
       </div>
       <br>
       You can also leave your username in the donation message, and I will add a special title for you in the game!
@@ -33,17 +33,30 @@ div {
 a {
   font-weight: bold;
   color: #ff66aa;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+a:hover {
+  background: rgba(255, 102, 170, 0.1);
+  box-shadow: 0 0 15px rgba(255, 102, 170, 0.3);
 }
 
 .div-links {
-  display: flex;
   gap: 20px;
   justify-content: center;
+  display: flex;
+  align-items: center;
 }
 
 .svg-icon {
   width: 50px;
   height: 50px;
+  transition: filter 0.3s ease;
 }
 
 .icon-paypal {
