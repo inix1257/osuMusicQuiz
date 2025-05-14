@@ -19,7 +19,7 @@
       <div v-if="this.me && isModerator()">
         <router-link to="/debug">Admin</router-link>
       </div>
-      <a href="#" @click.stop="showDonatePage = true"><font-awesome-icon :icon="['fas', 'heart']" style="color: hotpink;"/></a>
+      <a href="#" @click.stop="showDonatePage = true"><font-awesome-icon :icon="['fas', 'heart']" style="color: hotpink;"/>Donate</a>
       <a href="#" @click.stop="showHelpPage = true">Help</a>
       <a href="#" @click.stop="showIntroPage = true">Daily</a>
       <router-link to="/log" v-if="this.me.id">Log</router-link>
@@ -406,5 +406,19 @@ a {
 
 .difficulty-extra {
   color: #000000;
+}
+
+#status-bar a[href="#"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#status-bar a[href="#"] .fa-heart {
+  margin-right: 4px;
+}
+
+#status-bar a[href="#"]:has(.fa-heart) {
+  color: #ff69b4;
 }
 </style>
