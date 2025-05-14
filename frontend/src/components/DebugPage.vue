@@ -1,6 +1,11 @@
 <template>
   <div class="debug-page">
     <div>
+      <div class="volume-control">
+        <label for="volume">Volume:</label>
+        <input type="range" id="volume" v-model="volume" min="0" max="1" step="0.1" @input="updateVolume">
+        <span>{{ Math.round(volume * 100) }}%</span>
+      </div>
       <BeatmapRenderer ref="beatmapRenderer"/>
       <button @click="resetCurrentTime()">reset currentTime</button>
       <br>
@@ -129,13 +134,14 @@ export default {
       filteredOptions: [],
       filteredTargetOptions: [],
       currentTime: 0,
-      beatmapId: ''
+      beatmapId: '',
+      volume: 0.2
     }
   },
   mounted() {
     this.getGameRooms()
 
-      apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers?gamemode=ANY&guessmode=TITLE`, {})
+    apiService.get(`${process.env.VUE_APP_API_URL}/api/possibleAnswers?gamemode=ANY&guessmode=TITLE`, {})
         .then((response) => {
           this.list_titles = response.data;
         })
@@ -147,6 +153,11 @@ export default {
         .then((response) => {
           this.list_creators = response.data;
         })
+    
+    // Set initial volume after a short delay to ensure BeatmapRenderer is ready
+    setTimeout(() => {
+      this.updateVolume();
+    }, 100);
   },
   methods: {
     getGameRooms() {
@@ -296,6 +307,10 @@ export default {
 
     updateBeatmap(beatmapId) {
       this.$refs.beatmapRenderer.updateBeatmapBypass(beatmapId);
+    },
+
+    updateVolume() {
+      this.$refs.beatmapRenderer.setVolume(this.volume);
     }
   },
   components: {
@@ -432,5 +447,21 @@ button {
 
 .autocomplete-options li:hover {
   background-color: var(--color-disabled);
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.volume-control input[type="range"] {
+  width: 200px;
+}
+
+.volume-control span {
+  min-width: 50px;
+  text-align: right;
 }
 </style>
