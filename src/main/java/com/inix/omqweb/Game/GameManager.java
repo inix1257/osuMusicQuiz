@@ -734,8 +734,6 @@ public class GameManager {
 
         setGameProperties(game, updateRoomSettingsDTO);
 
-        systemMessageHandler.onRoomSettingsUpdate(game);
-
         // Compare the previous settings with the new settings, print what has changed
         if (!prevGame.getName().equals(game.getName())) {
             messageService.sendSystemMessage(game.getUuid(), "Room name has been changed to **" + game.getName() + "**");
@@ -779,6 +777,10 @@ public class GameManager {
 
         if (!prevGame.getDisplayMode().equals(game.getDisplayMode())) {
             messageService.sendSystemMessage(game.getUuid(), "Display mode has been changed to **" + game.getDisplayMode() + "**");
+
+            if (prevGame.getDisplayMode().contains(DisplayMode.PATTERN) && !game.getDisplayMode().contains(DisplayMode.PATTERN)) {
+                game.setGuessMode(GuessMode.TITLE);
+            }
         }
 
         if (!prevGame.getGenreType().stream().filter(genre -> genre != GenreType.ANY).toList()
@@ -833,6 +835,8 @@ public class GameManager {
                 game.getDifficulty(), Integer.MAX_VALUE, tags,
                 game.getGenreType(), game.getLanguageType(), game.getGameMode(), game.getGuessMode());
         int totalBeatmapPoolSize = beatmapPool.getTotalBeatmapPoolSize();
+
+        systemMessageHandler.onRoomSettingsUpdate(game);
 
         messageService.sendSystemMessage(game.getUuid(), "Estimated beatmap pool size: " + totalBeatmapPoolSize);
 
@@ -1128,7 +1132,7 @@ public class GameManager {
         List<PlayerDonationDTO> donators = groupedDonations.stream()
                 .map(result -> new PlayerDonationDTO((Player) result[0], (Double) result[1]))
                 .sorted(Comparator.comparingDouble(PlayerDonationDTO::getTotalAmount).reversed())
-                .limit(5)
+                .limit(10)
                 .toList();
 
         int totalPlayers = playerRepository.findAll().size();
