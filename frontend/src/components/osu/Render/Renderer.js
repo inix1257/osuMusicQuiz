@@ -118,6 +118,8 @@ export async function createPixiApp() {
     sound.init();
     sound.volumeAll = 0.1;
     sound.disableAutoPause = true;
+    sound.autoPlay = true;
+    sound.useLegacy = true;
     sound.add('normal-hitnormal', normal_hitnormal);
     sound.add('normal-hitwhistle', normal_hitwhistle);
     sound.add('normal-hitfinish', normal_hitfinish);
@@ -451,12 +453,16 @@ function addSlider(app, hitObject, textures, pos_x, pos_y, circleSize, comboColo
     hitObject.hitCircleOverlaySprite_sliderend = hitCircleOverlaySprite_sliderend;
 
     if (sliderInfo.sliderRepeat > 1) {
+        // Calculate the angle for the reverse arrow
+        let lastAngle = calculateReverseArrowAngle(sliderInfo);
+        
         const reverseSprite = new PIXI.Sprite(textures.texture_reverse);
         reverseSprite.x = sliderInfo.sliderEndPos.x;
         reverseSprite.y = sliderInfo.sliderEndPos.y;
         reverseSprite.width = circleSize * 0.6;
         reverseSprite.height = circleSize * 0.6;
         reverseSprite.anchor.set(0.5);
+        reverseSprite.rotation = lastAngle;
         reverseSprite.zIndex = zIndex;
         app.stage.addChild(reverseSprite);
         hitObject.reverseSprite = reverseSprite;
@@ -466,92 +472,210 @@ function addSlider(app, hitObject, textures, pos_x, pos_y, circleSize, comboColo
     followCircle.beginFill(0xEEEEEE);
     followCircle.drawCircle(0, 0, hitObject.hitCircleSprite.width / 2.4);
     followCircle.endFill();
-    followCircle.x = hitObject.x / 512 * display_width - hitObject.hitCircleSprite.width / 2;
-    followCircle.y = hitObject.y / 384 * display_height - hitObject.hitCircleSprite.height / 2;
+    // Initialize follow circle at the same position as the slider head
+    followCircle.x = pos_x;
+    followCircle.y = pos_y;
     followCircle.alpha = 0;
     followCircle.zIndex = zIndex+1;
     app.stage.addChild(followCircle);
     hitObject.followCircle = followCircle;
 }
 
-function updateHitObject(hitObject, timeDiff, hitTime) {
-    if (hitObject.followCircle && timeDiff < 0) {
-        const timingPoint = getTimingPointAt(hitTime, beatmap);
-        const beatLength = timingPoint.closestBPM.beatLengthValue;
-        const baseSV = beatmap["Difficulty"]["SliderMultiplier"];
-        const speed = timingPoint.closestSV ? timingPoint.closestSV.sv : -100;
-        const sliderRepeat = hitObject.sliderInfo.sliderRepeat;
-        const sliderLength = hitObject.sliderInfo.sliderLength;
-        const sliderDuration = sliderLength / (100 * baseSV * (-100 / speed)) * beatLength * sliderRepeat - 10;
-
-        if (currentTime <= hitTime + sliderDuration) {
-            hitObject.sliderRepeat = sliderRepeat;
-            hitObject.sliderLength = sliderLength;
-            hitObject.sliderDuration = sliderDuration;
-
-            var sliderProgress = (currentTime - hitTime) / hitObject.sliderDuration * hitObject.sliderRepeat;
-            var sliderProgressIndex = Math.floor(sliderProgress);
-            hitObject.followCircle.alpha = 0.7;
-
-            if (!hitObject.hitsound.sliderRepeat[sliderProgressIndex] && sliderProgressIndex < hitObject.sliderRepeat && sliderProgressIndex > 0) {
-                if (hitObject.sliderInfo.edgeSounds) {
-                    const edgeSound = hitObject.sliderInfo.edgeSounds.split('|')[sliderProgressIndex];
-                    var normalSet, additionSet;
-
-                    if (hitObject.sliderInfo.edgeSets) {
-                        const edgeSet = hitObject.sliderInfo.edgeSets.split('|')[sliderProgressIndex];
-                        normalSet = edgeSet.split(':')[0] == 0 ? timingPoint.sampleSet : edgeSet.split(':')[0];
-                        additionSet = edgeSet.split(':')[1] == 0 ? normalSet : edgeSet.split(':')[1];
-                    } else {
-                        normalSet = timingPoint.sampleSet;
-                        additionSet = normalSet;
-                    }
-
-                    playHitsound(normalSet, additionSet, edgeSound);
-                } else {
-                    const normalset = timingPoint.sampleSet;
-
-                    playHitsound(normalset, normalset, 0);
-                }
-
-                hitObject.hitsound.sliderRepeat[sliderProgressIndex] = true;
+// Function to calculate the rotation angle for reverse arrows
+function calculateReverseArrowAngle(sliderInfo) {
+    // Use the last two points of the slider to determine direction
+    const anchorPositions = sliderInfo.anchorPositions;
+    const endPos = sliderInfo.sliderEndPos;
+    
+    if (!anchorPositions || anchorPositions.length < 2 || !endPos) {
+        return 0; // Default rotation if we don't have enough data
+    }
+    
+    let secondLastPoint;
+    
+    // For perfect curves, we need to calculate the second-to-last point
+    if (sliderInfo.sliderType === "P" && anchorPositions.length >= 3) {
+        // For a perfect curve, calculate a point before the end
+        const circleCenter = getCircleCenter(anchorPositions[0], anchorPositions[1], anchorPositions[2]);
+        const radius = Math.sqrt(Math.pow(circleCenter.x - anchorPositions[0].x, 2) + Math.pow(circleCenter.y - anchorPositions[0].y, 2));
+        
+        // Calculate angle between end point and center
+        const endAngle = Math.atan2(endPos.y - circleCenter.y, endPos.x - circleCenter.x);
+        
+        // Get a point slightly before the end (moving backward along the curve)
+        const slightlyBeforeEndAngle = endAngle - 0.1; // Small angle offset
+        secondLastPoint = {
+            x: circleCenter.x + radius * Math.cos(slightlyBeforeEndAngle),
+            y: circleCenter.y + radius * Math.sin(slightlyBeforeEndAngle)
+        };
+    } else {
+        // For bezier curves or linear sliders, use the second-to-last anchor point
+        // We need to find a point that's definitely on the path before the end
+        if (anchorPositions.length >= 2) {
+            // For multiple control points, use the last control point as a reference
+            secondLastPoint = anchorPositions[anchorPositions.length - 1];
+            
+            // Calculate a point slightly before the end along the line from last control point to end
+            const dx = endPos.x - secondLastPoint.x;
+            const dy = endPos.y - secondLastPoint.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 0) {
+                // Move a short distance from the end back toward the control point
+                const backDistance = Math.min(distance * 0.2, 20); // Don't go too far back
+                secondLastPoint = {
+                    x: endPos.x - (dx / distance) * backDistance,
+                    y: endPos.y - (dy / distance) * backDistance
+                };
             }
-
-            const position = getFollowPosition(hitObject, hitTime, currentTime, grid_unit);
-
-            hitObject.followCircle.x = position.x;
-            hitObject.followCircle.y = position.y;
         } else {
-            if (!hitObject.hitsound.sliderend) {
-                if (hitObject.sliderInfo.edgeSounds && hitObject.sliderInfo.edgeSets) {
-                    const edgeSound = hitObject.sliderInfo.edgeSounds.split('|')[hitObject.sliderRepeat];
-                    const edgeSet = hitObject.sliderInfo.edgeSets.split('|')[hitObject.sliderRepeat];
-                    const normalSet = edgeSet.split(':')[0] == 0 ? timingPoint.sampleSet : edgeSet.split(':')[0];
-                    const additionSet = edgeSet.split(':')[1] == 0 ? normalSet : edgeSet.split(':')[1];
-                    playHitsound(normalSet, additionSet, edgeSound);
-                } else {
-                    const normalSet = timingPoint.sampleSet;
-                    playHitsound(normalSet, normalSet, 0);
-                }
-                hitObject.hitsound.sliderend = true;
-            }
-
-            removeHitObject(app, hitObject);
+            secondLastPoint = anchorPositions[0];
         }
     }
+    
+    // Calculate direction vector going FROM end point TO second last point
+    // This ensures the arrow points back into the slider
+    const dx = secondLastPoint.x - endPos.x;
+    const dy = secondLastPoint.y - endPos.y;
+    
+    // Calculate the angle to point the arrow toward the slider body
+    // Add PI/2 for adjusting to the arrow image orientation
+    return Math.atan2(dy, dx) + Math.PI;
+}
 
-    if (hitObject.approachSprite || hitObject.sliderSprite) {
-        if (hitObject.type.includes("Slider")) {
+function updateHitObject(hitObject, timeDiff, hitTime) {
+    if (hitObject.type && hitObject.type.includes("Slider")) {
+        // Handle slider-specific logic
+        if (hitObject.followCircle && timeDiff < 0) {
+            const timingPoint = getTimingPointAt(hitTime, beatmap);
+            const beatLength = timingPoint.closestBPM.beatLengthValue;
+            const baseSV = beatmap["Difficulty"]["SliderMultiplier"];
+            const speed = timingPoint.closestSV ? timingPoint.closestSV.sv : -100;
+            const sliderRepeat = hitObject.sliderInfo.sliderRepeat;
+            const sliderLength = hitObject.sliderInfo.sliderLength;
+            const sliderDuration = sliderLength / (100 * baseSV * (-100 / speed)) * beatLength * sliderRepeat - 10;
+
+            if (currentTime <= hitTime + sliderDuration) {
+                hitObject.sliderRepeat = sliderRepeat;
+                hitObject.sliderLength = sliderLength;
+                hitObject.sliderDuration = sliderDuration;
+
+                var sliderProgress = (currentTime - hitTime) / hitObject.sliderDuration * hitObject.sliderRepeat;
+                var sliderProgressIndex = Math.floor(sliderProgress);
+                hitObject.followCircle.alpha = 0.7;
+
+                if (!hitObject.hitsound.sliderRepeat[sliderProgressIndex] && sliderProgressIndex < hitObject.sliderRepeat && sliderProgressIndex > 0) {
+                    if (hitObject.sliderInfo.edgeSounds) {
+                        const edgeSound = hitObject.sliderInfo.edgeSounds.split('|')[sliderProgressIndex];
+                        var normalSet, additionSet;
+
+                        if (hitObject.sliderInfo.edgeSets) {
+                            const edgeSet = hitObject.sliderInfo.edgeSets.split('|')[sliderProgressIndex];
+                            normalSet = edgeSet.split(':')[0] == 0 ? timingPoint.sampleSet : edgeSet.split(':')[0];
+                            additionSet = edgeSet.split(':')[1] == 0 ? normalSet : edgeSet.split(':')[1];
+                        } else {
+                            normalSet = timingPoint.sampleSet;
+                            additionSet = normalSet;
+                        }
+
+                        playHitsound(normalSet, additionSet, edgeSound);
+                    } else {
+                        const normalset = timingPoint.sampleSet;
+
+                        playHitsound(normalset, normalset, 0);
+                    }
+
+                    hitObject.hitsound.sliderRepeat[sliderProgressIndex] = true;
+                }
+
+                const position = getFollowPosition(hitObject, hitTime, currentTime, grid_unit);
+                
+                // Make sure position is valid before updating the follow circle
+                if (position && position.x !== undefined && position.y !== undefined) {
+                    hitObject.followCircle.x = position.x;
+                    hitObject.followCircle.y = position.y;
+                }
+            } else {
+                if (!hitObject.hitsound.sliderend) {
+                    if (hitObject.sliderInfo.edgeSounds && hitObject.sliderInfo.edgeSets) {
+                        const edgeSound = hitObject.sliderInfo.edgeSounds.split('|')[hitObject.sliderRepeat];
+                        const edgeSet = hitObject.sliderInfo.edgeSets.split('|')[hitObject.sliderRepeat];
+                        const normalSet = edgeSet.split(':')[0] == 0 ? timingPoint.sampleSet : edgeSet.split(':')[0];
+                        const additionSet = edgeSet.split(':')[1] == 0 ? normalSet : edgeSet.split(':')[1];
+                        playHitsound(normalSet, additionSet, edgeSound);
+                    } else {
+                        const normalSet = timingPoint.sampleSet;
+                        playHitsound(normalSet, normalSet, 0);
+                    }
+                    hitObject.hitsound.sliderend = true;
+                }
+
+                // Set a flag to indicate we're in slider fade-out mode
+                hitObject.inSliderFadeOut = true;
+
+                // Calculate fade duration for the slider
+                const thresholdMs = 250;
+                const timeAfterEnd = currentTime - (hitTime + sliderDuration);
+                
+                if (timeAfterEnd <= thresholdMs) {
+                    // Gradually fade the slider out
+                    const alpha = 1 - Math.min(1, timeAfterEnd / thresholdMs);
+                    
+                    // Apply alpha to all slider elements
+                    if (hitObject.sliderSprite) hitObject.sliderSprite.alpha = alpha;
+                    if (hitObject.hitCircleSprite) hitObject.hitCircleSprite.alpha = alpha;
+                    if (hitObject.hitCircleOverlaySprite) hitObject.hitCircleOverlaySprite.alpha = alpha;
+                    if (hitObject.comboText) hitObject.comboText.alpha = alpha;
+                    if (hitObject.hitCircleSprite_sliderend) hitObject.hitCircleSprite_sliderend.alpha = alpha;
+                    if (hitObject.hitCircleOverlaySprite_sliderend) hitObject.hitCircleOverlaySprite_sliderend.alpha = alpha;
+                    if (hitObject.reverseSprite) hitObject.reverseSprite.alpha = alpha;
+                    if (hitObject.followCircle) hitObject.followCircle.alpha = alpha * 0.7;
+                    if (hitObject.approachSprite) hitObject.approachSprite.alpha = 0; // Hide approach circle immediately
+                    
+                    // Scale effect similar to circles - for both head and end
+                    const circleSize = (54.4 - 4.48 * beatmap["Difficulty"]["CircleSize"]) * grid_unit * 2;
+                    const size = circleSize + (Math.min(1, timeAfterEnd / thresholdMs)) * circleSize * 0.3;
+                    
+                    // Apply scale effect to slider head
+                    if (hitObject.hitCircleSprite) {
+                        hitObject.hitCircleSprite.width = size;
+                        hitObject.hitCircleSprite.height = size;
+                        hitObject.hitCircleOverlaySprite.width = size;
+                        hitObject.hitCircleOverlaySprite.height = size;
+                    }
+                    
+                    // Apply scale effect to slider end
+                    if (hitObject.hitCircleSprite_sliderend) {
+                        hitObject.hitCircleSprite_sliderend.width = size;
+                        hitObject.hitCircleSprite_sliderend.height = size;
+                        hitObject.hitCircleOverlaySprite_sliderend.width = size;
+                        hitObject.hitCircleOverlaySprite_sliderend.height = size;
+                    }
+                } else {
+                    // Remove the slider completely after fade out
+                    removeHitObject(app, hitObject);
+                }
+            }
+        }
+
+        if (hitObject.approachSprite || hitObject.sliderSprite) {
             const timingPoint = getTimingPointAt(hitTime, beatmap);
             const beatLength = timingPoint.closestBPM.beatLengthValue;
             const sliderRepeat = hitObject.sliderInfo.sliderRepeat;
             const sliderLength = hitObject.sliderInfo.sliderLength;
             const sliderDuration = beatLength * sliderRepeat * sliderLength / 100;
 
-            if (currentTime > hitTime + sliderDuration) {
+            const thresholdMs = 250;
+            const timeAfterEnd = currentTime - (hitTime + sliderDuration);
+            
+            // Only remove if it's past the fade-out threshold
+            if (timeAfterEnd > thresholdMs) {
                 removeHitObject(app, hitObject);
             }
-        } else if (hitObject.type.includes("Spinner")) {
+        }
+    } else if (hitObject.type && hitObject.type.includes("Spinner")) {
+        // Handle spinner-specific logic
+        if (hitObject.approachSprite) {
             const endTime = hitObject.extras[0];
             const duration = endTime - hitTime;
             const timeElapsed = currentTime - hitTime;
@@ -561,21 +685,26 @@ function updateHitObject(hitObject, timeDiff, hitTime) {
             if (currentTime > endTime) {
                 removeHitObject(app, hitObject);
             }
-        } else {
+        }
+    } else {
+        // Handle circle-specific logic
+        if ((hitObject.approachSprite || hitObject.hitCircleSprite) && !hitObject.inSliderFadeOut) {
             const thresholdMs = 250;
             if (timeDiff <= 0 && timeDiff > -thresholdMs) {
                 const alpha = 1 - Math.min(1, -timeDiff / thresholdMs);
-                hitObject.hitCircleSprite.alpha = alpha;
-                hitObject.hitCircleOverlaySprite.alpha = alpha;
-                hitObject.comboText.alpha = alpha;
-                hitObject.approachSprite.alpha = 0;
+                if (hitObject.hitCircleSprite) hitObject.hitCircleSprite.alpha = alpha;
+                if (hitObject.hitCircleOverlaySprite) hitObject.hitCircleOverlaySprite.alpha = alpha;
+                if (hitObject.comboText) hitObject.comboText.alpha = alpha;
+                if (hitObject.approachSprite) hitObject.approachSprite.alpha = 0;
 
-                const circleSize = (54.4 - 4.48 * beatmap["Difficulty"]["CircleSize"]) * grid_unit * 2;
-                const size = circleSize + (Math.min(1, -timeDiff / thresholdMs)) * circleSize * 0.3;
-                hitObject.hitCircleSprite.width = size;
-                hitObject.hitCircleSprite.height = size;
-                hitObject.hitCircleOverlaySprite.width = size;
-                hitObject.hitCircleOverlaySprite.height = size;
+                if (hitObject.hitCircleSprite) {
+                    const circleSize = (54.4 - 4.48 * beatmap["Difficulty"]["CircleSize"]) * grid_unit * 2;
+                    const size = circleSize + (Math.min(1, -timeDiff / thresholdMs)) * circleSize * 0.3;
+                    hitObject.hitCircleSprite.width = size;
+                    hitObject.hitCircleSprite.height = size;
+                    hitObject.hitCircleOverlaySprite.width = size;
+                    hitObject.hitCircleOverlaySprite.height = size;
+                }
             }
             if (timeDiff <= -thresholdMs) {
                 removeHitObject(app, hitObject);
