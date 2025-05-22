@@ -368,6 +368,11 @@ public class BeatmapService {
         title = title.replace(" (TV Size)", "");
         title = title.replace(" (Short Ver.)", "");
         title = title.replace(" (Cut Ver.)", "");
+        title = title.replace(" (Game Ver.)", "");
+        title = title.replace(" (Extended Edit)", "");
+        title = title.replace(" (Extended ver)", "");
+        title = title.replace(" (Full ver)", "");
+        title = title.replace(" (Full ver.)", "");
 
         Beatmap beatmap = Beatmap.builder()
                 .beatmapStats(beatmapStatsMap)
