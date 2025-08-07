@@ -3,6 +3,7 @@ package com.inix.omqweb.Game;
 import com.inix.omqweb.Achievement.AchievementService;
 import com.inix.omqweb.Announcement.AnnouncementSendDTO;
 import com.inix.omqweb.Beatmap.Alias.AliasAddDTO;
+import com.inix.omqweb.BeatmapRequest.BeatmapRequestService;
 import com.inix.omqweb.DTO.*;
 import com.inix.omqweb.Beatmap.Beatmap;
 import com.inix.omqweb.Beatmap.BeatmapService;
@@ -34,6 +35,7 @@ public class omqController {
     private final BeatmapService beatmapService;
     private final PlayerRepository playerRepository;
     private final AchievementService achievementService;
+    private final BeatmapRequestService beatmapRequestService;
 
     private final DiscordWebhookService discordWebhookService;
 
@@ -240,21 +242,19 @@ public class omqController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
 
+        Beatmap beatmap;
         if (beatmapAddDTO.getMode().equals("pattern")) {
-            ResponseEntity<Beatmap> responseEntity = ResponseEntity.ok(beatmapService.addBeatmapPattern(beatmapAddDTO.getBeatmapsetId()));
-            Beatmap beatmap = responseEntity.getBody();
-
+            beatmap = beatmapService.addBeatmapPattern(beatmapAddDTO.getBeatmapsetId());
             discordWebhookService.sendBeatmapWebhook("(Pattern Pool) Added beatmapset `" + beatmap.getArtistAndTitle() + " (" + beatmap.getBeatmapset_id() + ")` by `" + player.getUsername() + "`");
-
-            return responseEntity;
         } else {
-            ResponseEntity<Beatmap> responseEntity = ResponseEntity.ok(beatmapService.addBeatmap(beatmapAddDTO.getBeatmapsetId()));
-            Beatmap beatmap = responseEntity.getBody();
-
+            beatmap = beatmapService.addBeatmap(beatmapAddDTO.getBeatmapsetId());
             discordWebhookService.sendBeatmapWebhook("Added beatmapset `" + beatmap.getArtistAndTitle() + " (" + beatmap.getBeatmapset_id() + ")` by `" + player.getUsername() + "`");
-
-            return responseEntity;
         }
+
+        // Automatically delete any pending requests for this beatmap
+        beatmapRequestService.deleteRequestsByBeatmapSetId(Integer.parseInt(beatmapAddDTO.getBeatmapsetId()));
+
+        return ResponseEntity.ok(beatmap);
     }
 
     @PostMapping("/ingameAnnouncement")
