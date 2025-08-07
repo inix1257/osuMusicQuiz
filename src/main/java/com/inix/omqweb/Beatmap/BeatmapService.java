@@ -297,7 +297,13 @@ public class BeatmapService {
     }
 
     public void reportBeatmap(BeatmapReportDTO beatmapReportDTO) {
-        int beatmapsetId = Integer.parseInt(aesUtil.decrypt(beatmapReportDTO.getEncryptedBeatmapsetId()));
+        String decryptedId = aesUtil.decrypt(beatmapReportDTO.getEncryptedBeatmapsetId());
+        if (decryptedId == null) {
+            logger.error("Failed to decrypt beatmapset ID for report");
+            return;
+        }
+        
+        int beatmapsetId = Integer.parseInt(decryptedId);
 
         BeatmapReport beatmapReport = BeatmapReport.builder()
                 .player(playerRepository.findById(beatmapReportDTO.getUserId()).orElse(null))

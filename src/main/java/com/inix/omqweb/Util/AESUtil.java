@@ -1,5 +1,7 @@
 package com.inix.omqweb.Util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -13,6 +15,7 @@ import java.util.Random;
 @Service
 public class AESUtil {
     private final String ALGORITHM = "AES";
+    private final Logger logger = LoggerFactory.getLogger(AESUtil.class);
 
     private String secretKey;
 
@@ -33,7 +36,8 @@ public class AESUtil {
 
             return Base64.getUrlEncoder().encodeToString(encValue);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to encrypt the value:" + valueToEnc);
+            logger.error("Failed to encrypt value: {}", valueToEnc);
+            return null;
         }
     }
 
@@ -46,7 +50,8 @@ public class AESUtil {
             byte[] decValue = c.doFinal(decodedValue);
             return new String(decValue);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to decrypt the value:" + encryptedValue);
+            logger.error("Failed to decrypt value: {}", encryptedValue);
+            return null;
         }
     }
 

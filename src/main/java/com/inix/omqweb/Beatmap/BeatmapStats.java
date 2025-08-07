@@ -1,10 +1,6 @@
 package com.inix.omqweb.Beatmap;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.inix.omqweb.Game.GameDifficulty;
-import com.inix.omqweb.Game.GuessMode;
-import com.inix.omqweb.Util.DifficultyCalc;
 import jakarta.persistence.*;
 import lombok.*;
 

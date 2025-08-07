@@ -42,8 +42,13 @@ public class DailyGuessController {
         resourceService.getAudio(beatmapId);
         resourceService.getImage(beatmapId, dailyGuess.getBeatmap().isBlur());
 
+        String encryptedBeatmapId = aesUtil.encrypt(String.valueOf(beatmapId));
+        if (encryptedBeatmapId == null) {
+            return null;
+        }
+        
         return DailyGuessDTO.builder()
-                .base64(aesUtil.encrypt(String.valueOf(beatmapId)))
+                .base64(encryptedBeatmapId)
                 .dailyNumber(dailyGuess.getId())
                 .retryCount(dailyGuessLog == null ? 0 : dailyGuessLog.getRetryCount())
                 .guessed(dailyGuessLog != null && dailyGuessLog.isGuessed())
@@ -59,15 +64,21 @@ public class DailyGuessController {
         return dailyGuessLogs.stream()
                 .map(dailyGuessLog -> {
                     int beatmapId = dailyGuessLog.getDailyGuess().getBeatmap().getBeatmapset_id();
+                    String encryptedBeatmapId = aesUtil.encrypt(String.valueOf(beatmapId));
+                    
+                    if (encryptedBeatmapId == null) {
+                        return null;
+                    }
 
                     return DailyGuessDTO.builder()
-                            .base64(aesUtil.encrypt(String.valueOf(beatmapId)))
+                            .base64(encryptedBeatmapId)
                             .dailyNumber(dailyGuessLog.getDailyGuess().getId())
                             .retryCount(dailyGuessLog.getRetryCount())
                             .guessed(dailyGuessLog.isGuessed())
                             .dailyGuessLog(dailyGuessLog.isGuessed() ? dailyGuessLog : null)
                             .build();
                 })
+                .filter(dto -> dto != null)
                 .collect(Collectors.toList());
     }
 

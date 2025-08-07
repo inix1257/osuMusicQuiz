@@ -29,6 +29,9 @@ public class ResourceController {
     @GetMapping("/audio/{encryptedId}")
     public Mono<ResponseEntity<Resource>> getAudio(@PathVariable String encryptedId) {
         String id = aesUtil.decrypt(encryptedId);
+        if (id == null) {
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
         Path path = Path.of("./preview/" + id + ".mp3");
 
         if (Files.exists(path)) {
@@ -46,8 +49,10 @@ public class ResourceController {
 
     @GetMapping("/image/{encryptedId}")
     public Mono<ResponseEntity<Resource>> getImage(@PathVariable String encryptedId) {
-        String id;
-        id = aesUtil.decrypt(encryptedId);
+        String id = aesUtil.decrypt(encryptedId);
+        if (id == null) {
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
 
         Path path = Path.of("./preview/" + id + ".jpg");
 
@@ -66,11 +71,12 @@ public class ResourceController {
 
     @GetMapping("/image/{encryptedId}/{encryptedKey}")
     public Mono<ResponseEntity<Resource>> getOriginalImage(@PathVariable String encryptedId, @PathVariable String encryptedKey) {
-        String id;
-        String key;
-
-        id = aesUtil.decrypt(encryptedId);
-        key = aesUtil.decrypt(encryptedKey);
+        String id = aesUtil.decrypt(encryptedId);
+        String key = aesUtil.decrypt(encryptedKey);
+        
+        if (id == null || key == null) {
+            return Mono.just(ResponseEntity.badRequest().build());
+        }
 
         Path path = Path.of("./preview/" + id + "_original.jpg");
 
@@ -90,6 +96,9 @@ public class ResourceController {
     @GetMapping("/beatmap/{encryptedId}")
     public String getBeatmap(@PathVariable String encryptedId) {
         String id = aesUtil.decrypt(encryptedId);
+        if (id == null) {
+            return "Invalid encrypted ID";
+        }
         StringBuilder textData = new StringBuilder();
         Path path = Path.of("./preview/beatmap/" + id + ".osu");
 

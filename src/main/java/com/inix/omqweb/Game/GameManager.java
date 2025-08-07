@@ -526,10 +526,22 @@ public class GameManager {
 
                 if (beatmap.isBlur()) {
                     String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
+                    if (encodedId == null) {
+                        logger.error("Failed to encrypt beatmap ID for blur reveal in game: {}", game.getUuid());
+                        return;
+                    }
                     String encodedKey = aesUtil.encrypt(encodedId);
+                    if (encodedKey == null) {
+                        logger.error("Failed to encrypt key for blur reveal in game: {}", game.getUuid());
+                        return;
+                    }
                     systemMessageHandler.onBlurReveal(game, encodedId, encodedKey);
                 }else{
                     String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
+                    if (encodedId == null) {
+                        logger.error("Failed to encrypt beatmap ID for reveal in game: {}", game.getUuid());
+                        return;
+                    }
                     systemMessageHandler.onBlurReveal(game, encodedId);
                 }
 
@@ -687,8 +699,19 @@ public class GameManager {
         EncryptedBeatmapInfoDTO encryptedBeatmapInfoDTO = new EncryptedBeatmapInfoDTO();
         String encodedId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
         String encodedBeatmapSetId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapset_id()));
+        
+        if (encodedId == null || encodedBeatmapSetId == null) {
+            logger.error("Failed to encrypt beatmap IDs for game: {}", game.getUuid());
+            return;
+        }
+        
         if (game.getGuessMode() == GuessMode.PATTERN) {
-            encryptedBeatmapInfoDTO.setBeatmapId(aesUtil.encrypt(String.valueOf(beatmap.getBeatmapPattern().getBeatmap_id())));
+            String beatmapId = aesUtil.encrypt(String.valueOf(beatmap.getBeatmapPattern().getBeatmap_id()));
+            if (beatmapId == null) {
+                logger.error("Failed to encrypt beatmap pattern ID for game: {}", game.getUuid());
+                return;
+            }
+            encryptedBeatmapInfoDTO.setBeatmapId(beatmapId);
         }
         encryptedBeatmapInfoDTO.setBeatmapSetId(encodedBeatmapSetId);
         encryptedBeatmapInfoDTO.setBase64(encodedId);
