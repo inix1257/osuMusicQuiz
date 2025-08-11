@@ -35,6 +35,12 @@ public class BeatmapRequest {
     @Column(name = "ranked_date")
     private Timestamp rankedDate;
 
+    @Column(name = "play_count")
+    private int playCount;
+
+    @Column(name = "favourite_count")
+    private int favouriteCount;
+
     public enum Status {
         PENDING, APPROVED, REJECTED
     }

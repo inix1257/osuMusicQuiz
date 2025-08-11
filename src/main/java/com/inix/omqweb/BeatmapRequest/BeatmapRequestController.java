@@ -34,6 +34,8 @@ public class BeatmapRequestController {
             map.put("artist", req.getArtist());
             map.put("creator", req.getCreator());
             map.put("rankedDate", req.getRankedDate());
+            map.put("playCount", req.getPlayCount());
+            map.put("favouriteCount", req.getFavouriteCount());
             
             return map;
         }).collect(Collectors.toList());

@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.Beatmap.BeatmapRepository;
+import com.inix.omqweb.osuAPI.osuAPIService;
+
+import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +21,13 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.stream.Collectors;
+import java.util.HashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -25,8 +35,11 @@ public class BeatmapRequestService {
     private final BeatmapRequestRepository requestRepository;
     private final BeatmapRequestVoteRepository voteRepository;
     private final BeatmapRepository beatmapRepository;
+    private final osuAPIService osuAPIService;
     @Value("${osu.apiKey}")
     private String apiKey;
+    
+    private final Logger logger = LoggerFactory.getLogger(BeatmapRequestService.class);
 
     public List<BeatmapRequest> getAllRequests() {
         return requestRepository.findAll();
@@ -145,6 +158,78 @@ public class BeatmapRequestService {
             
             // Delete the request
             requestRepository.delete(request);
+        }
+    }
+
+    /**
+     * Scheduled method to update playcounts and favourite counts for all beatmaps in request listing
+     * Uses osu! API v1 to fetch individual beatmapsets
+     * Runs every 6 hours to avoid hitting API rate limits
+     */
+    @Scheduled(fixedDelay = 1000 * 60 * 60 * 6) // Every 6 hours
+    @PostConstruct
+    public void updateBeatmapRequestStats() {
+        logger.info("Starting scheduled update of beatmap request statistics...");
+        
+        List<BeatmapRequest> allRequests = requestRepository.findAll();
+        if (allRequests.isEmpty()) {
+            logger.info("No beatmap requests found to update");
+            return;
+        }
+        
+        // Extract unique beatmap set IDs
+        List<Integer> beatmapSetIds = allRequests.stream()
+                .map(BeatmapRequest::getBeatmapSetId)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        logger.info("Updating stats for {} unique beatmapsets", beatmapSetIds.size());
+        
+        try {
+            // Fetch beatmap data using osu! API v1
+            Map<Integer, osuAPIService.BeatmapStats> beatmapStatsMap = osuAPIService.fetchBeatmapStatsBatch(beatmapSetIds);
+            
+            int updatedCount = 0;
+            int errorCount = 0;
+            
+            for (BeatmapRequest request : allRequests) {
+                try {
+                    osuAPIService.BeatmapStats stats = beatmapStatsMap.get(request.getBeatmapSetId());
+                    if (stats != null) {
+                        // Update the request if values have changed
+                        boolean needsUpdate = false;
+                        if (request.getPlayCount() != stats.getPlayCount()) {
+                            request.setPlayCount(stats.getPlayCount());
+                            needsUpdate = true;
+                        }
+                        if (request.getFavouriteCount() != stats.getFavouriteCount()) {
+                            request.setFavouriteCount(stats.getFavouriteCount());
+                            needsUpdate = true;
+                        }
+                        
+                        if (needsUpdate) {
+                            requestRepository.save(request);
+                            updatedCount++;
+                            logger.debug("Updated stats for beatmap request {}: playCount={}, favouriteCount={}", 
+                                        request.getBeatmapSetId(), stats.getPlayCount(), stats.getFavouriteCount());
+                        }
+                    } else {
+                        logger.warn("No stats found for beatmap set ID: {}", request.getBeatmapSetId());
+                        errorCount++;
+                    }
+                    
+                } catch (Exception e) {
+                    errorCount++;
+                    logger.error("Failed to update stats for beatmap request {}: {}", 
+                               request.getBeatmapSetId(), e.getMessage());
+                }
+            }
+            
+            logger.info("Completed beatmap request stats update: {} updated, {} errors out of {} total requests", 
+                       updatedCount, errorCount, allRequests.size());
+            
+        } catch (Exception e) {
+            logger.error("Failed to fetch beatmap stats: {}", e.getMessage());
         }
     }
 }
