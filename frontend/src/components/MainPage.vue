@@ -141,7 +141,7 @@ export default {
 
           <div class="gameroom-statistics">
             <span class="gameroom-statistics-number">{{ getGameroomCount() }}</span> lobbies, <span
-              class="gameroom-statistics-number">{{ getGameroomPlayers() }}</span> players online
+              class="gameroom-statistics-number">{{ getGameroomPlayers() }}</span> players
           </div>
 
           <input type="text" v-model="searchTerm" placeholder="Search game rooms by title or player..." class="gameroom-searchinput">
@@ -191,6 +191,8 @@ export default {
   display: grid;
   grid-template-columns: 3fr 1fr;
   height: 80vh;
+  gap: 30px;
+  padding: 20px;
 }
 
 .info-div {
@@ -198,45 +200,76 @@ export default {
   flex-direction: column;
   align-items: center;
   height: 100%;
-  padding-right: 20px;
+  padding: 20px;
   gap: 20px;
+  background: linear-gradient(135deg, var(--color-body) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 25px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .gameroom-container {
-  grid-template-columns: 1fr;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   height: 80vh;
   width: 65vw;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--color-body) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 25px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
 }
 
 .gameroom-list {
-  border-radius: 10px;
-  padding: 10px;
-  height: 100%;
+  border-radius: 15px;
+  padding: 15px;
+  flex: 1;
   overflow: auto;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  min-height: 0;
 }
 
 .button-searchbar {
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   outline: none;
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   color: var(--color-text);
-  padding: 10px 20px;
+  padding: 12px 16px;
   margin: 0 2px;
   font-size: 1em;
   font-family: Sen, Arial, sans-serif;
   cursor: pointer;
   border-radius: 10px;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .button-create {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
   color: white;
+  border-color: rgba(96, 165, 250, 0.4);
+  font-weight: 600;
 }
 
 .button-searchbar:hover {
-  background-color: #aac9e8;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(96, 165, 250, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  color: #60a5fa;
+}
+
+.button-create:hover {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
 }
 
 .owner-highlight .avatar {
@@ -248,7 +281,13 @@ export default {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin-bottom: 8px;
+  gap: 15px;
+  padding: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .gameroom-upper-searchoptions-container {
@@ -263,27 +302,57 @@ export default {
   flex-direction: column;
   justify-content: center;
   width: 20vw;
-  padding: 10px;
-  border-radius: 5px;
+  padding: 15px 20px;
+  border-radius: 12px;
   margin: 4px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
-  transition: all 0.3s cubic-bezier(.25,.8,.25,1);
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  font-weight: 500;
+  text-align: center;
+}
+
+.gameroom-statistics:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
 }
 
 .gameroom-statistics-number {
-  font-weight: bold;
+  font-weight: 700;
+  font-size: 1.2em;
+  color: #60a5fa;
+  background: linear-gradient(45deg, #60a5fa, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 1px 2px rgba(96, 165, 250, 0.3);
 }
 
 .gameroom-searchinput {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   font-size: 16px;
   color: var(--color-text);
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   font-family: 'Sen', serif;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.gameroom-searchinput:focus {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.2);
+  transform: translateY(-1px);
+}
+
+.gameroom-searchinput::placeholder {
+  color: var(--color-text);
+  opacity: 0.6;
 }
 
 .dropdown {

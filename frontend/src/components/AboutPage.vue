@@ -28,13 +28,6 @@ export default {
       Beatmaps with more than a certain number of favorites or playcounts will be automatically imported (the threshold may vary).<br>
       Some beatmaps might be manually handpicked by the dev and a few helpers.
     </div>
-    <div class="about-question">
-      "Too Many Requests"
-    </div>
-    <div class="about-answer">
-      Either you have sent too many requests to the server, or OMQ got rate limited from osu! server.<br>
-      This usually happens when a lot of people try to login at the same time, please wait a few minutes and try again.
-    </div>
 
   </div>
 </template>

@@ -76,8 +76,10 @@ export default {
     <button class="page-button" @click="previousPage">&lt;</button>
     <span class="page-count">{{ this.page + 1 }}</span>
     <button class="page-button" @click="nextPage">&gt;</button>
-    <div class="modal-overlay" v-if="showUserpage" @click.stop="showUserpage = false">
-      <UserPage :playerId="userpageId"></UserPage>
+    <div v-if="showUserpage" class="leaderboard-modal-overlay" @click.stop="showUserpage = false">
+      <div class="leaderboard-modal-content" @click.stop>
+        <UserPage :playerId="userpageId"></UserPage>
+      </div>
     </div>
   </div>
 </template>
@@ -173,4 +175,25 @@ export default {
   font-size: 16px;
   margin: 16px
 }
+
+.leaderboard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.leaderboard-modal-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
 </style>

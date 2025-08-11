@@ -87,7 +87,15 @@ export default {
         submitRightArrow: false,
         submitTab: false,
         chatHighlight: false
-      }
+      },
+      // Draggable leaderboard properties
+      isDragging: false,
+      dragStartX: 0,
+      dragStartY: 0,
+      leaderboardX: this.loadLeaderboardPosition().x,
+      leaderboardY: this.loadLeaderboardPosition().y,
+      dragOffsetX: 0,
+      dragOffsetY: 0
     };
   },
   methods: {
@@ -696,6 +704,114 @@ export default {
     resetCurrentTime() {
       this.$refs.beatmapRenderer.resetCurrentTime();
     },
+
+    // Draggable leaderboard methods
+    startDrag(event) {
+      this.isDragging = true;
+      this.dragStartX = event.clientX;
+      this.dragStartY = event.clientY;
+      this.dragOffsetX = this.dragStartX - this.leaderboardX;
+      this.dragOffsetY = this.dragStartY - this.leaderboardY;
+      document.addEventListener('mousemove', this.onDrag);
+      document.addEventListener('mouseup', this.stopDrag);
+      event.preventDefault();
+    },
+
+    onDrag(event) {
+      if (!this.isDragging) return;
+      
+      // Calculate the new position based on mouse movement from the start position
+      const deltaX = event.clientX - this.dragStartX;
+      const deltaY = event.clientY - this.dragStartY;
+      
+      const newX = this.leaderboardX + deltaX;
+      const newY = this.leaderboardY + deltaY;
+      
+      // Get leaderboard dimensions (approximate values)
+      const leaderboardWidth = 320; // 28vh converted to approximate pixels
+      const leaderboardHeight = 400; // Approximate height based on content
+      
+      // Constrain to viewport bounds with padding
+      const padding = 20; // Keep some padding from screen edges
+      const statusBarHeight = 80; // Account for status bar at the top
+      const maxX = window.innerWidth - leaderboardWidth - padding;
+      const maxY = window.innerHeight - leaderboardHeight - padding;
+      
+      // Ensure leaderboard stays within viewport, accounting for status bar
+      this.leaderboardX = Math.max(padding, Math.min(newX, maxX));
+      this.leaderboardY = Math.max(statusBarHeight + padding, Math.min(newY, maxY));
+      
+      // Update the start position for the next frame
+      this.dragStartX = event.clientX;
+      this.dragStartY = event.clientY;
+    },
+
+    stopDrag() {
+      this.isDragging = false;
+      document.removeEventListener('mousemove', this.onDrag);
+      document.removeEventListener('mouseup', this.stopDrag);
+      
+      // Ensure leaderboard is still within bounds after drag ends
+      this.ensureLeaderboardInBounds();
+      
+      // Save the final position
+      this.saveLeaderboardPosition();
+    },
+
+    ensureLeaderboardInBounds() {
+      const leaderboardWidth = 320;
+      const leaderboardHeight = 400;
+      const padding = 20;
+      
+      const maxX = window.innerWidth - leaderboardWidth - padding;
+      const maxY = window.innerHeight - leaderboardHeight - padding;
+      
+      // If leaderboard is outside bounds, reset to safe position
+      if (this.leaderboardX < padding || this.leaderboardX > maxX || 
+          this.leaderboardY < padding || this.leaderboardY > maxY) {
+        this.leaderboardX = padding;
+        this.leaderboardY = padding;
+      }
+      
+      // Save the position after ensuring it's in bounds
+      this.saveLeaderboardPosition();
+    },
+
+    saveLeaderboardPosition() {
+      const position = {
+        x: this.leaderboardX,
+        y: this.leaderboardY
+      };
+      localStorage.setItem('leaderboardPosition', JSON.stringify(position));
+    },
+
+    loadLeaderboardPosition() {
+      try {
+        const savedPosition = localStorage.getItem('leaderboardPosition');
+        if (savedPosition) {
+          const position = JSON.parse(savedPosition);
+          // Validate the saved position is reasonable
+          if (typeof position.x === 'number' && typeof position.y === 'number' &&
+              position.x >= 0 && position.y >= 0 && 
+              position.x < window.innerWidth && position.y < window.innerHeight) {
+            return position;
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load leaderboard position:', error);
+      }
+      
+      // Return default position if no valid saved position
+      return { x: 20, y: 50 };
+    },
+
+    handleWindowResize() {
+      // Ensure leaderboard is in bounds after resize
+      this.ensureLeaderboardInBounds();
+      
+      // Save the adjusted position
+      this.saveLeaderboardPosition();
+    },
   },
 
   async mounted() {
@@ -713,13 +829,21 @@ export default {
     } catch (e) {
       this.$router.push('/');
     }
+
+    // Add window resize listener to keep leaderboard in bounds
+    window.addEventListener('resize', this.handleWindowResize);
   },
 
   beforeUnmount() {
     window.removeEventListener('beforeunload', this.requestLeaveRoom);
+    window.removeEventListener('resize', this.handleWindowResize);
 
     clearInterval(this.countdownInterval)
     clearInterval(this.inactivityTimer)
+    
+    // Clean up drag event listeners
+    document.removeEventListener('mousemove', this.onDrag);
+    document.removeEventListener('mouseup', this.stopDrag);
   },
 
   beforeRouteLeave(to, from, next) {
@@ -884,9 +1008,20 @@ export default {
             <button v-on:click="leaveRoom" class="leave-room-button">
               <font-awesome-icon :icon="['fas', 'door-open']" class="info-icon" />
             </button>
-            <div class="game-name icon-container">{{ this.game.name }}</div>
-            <div>Host: {{ this.game.owner.username }} / {{ players.length }} players</div>
-            <div v-if="!this.game.ranked" class="game-room-info-unranked">Unranked</div>
+            <div class="game-info-container">
+              <div class="game-name icon-container">{{ this.game.name }}</div>
+              <div class="game-details">
+                <div class="game-host-info">
+                  <font-awesome-icon :icon="['fas', 'crown']" class="host-icon" />
+                  <span class="host-text">{{ this.game.owner.username }}</span>
+                </div>
+                <div class="game-players-info">
+                  <font-awesome-icon :icon="['fas', 'users']" class="players-icon" />
+                  <span class="players-text">{{ players.length }} players</span>
+                </div>
+              </div>
+              <div v-if="!this.game.ranked" class="game-room-info-unranked">Unranked</div>
+            </div>
           </div>
 
           <div class="game-room-info-middle">
@@ -1006,8 +1141,15 @@ export default {
               class="beatmap-info"
           />
 
-          <div class="leaderboard">
-            <h2>Leaderboard</h2>
+          <div class="leaderboard" 
+               :style="{ left: leaderboardX + 'px', top: leaderboardY + 'px' }"
+               :class="{ 'dragging': isDragging }">
+            <div class="leaderboard-header" @mousedown="startDrag">
+              <h2>Leaderboard</h2>
+              <div class="drag-handle">
+                <font-awesome-icon :icon="['fas', 'grip-vertical']" />
+              </div>
+            </div>
             <div v-for="(player, index) in sortedPlayers" :key="player.id" class="leaderboard-player-info" :class="{ 'leaderboard-player-highlight': (answers[player.id] && answers[player.id].correct && !answers[player.id].aliasCorrect && !isGuessing), 'highlight-secondary': (answers[player.id] && answers[player.id].correct && answers[player.id].aliasCorrect && !isGuessing) }" @click.stop="showPlayerInfoModal = true; userpageId = player.id">
               <div class="leaderboard-player-rank">#{{ index + 1 }}</div>
               <div class="leaderboard-player-name">{{ player.username }}</div>
@@ -1070,7 +1212,8 @@ UserPage {
   height: 100%;
   top: 0;
   left: 0;
-  background-color: rgba(0, 0, 0, 0.8);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1086,7 +1229,8 @@ UserPage {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.8);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+  backdrop-filter: blur(10px);
   color: white;
   font-size: 3em;
   z-index: 999;
@@ -1094,6 +1238,9 @@ UserPage {
 
 .game-container {
   display: flex;
+  min-height: 100vh;
+  padding: 20px;
+  gap: 20px;
 }
 
 .game-content {
@@ -1101,13 +1248,23 @@ UserPage {
   max-width: 82vw;
   position: relative;
   flex: 3;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 20px;
+  padding: 25px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .game-room-info {
   display: flex;
   justify-content: space-between;
-  padding: 10px;
+  padding: 20px;
   height: 6vh;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
 }
 
 .game-room-info-middle {
@@ -1117,17 +1274,27 @@ UserPage {
 }
 
 .start-game-button {
-  background: var(--color-secondary);
-  border: none;
-  color: var(--color-text);
-  padding: 15px 32px;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.8), rgba(59, 130, 246, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 12px 24px;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 16px;
+  font-weight: 600;
   margin: 4px 2px;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+}
+
+.start-game-button:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(96, 165, 250, 0.4);
+  border-color: rgba(96, 165, 250, 0.4);
 }
 
 .settings-container {
@@ -1144,13 +1311,22 @@ UserPage {
 
 .icon-container {
   font-size: 1.2em;
-  background-color: var(--color-secondary);
-  border-radius: 5px;
-  padding: 4px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  padding: 8px 12px;
   display: flex;
   gap: 5px;
   justify-content: center;
-  justify-items: center;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.icon-container:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .input-container {
@@ -1189,17 +1365,67 @@ UserPage {
   gap: 20px;
 }
 
+.game-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-room-info-left .game-name {
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.game-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.game-host-info, .game-players-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9em;
+  color: var(--color-text);
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.game-host-info:hover, .game-players-info:hover {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+.host-icon {
+  color: #fbbf24;
+  font-size: 0.8em;
+}
+
+.players-icon {
+  color: #60a5fa;
+  font-size: 0.8em;
+}
+
+.host-text, .players-text {
+  font-weight: 500;
+}
+
 .game-room-info-left .game-name {
   font-weight: bold;
   font-size: 1.2em;
 }
 
 .game-room-info-unranked {
-  background-color: var(--color-gameroom);
-  border-radius: 5px;
-  padding: 5px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.8), rgba(220, 38, 38, 0.8));
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  padding: 6px 12px;
   font-weight: bold;
   font-size: 1.2em;
+  color: white;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
 }
 
 .info-icon {
@@ -1213,11 +1439,22 @@ UserPage {
 }
 
 .leave-room-button {
-  background: none;
-  border: none;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.8), rgba(220, 38, 38, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
   cursor: pointer;
-  padding: 0;
+  padding: 8px 12px;
   margin-right: 10px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.leave-room-button:hover {
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.9), rgba(185, 28, 28, 0.9));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.4);
 }
 
 .players-container {
@@ -1290,12 +1527,21 @@ UserPage {
   width: 71vh;
   height: 40vh;
   object-fit: contain;
-  border: 3px solid black;
-  background-color: var(--color-disabled);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.question-image:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px);
 }
 
 .question-image-cover {
@@ -1330,8 +1576,19 @@ UserPage {
   text-align: center;
   margin-top: 8px;
   font-family: 'Exo 2', 'Sen', serif;
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   color: var(--color-text);
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.answer-input:focus {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.2);
+  transform: translateY(-1px);
 }
 
 .highlight {
@@ -1463,31 +1720,86 @@ UserPage {
 }
 
 .leaderboard {
-  position: absolute;
+  position: fixed;
   top: 7vh;
   left: 20px;
-  padding: 10px;
+  padding: 0;
   margin-top: 10px;
-  border: 1px solid #ccc;
-  background-color: var(--color-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-radius: 15px;
   max-width: 28vh;
   min-width: 28vh;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  user-select: none;
+  transition: box-shadow 0.3s ease;
+}
 
+.leaderboard.dragging {
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+  cursor: grabbing;
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px 15px 0 0;
+  cursor: grab;
+  transition: all 0.3s ease;
+}
+
+.leaderboard-header:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.12));
+}
+
+.leaderboard-header:active {
+  cursor: grabbing;
+}
+
+.drag-handle {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9em;
+  transition: color 0.3s ease;
+}
+
+.leaderboard-header:hover .drag-handle {
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .leaderboard h2 {
   text-align: center;
-  margin-bottom: 10px;
+  margin: 0;
+  font-size: 1.3em;
+  font-weight: 700;
+  color: var(--color-text);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
 }
 
 .leaderboard-player-info {
   cursor: pointer;
   display: flex;
   justify-content: space-between;
-  padding: 5px 0;
-  margin-bottom: 5px;
+  padding: 8px 12px;
+  margin: 8px 20px;
   align-items: center;
   box-sizing: border-box;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.leaderboard-player-info:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .leaderboard-player-highlight {

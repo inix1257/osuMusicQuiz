@@ -626,7 +626,8 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+  backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -635,13 +636,15 @@ export default {
 
 .modal {
   position: relative;
-  background-color: var(--color-secondary);
-  padding: 20px;
-  border-radius: 10px;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
+  padding: 30px;
+  border-radius: 20px;
   width: 50em;
   height: 30em;
-  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 100;
+  backdrop-filter: blur(20px);
 }
 
 .modal-content {
@@ -655,26 +658,33 @@ export default {
 }
 
 .tabs button {
-  padding: 10px;
-  border: none;
-  background-color: var(--color-secondary);
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
   font-size: 1em;
   font-family: Sen, Arial, sans-serif;
-  transition: background-color 0.3s ease;
-  margin-bottom: 5px;
-  border-radius: 5px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-bottom: 8px;
+  border-radius: 10px;
 }
 
 .tabs button:hover {
-  background-color: var(--color-bodysecondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .tabs button.active {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.6), rgba(59, 130, 246, 0.6));
   color: white;
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+  font-weight: 600;
 }
 
 .tab-content {
@@ -694,16 +704,28 @@ export default {
 
 .dropdown {
   font-family: Sen, Arial, sans-serif;
-  padding: 6px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  background-color: var(--color-secondary);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   font-size: 16px;
   color: var(--color-text);
+  transition: all 0.3s ease;
+  outline: none;
+  cursor: pointer;
+}
+
+.dropdown:focus {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.2);
+  transform: translateY(-1px);
 }
 
 .dropdown:disabled {
-  background-color: var(--color-disabled);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .checkbox-grid {
@@ -718,29 +740,50 @@ export default {
 }
 
 .input-gameinfo {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   font-size: 16px;
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   color: var(--color-text);
   box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  outline: none;
+  font-family: Sen, Arial, sans-serif;
+}
+
+.input-gameinfo:focus {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.2);
+  transform: translateY(-1px);
 }
 
 .input-gameinfo:disabled {
-  background-color: var(--color-disabled);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .close-button {
   color: var(--color-text);
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 1.5em;
+  top: 15px;
+  right: 15px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 1.2em;
   cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-button:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  transform: scale(1.1);
 }
 
 .save-button-div {
@@ -754,22 +797,27 @@ export default {
 
 .save-button {
   height: 2.5em;
-  padding: 4px 20px;
-  border: none;
-  background-color: var(--color-primary);
+  padding: 8px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.8), rgba(59, 130, 246, 0.8));
   color: white;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
   font-family: Sen, Arial, sans-serif;
-  border-radius: 5px;
-  transition: background-color 0.3s ease;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
 }
 
 .save-button:hover {
-  background-color: #2984a4;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(96, 165, 250, 0.4);
+  border-color: rgba(96, 165, 250, 0.4);
 }
 
 .inner-rightalign {
@@ -783,27 +831,37 @@ input[type="checkbox"] {
   appearance: none;
   width: 20px;
   height: 20px;
-  border: 2px solid var(--color-primary);
-  border-radius: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
   outline: none;
   cursor: pointer;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  transition: all 0.3s ease;
   position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+}
+
+input[type="checkbox"]:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  transform: scale(1.05);
 }
 
 input[type="checkbox"]:checked {
-  background-color: var(--color-primary);
-  border-color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.6), rgba(59, 130, 246, 0.6));
+  border-color: #60a5fa;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
 }
 
 input[type="checkbox"]:checked::after {
   content: '✔';
   color: white;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: bold;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 input[type="checkbox"] + label {
@@ -829,32 +887,56 @@ input[type="checkbox"] + label {
 .custom-checkbox-label {
   display: block;
   width: 100%;
-  padding: 10px 20px;
-  border: 2px solid var(--color-primary);
-  border-radius: 4px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: all 0.3s ease;
   box-sizing: border-box;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  font-weight: 500;
+  text-align: center;
+}
+
+.custom-checkbox-label:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .label-displaymode {
   display: block;
   width: 100%;
-  padding: 10px 20px;
-  border: 2px solid #00000000;
-  border-radius: 4px;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: all 0.3s ease;
   box-sizing: border-box;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  font-weight: 500;
+  text-align: center;
 }
 
 .custom-checkbox:checked + .custom-checkbox-label {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.6), rgba(59, 130, 246, 0.6));
   color: white;
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+  transform: translateY(-1px);
 }
 
 .button-revert {
-  background-color: var(--color-body);
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.8), rgba(75, 85, 99, 0.8));
+  border-color: rgba(107, 114, 128, 0.4);
+}
+
+.button-revert:hover {
+  background: linear-gradient(135deg, rgba(75, 85, 99, 0.9), rgba(55, 65, 81, 0.9));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
+  border-color: rgba(107, 114, 128, 0.6);
 }
 
 .checkbox-div {
@@ -868,30 +950,41 @@ input[type="checkbox"] + label {
 
 .difficulty-label {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  line-height: 20px;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
   text-align: center;
-  border: 2px solid rgba(27, 73, 101, 0.24);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   font-weight: bold;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  font-size: 0.9em;
+}
+
+.difficulty-label:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  transform: scale(1.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .difficulty-checkbox:checked + .difficulty-label {
   border: 2px solid var(--color-primary);
-
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.5), rgba(59, 130, 246, 0.5));
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.3);
 }
 
 .difficulty-checkbox:not(:checked) + .difficulty-label {
-  background-color: var(--color-secondary);
-  color: var(--color-disabled);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .difficulty-checkbox:disabled + .difficulty-label {
-  background-color: var(--color-disabled);
-  color: var(--color-disabled);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
 }
 
 .tooltip-container {
@@ -902,18 +995,21 @@ input[type="checkbox"] + label {
 .tooltip {
   visibility: hidden;
   width: 15em;
-  background-color: black;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
   color: #fff;
   text-align: center;
-  border-radius: 6px;
-  padding: 10px 10px;
+  border-radius: 10px;
+  padding: 12px 16px;
   position: absolute;
   z-index: 1;
   bottom: 125%;
   left: 50%;
   margin-left: -100px;
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
 }
 
 .tooltip-container:hover .tooltip {
@@ -931,28 +1027,43 @@ input[type="checkbox"]:disabled {
 }
 
 .label-displaymode {
-  color: var(--color-disabled);
+  color: rgba(255, 255, 255, 0.6);
   display: flex;
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  transition: color 0.3s ease, background-color 0.3s ease;
+  transition: all 0.3s ease;
+  gap: 4px;
+}
+
+.label-displaymode:hover {
+  color: var(--color-text);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 input[type="checkbox"]:checked + .label-displaymode {
-  color: var(--color-text);
+  color: white;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.6), rgba(59, 130, 246, 0.6));
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);
+  transform: translateY(-1px);
 }
 
 input[type="checkbox"]:disabled + .label-displaymode {
-  color: var(--color-disabled);
+  color: rgba(255, 255, 255, 0.3);
+  cursor: not-allowed;
 }
 
 .div-displayModeInnerLeft {
-  gap: 10px;
+  gap: 12px;
   display: flex;
 }
 
 .displaymode-highlight {
-  border: 2px solid var(--color-primary);
+  border: 2px solid #60a5fa !important;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.05)) !important;
 }
 </style>

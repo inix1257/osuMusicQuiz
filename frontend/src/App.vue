@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <IntroPage v-if="showIntroPage" @close-intro="showIntroPage = false"/>
+    <IntroPage v-if="showIntroPage" @close-intro="showIntroPage = false" />
     <div id="status-bar">
       <router-link to="/" class="logo">
         <h1>omq</h1>
@@ -13,40 +13,43 @@
       </p>
       <a :href="discordInviteLink" target="_blank">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="logo_icon">
-          <path :fill='discordIconColor' d="M524.5 69.8a1.5 1.5 0 0 0 -.8-.7A485.1 485.1 0 0 0 404.1 32a1.8 1.8 0 0 0 -1.9 .9 337.5 337.5 0 0 0 -14.9 30.6 447.8 447.8 0 0 0 -134.4 0 309.5 309.5 0 0 0 -15.1-30.6 a1.9 1.9 0 0 0 -1.9-.9A483.7 483.7 0 0 0 116.1 69.1a1.7 1.7 0 0 0 -.8 .7C39.1 183.7 18.2 294.7 28.4 404.4a2 2 0 0 0 .8 1.4A487.7 487.7 0 0 0 176 479.9a1.9 1.9 0 0 0 2.1-.7A348.2 348.2 0 0 0 208.1 430.4a1.9 1.9 0 0 0 -1-2.6 321.2 321.2 0 0 1 -45.9-21.9 a1.9 1.9 0 0 1 -.2-3.1c3.1-2.3 6.2-4.7 9.1-7.1a1.8 1.8 0 0 1 1.9-.3c96.2 43.9 200.4 43.9 295.5 0a1.8 1.8 0 0 1 1.9 .2c2.9 2.4 6 4.9 9.1 7.2a1.9 1.9 0 0 1 -.2 3.1 301.4 301.4 0 0 1 -45.9 21.8 a1.9 1.9 0 0 0 -1 2.6 391.1 391.1 0 0 0 30 48.8 a1.9 1.9 0 0 0 2.1 .7A486 486 0 0 0 610.7 405.7a1.9 1.9 0 0 0 .8-1.4C623.7 277.6 590.9 167.5 524.5 69.8zM222.5 337.6c-29 0-52.8-26.6-52.8-59.2S193.1 219.1 222.5 219.1c29.7 0 53.3 26.8 52.8 59.2C275.3 311 251.9 337.6 222.5 337.6zm195.4 0c-29 0-52.8-26.6-52.8-59.2S388.4 219.1 417.9 219.1c29.7 0 53.3 26.8 52.8 59.2C470.7 311 447.5 337.6 417.9 337.6z"/>
+          <path :fill='discordIconColor'
+            d="M524.5 69.8a1.5 1.5 0 0 0 -.8-.7A485.1 485.1 0 0 0 404.1 32a1.8 1.8 0 0 0 -1.9 .9 337.5 337.5 0 0 0 -14.9 30.6 447.8 447.8 0 0 0 -134.4 0 309.5 309.5 0 0 0 -15.1-30.6 a1.9 1.9 0 0 0 -1.9-.9A483.7 483.7 0 0 0 116.1 69.1a1.7 1.7 0 0 0 -.8 .7C39.1 183.7 18.2 294.7 28.4 404.4a2 2 0 0 0 .8 1.4A487.7 487.7 0 0 0 176 479.9a1.9 1.9 0 0 0 2.1-.7A348.2 348.2 0 0 0 208.1 430.4a1.9 1.9 0 0 0 -1-2.6 321.2 321.2 0 0 1 -45.9-21.9 a1.9 1.9 0 0 1 -.2-3.1c3.1-2.3 6.2-4.7 9.1-7.1a1.8 1.8 0 0 1 1.9-.3c96.2 43.9 200.4 43.9 295.5 0a1.8 1.8 0 0 1 1.9 .2c2.9 2.4 6 4.9 9.1 7.2a1.9 1.9 0 0 1 -.2 3.1 301.4 301.4 0 0 1 -45.9 21.8 a1.9 1.9 0 0 0 -1 2.6 391.1 391.1 0 0 0 30 48.8 a1.9 1.9 0 0 0 2.1 .7A486 486 0 0 0 610.7 405.7a1.9 1.9 0 0 0 .8-1.4C623.7 277.6 590.9 167.5 524.5 69.8zM222.5 337.6c-29 0-52.8-26.6-52.8-59.2S193.1 219.1 222.5 219.1c29.7 0 53.3 26.8 52.8 59.2C275.3 311 251.9 337.6 222.5 337.6zm195.4 0c-29 0-52.8-26.6-52.8-59.2S388.4 219.1 417.9 219.1c29.7 0 53.3 26.8 52.8 59.2C470.7 311 447.5 337.6 417.9 337.6z" />
         </svg>
       </a>
       <div v-if="this.me && isModerator()">
         <router-link to="/debug">Admin</router-link>
       </div>
-      <a href="#" @click.stop="showDonatePage = true"><font-awesome-icon :icon="['fas', 'heart']" style="color: hotpink;"/>Donate</a>
+      <router-link to="/request" v-if="this.me.id">Requests</router-link>
+      <a href="#" @click.stop="showDonatePage = true"><font-awesome-icon :icon="['fas', 'heart']"
+          style="color: hotpink;" />Donate</a>
       <a href="#" @click.stop="showHelpPage = true">Help</a>
       <a href="#" @click.stop="showIntroPage = true">Daily</a>
       <router-link to="/log" v-if="this.me.id">Log</router-link>
-      <div class="links"/>
+      <div class="links" />
       <font-awesome-icon class="icon-darkmode-toggle" v-if="theme === 'lightMode'" :icon="['fas', 'sun']"
-                         @click="toggleTheme"/>
-      <font-awesome-icon class="icon-darkmode-toggle" v-else :icon="['fas', 'moon']" @click="toggleTheme"/>
+        @click="toggleTheme" />
+      <font-awesome-icon class="icon-darkmode-toggle" v-else :icon="['fas', 'moon']" @click="toggleTheme" />
 
       <div class="meInfo" v-if="accessToken && this.me" @click="showOwnProfile = true">
-        <img v-bind:src="me.avatar_url" alt="Profile Picture" class="avatar"/>
+        <img v-bind:src="me.avatar_url" alt="Profile Picture" class="avatar" />
         <p class="username">{{ me.username }}</p>
       </div>
       <div class="login-div">
         <button v-if="accessToken && this.me" class="button-icon" @click="logout">
-          <font-awesome-icon icon="sign-out-alt"/>
+          <font-awesome-icon icon="sign-out-alt" />
         </button>
         <button class="button-icon" @click="login" v-else>
           Login with osu
-          <font-awesome-icon icon="sign-in-alt"/>
+          <font-awesome-icon icon="sign-in-alt" />
         </button>
       </div>
     </div>
     <div class="modal-overlay" v-if="showHelpPage" @click="showHelpPage = false">
-      <AboutPage ></AboutPage>
+      <AboutPage></AboutPage>
     </div>
     <div class="modal-overlay" v-if="showDonatePage" @click="showDonatePage = false">
-      <DonationPage ></DonationPage>
+      <DonationPage></DonationPage>
     </div>
     <div class="modal-overlay" v-if="showOwnProfile" @click="showOwnProfile = false">
       <UserPage :playerId="me.id"></UserPage>
@@ -69,6 +72,7 @@ import AboutPage from "@/components/AboutPage.vue";
 import GameLog from "@/components/GameLog.vue";
 import DonationPage from "@/components/DonationPage.vue";
 import IntroPage from "@/components/Daily/DailyPage.vue";
+import BeatmapRequestPage from "@/components/BeatmapRequestPage.vue";
 
 export default {
   name: 'App',
@@ -77,7 +81,8 @@ export default {
     DonationPage,
     GameLog,
     AboutPage,
-    UserPage
+    UserPage,
+    BeatmapRequestPage
   },
   setup() {
     const userStore = useUserStore();
@@ -251,21 +256,37 @@ html, body {
   height: 60px;
   left: 0;
   right: 0;
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
   color: var(--color-text);
-  padding: 10px;
+  padding: 12px 20px;
   text-align: center;
-  border-bottom: 2px solid transparent;
-  border-image: linear-gradient(to right, transparent, var(--color-primary), transparent) 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1.5em;
+  gap: 1em;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
 }
 
 .logo {
   margin-right: 20px;
   margin-left: 10px;
+  transition: all 0.3s ease;
+}
+
+.logo h1 {
+  font-size: 1.8em;
+  font-weight: 700;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.logo:hover {
+  transform: translateY(-5px);
 }
 
 a {
@@ -297,11 +318,26 @@ a {
 
 .button-icon {
   color: var(--color-text);
-  background: none;
-  border: none;
-  padding: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 16px;
   cursor: pointer;
   outline: inherit;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+}
+
+.button-icon:hover {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.1));
+  border-color: rgba(96, 165, 250, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  color: #60a5fa;
 }
 
 #status-bar > div {
@@ -315,16 +351,33 @@ a {
 }
 
 .avatar {
-  width: 50px;
-  height: 50px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .meInfo {
   cursor: pointer;
   display: flex;
   align-items: center;
-  padding-right: 32px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  margin-right: 20px;
+}
+
+.meInfo:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.meInfo:hover .avatar {
+  border-color: rgba(96, 165, 250, 0.5);
+  transform: scale(1.05);
 }
 
 .login-div {
@@ -337,24 +390,52 @@ a {
 }
 
 .beatmap-count {
-  font-size: 0.8em;
+  font-size: 0.85em;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
 
+.beatmap-count:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
 }
 
 .beatmap-count-span {
-  font-weight: bold;
-  font-size: 1.2em;
-  justify-content: center;
+  font-weight: 700;
+  font-size: 1.3em;
   margin-left: 8px;
   margin-right: 8px;
+  color: #fbbf24;
+  background: linear-gradient(45deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 1px 2px rgba(251, 191, 36, 0.3);
 }
 
 .icon-darkmode-toggle {
   color: var(--color-text);
   cursor: pointer;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  font-size: 1.1em;
+}
+
+.icon-darkmode-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px) rotate(15deg);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  color: #fbbf24;
 }
 
 .modal-overlay {
@@ -383,9 +464,23 @@ a {
   z-index: 1001;
 }
 
+#status-bar a {
+  transition: all 0.2s ease;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  position: relative;
+}
+
 #status-bar a:hover,
 #status-bar .router-link:hover {
-  color: var(--color-primary);
+  color: #60a5fa;
+  transform: translateY(-1px);
+}
+
+#status-bar a.router-link-active {
+  color: #60a5fa;
+  font-weight: 600;
 }
 
 .difficulty-easy {

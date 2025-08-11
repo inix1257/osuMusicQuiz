@@ -173,12 +173,22 @@ export default {
 .gameroom {
   position: relative;
   display: flex;
-  background-color: var(--color-gameroom);
-  border-radius: 10px;
-  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, var(--color-gameroom) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
   cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.gameroom:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, var(--color-gameroom) 0%, rgba(255, 255, 255, 0.08) 100%);
+  border-color: rgba(96, 165, 250, 0.3);
 }
 
 .hover-cover {
@@ -187,10 +197,10 @@ export default {
   left: 0;
   width: 100%;
   height: 100%;
-  border-radius: 10px;
-  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 15px;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.05));
   opacity: 0;
-  transition: opacity 0.3s;
+  transition: opacity 0.3s ease;
   z-index: 2;
 }
 
@@ -209,9 +219,21 @@ export default {
 }
 
 .gameroom-hostname {
-  border: 2px solid #849ee5;
-  border-radius: 8px;
-  font-size: 1.2em;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(59, 130, 246, 0.1));
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 10px;
+  font-size: 1.1em;
+  font-weight: 600;
+  padding: 8px 12px;
+  color: #60a5fa;
+  text-shadow: 0 1px 2px rgba(96, 165, 250, 0.3);
+  transition: all 0.3s ease;
+}
+
+.gameroom:hover .gameroom-hostname {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.15));
+  border-color: rgba(96, 165, 250, 0.5);
+  transform: translateY(-1px);
 }
 
 .gameroom-difficulty {
@@ -220,15 +242,21 @@ export default {
 }
 
 .gameroom-difficulty-container {
-  background-color: var(--color-body);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   border-radius: 8px;
-  padding-left: 8px;
-  padding-right: 8px;
-  padding-top: 4px;
-  padding-bottom: 4px;
+  padding: 6px 10px;
   display: flex;
   gap: 6px;
   align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.gameroom:hover .gameroom-difficulty-container {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .owner-info {
@@ -249,12 +277,26 @@ export default {
 .gameroom-name {
   font-size: 1.8em;
   margin: 0.2em;
+  font-weight: 700;
+  color: var(--color-text);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.gameroom:hover .gameroom-name {
+  color: #60a5fa;
 }
 
 .gameroom-unranked {
-  color: #e85151;
+  color: #ef4444;
   font-size: 1.0em;
   margin: 0;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .gameroom-details {
@@ -274,26 +316,49 @@ export default {
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
+  border: 3px solid rgba(96, 165, 250, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.gameroom:hover .owner-avatar {
+  border-color: rgba(96, 165, 250, 0.6);
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 .player-avatar {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  margin-right: 10px;
-  transition: 0.3s;
-  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.1);
-  border: 0px solid #849ee5;
+  margin-right: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.player-info:hover .player-avatar {
+  border-color: rgba(96, 165, 250, 0.4);
+  transform: scale(1.1);
 }
 
 .player-info {
   display: flex;
   align-items: center;
-  border-radius: 8px;
-  border: 2px solid #849ee5;
-  padding: 2px 8px;
-  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 6px 10px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.player-info:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .player-username {
@@ -303,11 +368,23 @@ export default {
 }
 
 .playing {
-  color: #dc4040;
+  color: #ef4444;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .idle {
-  color: #8585d7;
+  color: #60a5fa;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(96, 165, 250, 0.3);
+  background: linear-gradient(45deg, #60a5fa, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .mode-icon {

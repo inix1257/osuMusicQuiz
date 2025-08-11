@@ -18,9 +18,6 @@
       </tr>
       </tbody>
     </table>
-    <div class="modal-overlay" v-if="showUserpage" @click.stop="showUserpage = false">
-      <UserPage :playerId="userpageId"></UserPage>
-    </div>
   </div>
 </template>
 
@@ -50,11 +47,6 @@ export default {
     goToFullLeaderboard() {
       this.$router.push('/leaderboard');
     }
-  },
-  async created() {
-    // const response = await apiService.get('/api/leaderboard');
-    //
-    // this.players = response.data.players;
   },
 };
 </script>
@@ -87,6 +79,27 @@ export default {
 .spaced-row {
   cursor: pointer;
 }
+
+.leaderboard-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.7));
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.leaderboard-modal-content {
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
 
 .button-container {
   display: flex;

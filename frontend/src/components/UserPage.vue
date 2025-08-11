@@ -171,18 +171,7 @@ export default {
 </template>
 
 <style scoped>
-.modal-overlay {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
+
 
 .user-info-container {
   position: relative;
