@@ -19,10 +19,6 @@ public class Achievement {
     private String description;
     private String title_name;
 
-    public String toString() {
-        return "Achievement(id=" + this.getId() + ", name=" + this.getName() + ", description=" + this.getDescription() + ", title_name=" + this.getTitle_name() + ")";
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this) {
