@@ -29,6 +29,10 @@ import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +53,9 @@ public class osuAPIService {
 
     @Value("${osu.redirectUri}")
     private String redirectUri;
+
+    @Value("${osu.apiKey}")
+    private String apiKey;
 
     public ResponseEntity<AccessTokenDTO> getToken(@PathVariable String code) {
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -184,7 +191,11 @@ public class osuAPIService {
     }
 
     private String cursor_string = "";
+    // eyJmYXZvdXJpdGVfY291bnQiOjIyODUsImlkIjoxMzczOTR9 TAIKO
+    // eyJmYXZvdXJpdGVfY291bnQiOjIzOSwiaWQiOjEyMjgyMTd9 CTB
+    // eyJmYXZvdXJpdGVfY291bnQiOjY0MSwiaWQiOjE1NjM0MDd9 MANIA
 
+//    @PostConstruct
 //    @Scheduled(fixedRate = 3000)
     private void searchBeatmap() throws IOException, ParseException {
         HttpHeaders headers = new HttpHeaders();
@@ -196,17 +207,102 @@ public class osuAPIService {
 
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<BeatmapSearchDTO> response = restTemplate.exchange("https://osu.ppy.sh/api/v2/beatmapsets/search?m=0&sort=plays_desc&cursor_string=" + cursor_string, HttpMethod.GET, entity, BeatmapSearchDTO.class);
-
+        ResponseEntity<BeatmapSearchDTO> response = restTemplate.exchange("https://osu.ppy.sh/api/v2/beatmapsets/search?m=3&sort=favourites_desc&cursor_string=" + cursor_string, HttpMethod.GET, entity, BeatmapSearchDTO.class);
+        System.out.println("Response: " + response.getBody());
         List<Beatmap> beatmaps = response.getBody().getBeatmapsets();
 
-        for (Beatmap beatmap : beatmaps) {
-            if (beatmap.getPlay_count() > 3000000 || beatmap.getFavourite_count() > 1000) {
+        for (Beatmap beatmap : beatmaps) { //
+            if (beatmap.getPlay_count() > 1000 * 500 || beatmap.getFavourite_count() > 300) {
+                System.out.println("Play count: " + beatmap.getPlay_count() + " Favourite count: " + beatmap.getFavourite_count());
                 beatmapService.addBeatmap(String.valueOf(beatmap.getId()));
             }
         }
 
         cursor_string = response.getBody().getCursor_string();
         System.out.println("Cursor string: " + cursor_string);
+    }
+
+    /**
+     * Fetch beatmap statistics for a single beatmapset using osu! API v1
+     * @param beatmapSetId The beatmapset ID to fetch
+     * @return BeatmapStats object with play count and favourite count
+     */
+    public BeatmapStats fetchBeatmapStats(int beatmapSetId) {
+        try {
+            String url = String.format("https://osu.ppy.sh/api/get_beatmaps?k=%s&s=%d", apiKey, beatmapSetId);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Accept", "application/json");
+
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(headers);
+            RestTemplate restTemplate = new RestTemplate();
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode jsonResponse = mapper.readTree(response.getBody());
+                
+                if (jsonResponse.isArray() && jsonResponse.size() > 0) {
+                    JsonNode beatmap = jsonResponse.get(0); // Get the first beatmap in the set
+                    int playCount = beatmap.path("playcount").asInt(0);
+                    int favouriteCount = beatmap.path("favourite_count").asInt(0);
+                    
+                    return new BeatmapStats(playCount, favouriteCount);
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to fetch beatmap stats for beatmapset {}: {}", beatmapSetId, e.getMessage());
+        }
+        
+        return new BeatmapStats(0, 0); // Return default values if fetch fails
+    }
+    
+    /**
+     * Batch fetch beatmap statistics using osu! API v1
+     * @param beatmapSetIds List of beatmap set IDs to fetch
+     * @return Map of beatmap set ID to BeatmapStats
+     */
+    public Map<Integer, BeatmapStats> fetchBeatmapStatsBatch(List<Integer> beatmapSetIds) {
+        Map<Integer, BeatmapStats> statsMap = new HashMap<>();
+        
+        logger.info("Fetching stats for {} beatmapsets using osu! API v1", beatmapSetIds.size());
+        
+        for (Integer beatmapSetId : beatmapSetIds) {
+            try {
+                BeatmapStats stats = fetchBeatmapStats(beatmapSetId);
+                statsMap.put(beatmapSetId, stats);
+                
+                // Add a small delay to avoid overwhelming the API
+                Thread.sleep(100);
+                
+            } catch (Exception e) {
+                logger.error("Failed to fetch stats for beatmapset {}: {}", beatmapSetId, e.getMessage());
+                statsMap.put(beatmapSetId, new BeatmapStats(0, 0)); // Default values
+            }
+        }
+        
+        return statsMap;
+    }
+    
+    /**
+     * Helper class to hold beatmap statistics
+     */
+    public static class BeatmapStats {
+        private final int playCount;
+        private final int favouriteCount;
+        
+        public BeatmapStats(int playCount, int favouriteCount) {
+            this.playCount = playCount;
+            this.favouriteCount = favouriteCount;
+        }
+        
+        public int getPlayCount() {
+            return playCount;
+        }
+        
+        public int getFavouriteCount() {
+            return favouriteCount;
+        }
     }
 }
