@@ -237,7 +237,7 @@ export default {
         this.gameName = `${this.me.username}'s game`;
       }
 
-      if (this.guessMode === 'DEFAULT') {
+      if (this.guessMode === 'DEFAULT' || !this.guessMode) {
         this.guessMode = 'TITLE';
       }
 
@@ -636,13 +636,13 @@ export default {
 
 .modal {
   position: relative;
-  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
+  background: var(--color-disabled);
   padding: 30px;
   border-radius: 20px;
   width: 50em;
   height: 30em;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   z-index: 100;
   backdrop-filter: blur(20px);
 }
@@ -659,7 +659,7 @@ export default {
 
 .tabs button {
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
   color: var(--color-text);
   cursor: pointer;
@@ -674,7 +674,7 @@ export default {
 
 .tabs button:hover {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--color-border);
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
@@ -706,7 +706,7 @@ export default {
   font-family: Sen, Arial, sans-serif;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   font-size: 16px;
   color: var(--color-text);
@@ -741,7 +741,7 @@ export default {
 
 .input-gameinfo {
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   font-size: 16px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
@@ -771,7 +771,7 @@ export default {
   top: 15px;
   right: 15px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 8px;
   font-size: 1.2em;
@@ -798,7 +798,7 @@ export default {
 .save-button {
   height: 2.5em;
   padding: 8px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border);
   background: linear-gradient(135deg, rgba(96, 165, 250, 0.8), rgba(59, 130, 246, 0.8));
   color: white;
   text-align: center;
@@ -831,7 +831,7 @@ input[type="checkbox"] {
   appearance: none;
   width: 20px;
   height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid var(--color-border);
   border-radius: 6px;
   outline: none;
   cursor: pointer;
@@ -888,7 +888,7 @@ input[type="checkbox"] + label {
   display: block;
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -900,7 +900,7 @@ input[type="checkbox"] + label {
 
 .custom-checkbox-label:hover {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--color-border);
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
@@ -909,7 +909,7 @@ input[type="checkbox"] + label {
   display: block;
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -954,7 +954,7 @@ input[type="checkbox"] + label {
   height: 24px;
   line-height: 24px;
   text-align: center;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--color-border);
   font-weight: bold;
   border-radius: 6px;
   cursor: pointer;
@@ -964,7 +964,7 @@ input[type="checkbox"] + label {
 }
 
 .difficulty-label:hover {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--color-border);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
   transform: scale(1.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -1007,7 +1007,7 @@ input[type="checkbox"] + label {
   margin-left: -100px;
   opacity: 0;
   transition: all 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(10px);
 }
@@ -1039,13 +1039,13 @@ input[type="checkbox"]:disabled {
 .label-displaymode:hover {
   color: var(--color-text);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: var(--color-border);
   transform: translateY(-1px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 input[type="checkbox"]:checked + .label-displaymode {
-  color: white;
+  color: var(--color-text);
   background: linear-gradient(135deg, rgba(96, 165, 250, 0.6), rgba(59, 130, 246, 0.6));
   border-color: rgba(96, 165, 250, 0.4);
   box-shadow: 0 4px 15px rgba(96, 165, 250, 0.3);

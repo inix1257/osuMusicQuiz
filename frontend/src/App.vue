@@ -215,6 +215,7 @@ html[data-theme="darkMode"] {
   --color-secondary: #2A2A38;
   --color-gameroom: #2A2A38;
   --color-player: rgba(117, 117, 117, 0.5);
+  --color-border: rgba(255, 255, 255, 0.2);
 
 }
 
@@ -228,6 +229,7 @@ html[data-theme="lightMode"] {
   --color-secondary: #ffffff;
   --color-gameroom: #e5e9f5;
   --color-player: rgba(231, 239, 255, 0.5);
+  --color-border: rgba(0, 0, 0, 0.2);
 }
 
 html, body {
@@ -256,11 +258,11 @@ html, body {
   height: 60px;
   left: 0;
   right: 0;
-  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-body) 100%);
   color: var(--color-text);
   padding: 12px 20px;
   text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -319,7 +321,7 @@ a {
 .button-icon {
   color: var(--color-text);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--color-border);
   padding: 10px 16px;
   cursor: pointer;
   outline: inherit;
@@ -354,7 +356,7 @@ a {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid var(--color-border);
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
@@ -397,7 +399,7 @@ a {
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   transition: all 0.3s ease;
   font-weight: 500;
 }
@@ -426,7 +428,7 @@ a {
   padding: 10px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--color-border);
   transition: all 0.3s ease;
   font-size: 1.1em;
 }

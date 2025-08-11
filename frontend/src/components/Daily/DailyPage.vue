@@ -574,7 +574,7 @@ export default {
   height: 40vh;
   object-fit: contain;
   border: 3px solid black;
-  background-color: var(--color-disabled);
+  background-color: #474747;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -589,21 +589,21 @@ export default {
   text-align: center;
   margin-top: 8px;
   font-family: 'Sen', serif;
-  background-color: var(--color-secondary);
-  color: var(--color-text);
+  background-color: #2A2A38;
+  color: #ffffff;
 }
 
 .autocomplete-dropdown {
   font-family: 'Exo 2', 'Sen', serif;
   position: absolute;
-  background-color: var(--color-secondary);
+  background-color: #2A2A38;
   border: 1px solid #ccc;
   width: 71vh;
   z-index: 1;
 }
 
 .autocomplete-dropdown .selected {
-  background-color: var(--color-disabled);
+  background-color: #474747;
 }
 
 .autocomplete-option {
@@ -626,7 +626,7 @@ export default {
   padding: 10px;
   margin-top: 10px;
   border: 1px solid #ccc;
-  background-color: var(--color-secondary);
+  background-color: #2A2A38;
   max-width: 28vh;
   min-width: 28vh;
 }
@@ -644,7 +644,7 @@ export default {
   font-family: 'Exo 2', 'Sen', serif;
   font-size: 2em;
   font-weight: normal;
-  color: var(--color-text);
+  color: #ffffff;
   text-align: center;
   flex-grow: 1;
   margin: 0 0;
@@ -652,14 +652,14 @@ export default {
 
 .osudle-header-archivetext {
   font-size: 1em;
-  color: var(--color-subtext);
+  color: #d3d3d3;
 }
 
 .close-button {
   position: relative;
   top: 0;
   right: 2em;
-  color: var(--color-text);
+  color: #ffffff;
   background: none;
   border: none;
   font-size: 1.5em;
@@ -667,8 +667,8 @@ export default {
 }
 
 .login-button {
-  background-color: var(--color-secondary);
-  color: var(--color-text);
+  background-color: #2A2A38;
+  color: #ffffff;
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 10px;
@@ -682,7 +682,7 @@ export default {
   font-family: "Sen", "Noto Sans Korean", "serif";
   font-weight: bold;
   background-color: green;
-  color: var(--color-text);
+  color: #ffffff;
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 10px;
@@ -721,7 +721,7 @@ export default {
 
 .text-nextdle {
   font-size: 1.2em;
-  color: var(--color-text);
+  color: #ffffff;
 }
 
 .text-nextdletime {
@@ -764,9 +764,9 @@ export default {
   width: 50px;
   height: 50px;
   font-size: 1.5em;
-  border: 2px solid var(--color-text);
-  background-color: var(--color-secondary);
-  color: var(--color-text);
+  border: 2px solid #ffffff;
+  background-color: #2A2A38;
+  color: #ffffff;
   margin-top: 0.5em;
   margin-bottom: 0.5em;
   cursor: pointer;
@@ -788,17 +788,17 @@ progress {
   -webkit-appearance: none;
   appearance: none;
   border-radius: 5px;
-  background-color: var(--color-disabled);
-  border: 1px solid var(--color-body);
+  background-color: #474747;
+  border: 1px solid #1A1A22;
 }
 
 progress::-webkit-progress-bar {
-  background-color: var(--color-disabled);
+  background-color: #474747;
   border-radius: 5px;
 }
 
 progress::-webkit-progress-value {
-  background-color: var(--color-secondary);
+  background-color: #2A2A38;
   border-radius: 5px;
 }
 
@@ -815,7 +815,7 @@ progress::-webkit-progress-value {
   height: 40vh;
   object-fit: contain;
   border: 3px solid black;
-  background-color: var(--color-disabled);
+  background-color: #474747;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -832,7 +832,8 @@ progress::-webkit-progress-value {
   justify-content: center;
   align-items: center;
   text-align: center;
-  border: 3px solid var(--color-body);
+  color: #ffffff;
+  border: 3px solid #1A1A22;
   border-radius: 10px;
   font-size: 5em;
   font-weight: bold;
@@ -852,8 +853,8 @@ progress::-webkit-progress-value {
   height: 3em;
   margin-top: 8px;
   font-family: 'Sen', serif;
-  background-color: var(--color-secondary);
-  color: var(--color-text);
+  background-color: #2A2A38;
+  color: #ffffff;
 }
 
 .input-volume {
@@ -865,16 +866,17 @@ progress::-webkit-progress-value {
   display: flex;
   justify-content: center;
   align-items: center;
+  color: #ffffff;
   gap: 10px;
-  background: var(--color-secondary);
+  background: #2A2A38;
   padding: 10px;
   border-radius: 20px;
-  border: 2px solid var(--color-body);
+  border: 2px solid #1A1A22;
 }
 
 .icon-osudle-help {
   font-size: 1.5em;
-  color: var(--color-text);
+  color: #ffffff;
   cursor: pointer;
 }
 
@@ -904,8 +906,8 @@ progress::-webkit-progress-value {
 }
 
 .button-archive {
-  background-color: var(--color-secondary);
-  color: var(--color-text);
+  background-color: #2A2A38;
+  color: #ffffff;
   border: 1px solid #ccc;
   border-radius: 50%;
   padding: 0.3em 0.5em;

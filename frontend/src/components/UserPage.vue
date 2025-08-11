@@ -2,9 +2,13 @@
 import {useUserStore} from "@/stores/userStore";
 import apiService from "@/api/apiService";
 import moment from "moment";
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome";
 
 export default {
   name: "UserPage",
+  components: {
+    FontAwesomeIcon
+  },
   setup() {
     const userStore = useUserStore();
     return {
@@ -91,8 +95,30 @@ export default {
     getTotalStats() {
       const totalGuesses = this.player.playerStats.reduce((acc, stat) => acc + stat.guessed, 0);
       const totalPlays = this.player.playerStats.reduce((acc, stat) => acc + stat.played, 0);
-      return `${totalGuesses}/${totalPlays} (${(totalGuesses / totalPlays * 100 || 0).toFixed(2)}%)`;
+      return `${totalGuesses}/${totalPlays}`;
     },
+
+    getTotalAccuracy() {
+      const totalGuesses = this.player.playerStats.reduce((acc, stat) => acc + stat.guessed, 0);
+      const totalPlays = this.player.playerStats.reduce((acc, stat) => acc + stat.played, 0);
+      return totalPlays > 0 ? (totalGuesses / totalPlays * 100) : 0;
+    },
+
+    getAccuracyColor(percentage) {
+      // Ensure percentage is a valid number
+      if (!percentage || isNaN(percentage)) return '#6b7280'; // Gray for invalid data
+      
+      // Clamp percentage between 0 and 100
+      const clampedPercentage = Math.max(0, Math.min(100, percentage));
+      
+      // Create a smooth gradient from red (0%) to green (100%)
+      // Using HSL for better color transitions
+      const hue = clampedPercentage * 120 / 100; // 0 = red, 120 = green
+      const saturation = 70; // Keep saturation consistent
+      const lightness = 45 + (clampedPercentage * 15 / 100); // 45% to 60% for good contrast
+      
+      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+    }
   },
 
   mounted() {
@@ -117,86 +143,187 @@ export default {
         {{ notificationMessage }}
       </div>
       <div class="user-info" v-if="player.id">
-        <a :href="`https://osu.ppy.sh/users/${player.id}`" target="_blank" @click.stop="">
-          <div class="user-header">
-            <img :src="player.avatar_url" alt="User's avatar" class="user-avatar">
-            <div class="user-header-right">
-              <p class="user-username">{{ player.username }}</p>
-              <p class="user-title" v-if="player.current_title_achievement != null">{{ player.current_title_achievement.name }}</p>
-              <p class="user-rank">Rank: <strong>#{{ player.rank }}</strong></p>
+        <!-- User Profile Header -->
+        <div class="profile-header">
+          <a :href="`https://osu.ppy.sh/users/${player.id}`" target="_blank" @click.stop="">
+            <div class="user-header">
+              <img :src="player.avatar_url" alt="User's avatar" class="user-avatar">
+              <div class="user-header-right">
+                <p class="user-username">{{ player.username }}</p>
+                <p class="user-title" v-if="player.current_title_achievement != null">{{ player.current_title_achievement.name }}</p>
+                <p class="user-rank">Rank: <strong>#{{ player.rank }}</strong></p>
+                <p class="user-register-date">Joined: {{ formatDate(player.register_date) }}</p>
+              </div>
+            </div>
+          </a>
+          
+          <!-- Stats Overview -->
+          <div class="stats-overview">
+            <div class="stat-card">
+              <div class="stat-icon"><FontAwesomeIcon icon="crown" /></div>
+              <div class="stat-content">
+                <div class="stat-value">{{ player.points }}</div>
+                <div class="stat-label">Points</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><FontAwesomeIcon icon="star" /></div>
+              <div class="stat-content">
+                <div class="stat-value">{{ player.level }}</div>
+                <div class="stat-label">Level</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon"><FontAwesomeIcon icon="chart-bar" /></div>
+              <div class="stat-content">
+                <div class="stat-value">{{ getTotalStats() }}</div>
+                <div class="stat-label">Total Stats</div>
+              </div>
             </div>
           </div>
-        </a>
-        <div class="user-levelpoints">
-          <p class="user-points"><strong>{{ player.points }}</strong> pts</p>
-          <p class="user-level">(Level <strong>{{ player.level }}</strong>)</p>
-        </div>
-        <div v-if="me.id === player.id">
-          Current Title:
-          <select @click.stop="" v-model="selectedAchievement" @change="onAchievementUpdate" class="user-title-selection">
-            <option v-for="achievement in achievements" :key="achievement.id" :value="achievement">
-              {{ achievement.name }}
-            </option>
-          </select>
-        </div>
 
-        <div class="tabs">
-          <div class="game-modes">
-            <button v-for="mode in gameModes" :key="mode" @click.stop="selectGameMode(mode)" :class="{ active: selectedGameMode === mode }">
-              {{ mode }}
-            </button>
-          </div>
-          <div class="guess-modes">
-            <button v-for="mode in guessModes" :key="mode" @click.stop="selectGuessMode(mode)" :class="{ active: selectedGuessMode === mode }">
-              {{ mode }}
-            </button>
+          <!-- Achievement Selection (if own profile) -->
+          <div v-if="me.id === player.id" class="achievement-section">
+            <label class="achievement-label">Current Title:</label>
+            <select @click.stop="" v-model="selectedAchievement" @change="onAchievementUpdate" class="user-title-selection">
+              <option v-for="achievement in achievements" :key="achievement.id" :value="achievement">
+                {{ achievement.name }}
+              </option>
+            </select>
           </div>
         </div>
 
+        <!-- Game Mode Tabs -->
+        <div class="tabs-container">
+          <div class="tabs-header">
+            <h3>Game Statistics</h3>
+          </div>
+          
+          <div class="tabs">
+            <div class="tabs-row">
+              <div class="game-modes">
+                <div class="mode-buttons">
+                  <button v-for="mode in gameModes" :key="mode" @click.stop="selectGameMode(mode)" :class="{ active: selectedGameMode === mode }">
+                    {{ mode }}
+                  </button>
+                </div>
+              </div>
+              <div class="guess-modes">
+                <div class="mode-buttons">
+                  <button v-for="mode in guessModes" :key="mode" @click.stop="selectGuessMode(mode)" :class="{ active: selectedGuessMode === mode }">
+                    {{ mode }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statistics Display -->
         <div class="user-stats-container">
-          <p class="user-stats" v-for="stat in filteredStats" :key="stat.difficulty">
-            <span :class="'difficulty-' + stat.difficulty.toLowerCase()">{{ stat.difficulty.toUpperCase() }}</span>:
-            {{ stat.guessed }}/{{ stat.played }}
-            ({{ (stat.guessed / stat.played * 100 || 0).toFixed(2) }}%)
-          </p>
-          <p v-if="filteredStats.length > 0">Mode Total: {{ filteredStats.reduce((acc, stat) => acc + stat.guessed, 0) }}/{{ filteredStats.reduce((acc, stat) => acc + stat.played, 0) }}</p>
-          <p v-else>No stats found for this mode</p>
-
-          <p class="user-guesses">User Total: {{ getTotalStats() }}</p>
+          <div v-if="filteredStats.length > 0">
+            <div class="stats-grid">
+              <div v-for="stat in filteredStats" :key="stat.difficulty" class="stat-item">
+                <div class="difficulty-badge" :class="'difficulty-' + stat.difficulty.toLowerCase()">
+                  {{ stat.difficulty.toUpperCase() }}
+                </div>
+                <div class="stat-numbers">
+                  <span class="correct-count">{{ stat.guessed }}</span>
+                  <span class="separator">/</span>
+                  <span class="total-count">{{ stat.played }}</span>
+                </div>
+                <div class="accuracy-percentage" :style="{ color: getAccuracyColor(stat.guessed / stat.played * 100) }">
+                  {{ (stat.guessed / stat.played * 100 || 0).toFixed(1) }}%
+                </div>
+              </div>
+            </div>
+            
+            <div class="mode-total">
+              <div class="total-label">Mode Total:</div>
+              <div class="total-numbers">
+                <span class="correct-count">{{ filteredStats.reduce((acc, stat) => acc + stat.guessed, 0) }}</span>
+                <span class="separator">/</span>
+                <span class="total-count">{{ filteredStats.reduce((acc, stat) => acc + stat.played, 0) }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="no-stats-message">
+            <div class="no-stats-icon"><FontAwesomeIcon icon="chart-bar" /></div>
+            <div class="no-stats-text">No stats found for this mode</div>
+            <div class="no-stats-subtext">Try selecting a different game mode or guess mode</div>
+          </div>
+          
+          <div class="user-total">
+            <div class="total-label">Overall Total:</div>
+            <div class="total-numbers">
+              <span class="correct-count">{{ getTotalStats() }}</span>
+            </div>
+            <div class="total-accuracy" :style="{ color: getAccuracyColor(getTotalAccuracy()) }">
+              ({{ getTotalAccuracy().toFixed(1) }}%)
+            </div>
+          </div>
         </div>
-
-        <p class="user-register-date">OMQ Registration: {{ formatDate(player.register_date) }}</p>
       </div>
     </div>
 </template>
 
 <style scoped>
-
-
 .user-info-container {
   position: relative;
-
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
 }
 
 .user-info {
-  width: 50vw;
+  width: 85vw;
+  max-width: 1200px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
+  padding: 30px;
+  background: linear-gradient(135deg, var(--color-body) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 25px;
   margin-bottom: 20px;
-  background-color: var(--color-secondary);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.user-info:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+/* Profile Header Section */
+.profile-header {
+  width: 100%;
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+  align-items: stretch;
 }
 
 .user-header {
   display: flex;
   flex-direction: row;
   align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  flex: 1;
+}
+
+.user-header:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.08) 100%);
 }
 
 .user-header-right {
@@ -204,133 +331,513 @@ export default {
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-}
-
-.user-header-details {
-  display: flex;
-  align-items: center;
-}
-
-.user-levelpoints {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
-}
-
-.user-levelpoints p {
-  font-size: 1.5em;
-  margin: 0;
+  margin-left: 20px;
 }
 
 .user-avatar {
-  width: 100px;
-  height: 100px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 10px;
-  margin-right: 20px;
   border: 3px solid var(--color-text);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.user-header:hover .user-avatar {
+  transform: scale(1.05);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
 }
 
 .user-username {
-  font-size: 2.5em;
+  font-size: 1.8em;
   font-weight: bold;
-  margin-bottom: 0;
+  margin-bottom: 5px;
+  color: var(--color-text);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
 }
 
 .user-title {
-  font-size: 1.5em;
+  font-size: 1.1em;
   margin-top: 0;
-  margin-bottom: 0;
+  margin-bottom: 5px;
+  color: #a855f7;
+  background: linear-gradient(45deg, #a855f7, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(168, 85, 247, 0.3);
 }
 
 .user-rank {
   margin-top: 0;
-  font-size: 1.8em;
+  font-size: 1.2em;
+  color: var(--color-text);
+  opacity: 0.9;
 }
 
-.user-points {
-  margin-left: 12px;
-  font-size: 1.2em;
+.user-register-date {
+  font-size: 0.9em;
+  color: var(--color-text);
+  opacity: 0.7;
+  margin: 0;
+}
+
+/* Stats Overview Cards */
+.stats-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  min-width: 140px;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.stat-icon {
+  font-size: 1.5em;
+  opacity: 0.8;
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-value {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: var(--color-text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.stat-label {
+  font-size: 0.8em;
+  color: var(--color-text);
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+}
+
+/* Achievement Section */
+.achievement-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 1;
+  min-width: 200px;
+}
+
+.achievement-label {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
 }
 
 .user-title-selection {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-top: 8px;
+  padding: 12px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   font-size: 16px;
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
   color: var(--color-text);
   box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .user-title-selection:focus {
-  border-color: #007bff;
+  border-color: #60a5fa;
   outline: none;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
+  transform: translateY(-1px);
 }
 
-.user-guesses,
-.user-plays,
-.user-register-date {
-  font-size: 16px;
-  margin-bottom: 5px;
+.user-title-selection:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.08) 100%);
 }
 
-.user-stats {
-  font-size: 16px;
-  margin-bottom: 0;
-  margin-top: 0.5em;
+/* Tabs Container */
+.tabs-container {
+  width: 100%;
+  margin-bottom: 25px;
 }
 
-.user-stats-container {
+.tabs-header {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  margin-top: 16px;
+  margin-bottom: 15px;
+  padding: 0 5px;
 }
 
-.notification-push {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background-color: #4caf50;
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 1000;
+.tabs-header h3 {
+  font-size: 1.4em;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.user-register-date {
+  font-size: 0.9em;
+  color: var(--color-text);
+  opacity: 0.7;
+  margin: 0;
 }
 
 .tabs {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 1em;
+  gap: 12px;
+}
+
+.tabs-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 30px;
 }
 
 .game-modes,
 .guess-modes {
   display: flex;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 6px;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex: 1;
+}
+
+.mode-buttons {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  justify-content: center;
 }
 
 .tabs > * button {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  background-color: var(--color-secondary);
+  padding: 8px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.05) 100%);
   color: var(--color-text);
   cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85em;
+  min-width: 60px;
+}
+
+.tabs > * button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, rgba(255, 255, 255, 0.08) 100%);
 }
 
 .tabs > * button.active {
-  border-color: #007bff;
-  background-color: #007bff;
+  border-color: #60a5fa;
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
   color: white;
+  box-shadow: 0 6px 20px rgba(96, 165, 250, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Statistics Container */
+.user-stats-container {
+  width: 100%;
+  padding: 25px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.stat-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.difficulty-badge {
+  font-size: 1.3em;
+  font-weight: bold;
+  padding: 6px 12px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-numbers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.correct-count {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #4ade80;
+  text-shadow: 0 2px 4px rgba(74, 222, 128, 0.3);
+}
+
+.separator {
+  font-size: 1.2em;
+  color: var(--color-text);
+  opacity: 0.6;
+}
+
+.total-count {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: var(--color-text);
+  opacity: 0.8;
+}
+
+.accuracy-percentage {
+  font-size: 1.2em;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.mode-total,
+.user-total {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  padding: 15px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 15px;
+}
+
+.mode-total:last-child,
+.user-total:last-child {
+  margin-bottom: 0;
+}
+
+.total-label {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.total-numbers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.total-accuracy {
+  font-size: 1.2em;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.no-stats-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 25px;
+}
+
+.no-stats-icon {
+  font-size: 3em;
+  margin-bottom: 15px;
+  opacity: 0.6;
+}
+
+.no-stats-text {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.no-stats-subtext {
+  font-size: 1em;
+  color: var(--color-text);
+  opacity: 0.7;
+  font-weight: 400;
+}
+
+.notification-push {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #4ade80, #22c55e);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 10px;
+  z-index: 1000;
+  box-shadow: 0 8px 25px rgba(74, 222, 128, 0.3);
+  font-weight: 600;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .user-info {
+    width: 95vw;
+    padding: 20px;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .stats-overview {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+  
+  .stat-card {
+    min-width: auto;
+    flex: 1;
+  }
+  
+  .user-header {
+    flex-direction: column;
+    text-align: center;
+    padding: 15px;
+  }
+  
+  .user-header-right {
+    margin-left: 0;
+    margin-top: 15px;
+    align-items: center;
+  }
+  
+  .user-username {
+    font-size: 1.5em;
+  }
+  
+  .user-avatar {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .achievement-section {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .achievement-label {
+    white-space: nowrap;
+  }
+  
+  .user-title-selection {
+    flex: 1;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .game-modes,
+  .guess-modes {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+  }
+  
+  .tabs-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .mode-buttons {
+    justify-content: center;
+  }
+
+  .tabs > * button {
+    padding: 8px 12px;
+    font-size: 0.8em;
+  }
+  
+  .tabs-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
 }
 </style>

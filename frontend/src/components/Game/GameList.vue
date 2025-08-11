@@ -211,6 +211,7 @@ export default {
 .gameroom-header-extrainfo {
   gap: 0.5em;
   display: flex;
+  align-items: center;
 }
 
 .gameroom-header {

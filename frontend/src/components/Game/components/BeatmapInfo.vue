@@ -61,7 +61,7 @@ export default {
 <style scoped>
 .beatmap-info-container {
   position: absolute;
-  top: 7vh;
+  top: 13vh;
   right: 20px;
   padding: 10px;
   margin-top: 10px;

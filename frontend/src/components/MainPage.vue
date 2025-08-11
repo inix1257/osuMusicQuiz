@@ -213,7 +213,6 @@ export default {
   flex-direction: column;
   gap: 10px;
   height: 80vh;
-  width: 65vw;
   padding: 20px;
   background: linear-gradient(135deg, var(--color-body) 0%, rgba(255, 255, 255, 0.02) 100%);
   border-radius: 25px;
