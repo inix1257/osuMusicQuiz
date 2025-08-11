@@ -7,8 +7,13 @@ import com.inix.omqweb.Beatmap.BeatmapRepository;
 import com.inix.omqweb.Util.AnswerUtil;
 import com.inix.omqweb.osuAPI.Player;
 import com.inix.omqweb.osuAPI.PlayerRepository;
+
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -27,6 +32,7 @@ public class DailyGuessManager {
     private final AliasRepository aliasRepository;
 
     private final SimpMessagingTemplate template;
+    private final Logger logger = LoggerFactory.getLogger(DailyGuessManager.class);
 
     private final ConcurrentHashMap<String, DailyGuessLog> playerGuesses = new ConcurrentHashMap<>();
 
@@ -71,6 +77,10 @@ public class DailyGuessManager {
         }
 
         DailyGuess dailyGuess = dailyGuessRepository.findDailyGuessById(dailyId);
+
+        if (dailyGuess == null) {
+            dailyGuess = dailyGuessRepository.getLastDailyGuess();
+        }
 
         List<Alias> aliases = aliasRepository.findAllByBeatmapIds(Collections.singletonList(dailyGuess.getBeatmap().getBeatmapset_id()));
 
@@ -166,5 +176,47 @@ public class DailyGuessManager {
 
     public List<DailyGuessLog> getDailyGuessLogs(Player player) {
         return dailyGuessLogRepository.findByPlayerId(player.getId());
+    }
+
+    /**
+     * Scheduled method that runs every 24 hours to add a new daily guess.
+     * This method selects a beatmap that meets the criteria for daily guesses:
+     * - Not already used in daily_guess table
+     * - Not blurred
+     * - Standard game mode
+     * - At least 50% guess rate for title guessing
+     */
+    @Scheduled(fixedRate = 1000 * 60 * 60 * 24)
+    public void addNewDailyGuess() {
+        try {
+            logger.info("Starting scheduled daily guess addition...");
+            
+            // Find a suitable beatmap for the daily guess
+            Beatmap beatmap = beatmapRepository.findRandomBeatmapForDailyGuess();
+            
+            if (beatmap == null) {
+                logger.warn("No suitable beatmap found for daily guess. Using fallback method.");
+                beatmap = beatmapRepository.findRandomBeatmapNotInDailyGuess();
+            }
+            
+            if (beatmap == null) {
+                logger.error("No beatmap available for daily guess. Skipping today's daily.");
+                return;
+            }
+            
+            // Create new daily guess
+            DailyGuess dailyGuess = DailyGuess.builder()
+                    .beatmap(beatmap)
+                    .build();
+            
+            // Save the new daily guess
+            DailyGuess savedDailyGuess = dailyGuessRepository.save(dailyGuess);
+            
+            logger.info("Successfully added new daily guess with ID: {} for beatmap: {} - {}", 
+                    savedDailyGuess.getId(), beatmap.getArtist(), beatmap.getTitle());
+                    
+        } catch (Exception e) {
+            logger.error("Failed to add new daily guess: ", e);
+        }
     }
 }

@@ -9,4 +9,7 @@ import java.util.Date;
 
 public interface DailyGuessRepository extends JpaRepository<DailyGuess, Integer> {
     DailyGuess findDailyGuessById(int id);
+
+    @Query("SELECT d FROM DailyGuess d ORDER BY d.id DESC LIMIT 1")
+    DailyGuess getLastDailyGuess();
 }

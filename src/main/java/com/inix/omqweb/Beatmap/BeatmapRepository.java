@@ -107,4 +107,14 @@ public interface BeatmapRepository extends JpaRepository<Beatmap, Integer> {
 
     @Query(value = "SELECT * FROM beatmap WHERE beatmapset_id = :beatmapset_id", nativeQuery = true)
     Beatmap findBeatmapByBeatmapset_id(int beatmapset_id);
+
+    @Query(value = "SELECT b.* FROM beatmap b " +
+            "JOIN beatmap_stats bs ON b.beatmapset_id = bs.beatmapset_id " +
+            "WHERE b.beatmapset_id NOT IN (SELECT d.beatmapset_id FROM daily_guess d) " +
+            "AND b.blur = false " +
+            "AND bs.game_mode = 'STD' " +
+            "AND bs.guessed / bs.played >= 0.5 " +
+            "AND bs.guess_mode = 'TITLE' " +
+            "ORDER BY RAND() LIMIT 1", nativeQuery = true)
+    Beatmap findRandomBeatmapForDailyGuess();
 }
